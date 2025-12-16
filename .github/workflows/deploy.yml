@@ -28,7 +28,22 @@ jobs:
 
       - name: Replace API key placeholder
         run: |
-          sed -i "s/PLACEHOLDER/${{ secrets.GOOGLE_MAPS_API_KEY }}/g" config.js
+          if [ -z "${{ secrets.GOOGLE_MAPS_API_KEY }}" ]; then
+            echo "ERROR: GOOGLE_MAPS_API_KEY secret is not set!"
+            exit 1
+          fi
+          if [ ! -f config.js ]; then
+            echo "ERROR: config.js file not found!"
+            exit 1
+          fi
+          # Use pipe delimiter to avoid issues with special characters in API key
+          sed -i "s|PLACEHOLDER|${{ secrets.GOOGLE_MAPS_API_KEY }}|g" config.js
+          # Verify replacement worked
+          if grep -q "PLACEHOLDER" config.js; then
+            echo "ERROR: Replacement failed! PLACEHOLDER still found in config.js"
+            exit 1
+          fi
+          echo "✓ API key placeholder successfully replaced"
         shell: bash
 
       - name: Setup Pages
