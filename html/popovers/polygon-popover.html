@@ -102,6 +102,28 @@
         </div>
 
         <div class="mb-3">
+          <span class="form-label">Show in Risk Assessments:</span>
+          <div class="d-flex flex-wrap gap-3">
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="risk-show-intruder" />
+              <label class="form-check-label" for="risk-show-intruder">Intruder</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="risk-show-cctv" />
+              <label class="form-check-label" for="risk-show-cctv">CCTV</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="risk-show-access" />
+              <label class="form-check-label" for="risk-show-access">Access</label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="checkbox" id="risk-show-fire" />
+              <label class="form-check-label" for="risk-show-fire">Fire</label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
           <span class="form-label">Access Points in Risk Area:</span>
           <div id="risk-devices-list" class="bg-light p-2 rounded text-dark" style="max-height: 200px; overflow-y: auto"></div>
         </div>
@@ -120,7 +142,7 @@
         </div>
 
         <div class="mb-3">
-          <label class="form-label">Risk Assessments:</label>
+          <span class="form-label">Risk Assessments:</span>
           <div id="safety-sub-details-list" class="mb-2" style="max-height: 300px; overflow-y: auto"></div>
           <button type="button" class="btn btn-sm btn-outline-primary w-100" id="safety-add-sub-detail-btn"><i class="bi bi-plus"></i> Add Risk Assessment</button>
         </div>

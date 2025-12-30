@@ -33,6 +33,10 @@ export function initDetailsPanel() {
   const riskLabelInput = document.getElementById("risk-label-input");
   const riskNotesInput = document.getElementById("risk-notes-input");
   const riskEaseSelect = document.getElementById("risk-ease-select");
+  const riskShowIntruder = document.getElementById("risk-show-intruder");
+  const riskShowCctv = document.getElementById("risk-show-cctv");
+  const riskShowAccess = document.getElementById("risk-show-access");
+  const riskShowFire = document.getElementById("risk-show-fire");
 
   // Safety controls
   const safetyLabelInput = document.getElementById("safety-label-input");
@@ -156,6 +160,23 @@ export function initDetailsPanel() {
     });
     preventEventPropagation(riskEaseSelect);
   }
+
+  // Handles changing risk show flags
+  const setupRiskCheckbox = (checkbox, property) => {
+    if (checkbox) {
+      checkbox.addEventListener("change", (e) => {
+        if (currentRisk && currentRiskPolygon) {
+          currentRisk[property] = e.target.checked;
+          currentRiskPolygon[property] = e.target.checked;
+        }
+      });
+    }
+  };
+
+  setupRiskCheckbox(riskShowIntruder, "showInIntruder");
+  setupRiskCheckbox(riskShowCctv, "showInCctv");
+  setupRiskCheckbox(riskShowAccess, "showInAccess");
+  setupRiskCheckbox(riskShowFire, "showInFire");
 
   // Handles typing in safety name input
   if (safetyLabelInput) {
@@ -387,6 +408,14 @@ export function initDetailsPanel() {
         if (riskLabelInput && currentRisk) riskLabelInput.value = currentRisk.riskName || "";
         if (riskNotesInput && currentRisk) riskNotesInput.value = currentRisk.riskNotes || "";
         if (riskEaseSelect && currentRisk) riskEaseSelect.value = currentRisk.riskEase || "";
+
+        if (currentRisk) {
+          if (riskShowIntruder) riskShowIntruder.checked = !!currentRisk.showInIntruder;
+          if (riskShowCctv) riskShowCctv.checked = !!currentRisk.showInCctv;
+          if (riskShowAccess) riskShowAccess.checked = !!currentRisk.showInAccess;
+          if (riskShowFire) riskShowFire.checked = !!currentRisk.showInFire;
+        }
+
         if (currentRisk && polygon && polygon.canvas) updateRiskDevicesList(currentRisk, polygon.canvas);
       } else if (deviceType === "safety-polygon") {
         currentSafetyPolygon = polygon;
@@ -463,8 +492,8 @@ const initPolygonPropertiesCoordinator = () => {
 };
 
 // Waits for the page to load before setting up
-if (!window.__polygonPropertiesInitialized) {
-  window.__polygonPropertiesInitialized = true;
+if (!window.__polygonPropertiesSetupStarted) {
+  window.__polygonPropertiesSetupStarted = true;
 
   const initialize = () => {
     const zoneLabelInput = document.getElementById("zone-label-input");
@@ -473,14 +502,23 @@ if (!window.__polygonPropertiesInitialized) {
 
     if (zoneLabelInput || roomLabelInput || riskLabelInput) {
       initPolygonPropertiesCoordinator();
-    } else {
-      setTimeout(initialize, 50);
+      window.__polygonPropertiesInitialized = true;
+      return true;
+    }
+    return false;
+  };
+
+  const kickOff = () => {
+    if (!initialize()) {
+      setTimeout(kickOff, 50);
     }
   };
 
   if (document.readyState === "complete" || document.readyState === "interactive") {
-    initialize();
+    kickOff();
   } else {
-    document.addEventListener("DOMContentLoaded", initialize);
+    document.addEventListener("DOMContentLoaded", kickOff);
   }
+
+  document.addEventListener("htmlIncludesLoaded", kickOff);
 }

@@ -57,6 +57,27 @@
           </div>
         </div>
 
+        <!-- Condition Assessment Section -->
+        <div class="card mb-3 risk-assessment-card" id="access-control-risk-condition-assessment-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Condition Assessment</h5>
+            <div class="table-responsive">
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th style="width: 30%">Access Point</th>
+                    <th style="width: 35%">Condition</th>
+                    <th style="width: 35%">Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="access-control-risk-condition-assessment-tbody">
+                  <!-- Populated dynamically from access points -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
         <!-- Access Section -->
         <div class="card mb-3 risk-assessment-card" id="access-control-risk-access-card">
           <div class="card-body">
@@ -70,127 +91,8 @@
                     <th>Notes</th>
                   </tr>
                 </thead>
-                <tbody>
-                  <tr>
-                    <td>Front</td>
-                    <td>
-                      <select id="access-control-risk-access-front-ease" class="form-select form-select-sm">
-                        <option value="">Select...</option>
-                        <option value="easy">Easy</option>
-                        <option value="controlled">Controlled</option>
-                        <option value="restricted">Restricted</option>
-                        <option value="na">N/A</option>
-                      </select>
-                    </td>
-                    <td>
-                      <input type="text" id="access-control-risk-access-front-notes" class="form-control form-control-sm" placeholder="" />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Side 1</td>
-                    <td>
-                      <select id="access-control-risk-access-side1-ease" class="form-select form-select-sm">
-                        <option value="">Select...</option>
-                        <option value="easy">Easy</option>
-                        <option value="controlled">Controlled</option>
-                        <option value="restricted">Restricted</option>
-                        <option value="na">N/A</option>
-                      </select>
-                    </td>
-                    <td>
-                      <input type="text" id="access-control-risk-access-side1-notes" class="form-control form-control-sm" placeholder="" />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Side 2</td>
-                    <td>
-                      <select id="access-control-risk-access-side2-ease" class="form-select form-select-sm">
-                        <option value="">Select...</option>
-                        <option value="easy">Easy</option>
-                        <option value="controlled">Controlled</option>
-                        <option value="restricted">Restricted</option>
-                        <option value="na">N/A</option>
-                      </select>
-                    </td>
-                    <td>
-                      <input type="text" id="access-control-risk-access-side2-notes" class="form-control form-control-sm" placeholder="" />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Rear</td>
-                    <td>
-                      <select id="access-control-risk-access-rear-ease" class="form-select form-select-sm">
-                        <option value="">Select...</option>
-                        <option value="easy">Easy</option>
-                        <option value="controlled">Controlled</option>
-                        <option value="restricted">Restricted</option>
-                        <option value="na">N/A</option>
-                      </select>
-                    </td>
-                    <td>
-                      <input type="text" id="access-control-risk-access-rear-notes" class="form-control form-control-sm" placeholder="" />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Roof</td>
-                    <td>
-                      <select id="access-control-risk-access-roof-ease" class="form-select form-select-sm">
-                        <option value="">Select...</option>
-                        <option value="easy">Easy</option>
-                        <option value="controlled">Controlled</option>
-                        <option value="restricted">Restricted</option>
-                        <option value="na">N/A</option>
-                      </select>
-                    </td>
-                    <td>
-                      <input type="text" id="access-control-risk-access-roof-notes" class="form-control form-control-sm" placeholder="" />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Garage</td>
-                    <td>
-                      <select id="access-control-risk-access-garage-ease" class="form-select form-select-sm">
-                        <option value="">Select...</option>
-                        <option value="easy">Easy</option>
-                        <option value="controlled">Controlled</option>
-                        <option value="restricted">Restricted</option>
-                        <option value="na">N/A</option>
-                      </select>
-                    </td>
-                    <td>
-                      <input type="text" id="access-control-risk-access-garage-notes" class="form-control form-control-sm" placeholder="" />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Shed/Store</td>
-                    <td>
-                      <select id="access-control-risk-access-shed-ease" class="form-select form-select-sm">
-                        <option value="">Select...</option>
-                        <option value="easy">Easy</option>
-                        <option value="controlled">Controlled</option>
-                        <option value="restricted">Restricted</option>
-                        <option value="na">N/A</option>
-                      </select>
-                    </td>
-                    <td>
-                      <input type="text" id="access-control-risk-access-shed-notes" class="form-control form-control-sm" placeholder="" />
-                    </td>
-                  </tr>
-                  <tr>
-                    <td>Controlled Access Closed Site</td>
-                    <td>
-                      <select id="access-control-risk-access-controlled-ease" class="form-select form-select-sm">
-                        <option value="">Select...</option>
-                        <option value="easy">Easy</option>
-                        <option value="controlled">Controlled</option>
-                        <option value="restricted">Restricted</option>
-                        <option value="na">N/A</option>
-                      </select>
-                    </td>
-                    <td>
-                      <input type="text" id="access-control-risk-access-controlled-notes" class="form-control form-control-sm" placeholder="" />
-                    </td>
-                  </tr>
+                <tbody id="access-control-risk-access-tbody">
+                  <!-- Populated dynamically from drawn risks -->
                 </tbody>
               </table>
             </div>
@@ -277,7 +179,7 @@
             <p class="mb-3" style="font-size: 0.9rem; color: #666">Where appropriate, locations will be described as being front or rear and left or right as seen by an observer standing outside and facing the front of the premises.</p>
             <div class="row g-2 align-items-end">
               <div class="col-12 col-md-3">
-                <label class="form-label">Drawing Supplied</label>
+                <span class="form-label">Drawing Supplied</span>
                 <div class="d-flex align-items-center gap-3">
                   <div class="form-check d-flex align-items-center">
                     <input class="form-check-input" type="radio" name="access-control-risk-drawing-supplied" id="access-control-risk-drawing-supplied-yes" value="yes" checked />
@@ -507,7 +409,7 @@
                 </select>
               </div>
               <div class="col-12">
-                <label class="form-label">Signalling Option</label>
+                <span class="form-label">Signalling Option</span>
                 <div class="row g-2">
                   <div class="col-12 col-md-6">
                     <select id="access-control-risk-signalling-option-1" class="form-select">
@@ -543,7 +445,7 @@
                 </select>
               </div>
               <div class="col-12">
-                <label class="form-label">Method of Confirmation</label>
+                <span class="form-label">Method of Confirmation</span>
                 <div class="d-flex align-items-center gap-3">
                   <div class="form-check d-flex align-items-center">
                     <input class="form-check-input" type="checkbox" id="access-control-risk-confirmation-sequential" />

@@ -1,0 +1,60 @@
+<!-- Fire Risk Assessment Modal -->
+<div class="modal fade custom-modal" id="fire-risk-assessment-modal" tabindex="-1" aria-labelledby="fireRiskAssessmentModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-header-content">
+          <div class="modal-header-left">
+            <h1 class="modal-title fs-5" id="fireRiskAssessmentModalLabel">Fire Risk Assessment</h1>
+          </div>
+          <div class="modal-header-right nav-buttons">
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-body">
+        <!-- Condition Assessment Section -->
+        <div class="card mb-3 risk-assessment-card" id="fire-risk-condition-assessment-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Condition Assessment</h5>
+            <div class="table-responsive">
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th style="width: 30%">Access Point</th>
+                    <th style="width: 35%">Condition</th>
+                    <th style="width: 35%">Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="fire-risk-condition-assessment-tbody">
+                  <!-- Populated dynamically from access points -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Access/Zones Section -->
+        <div class="card mb-3 risk-assessment-card" id="fire-risk-access-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Risk Zones</h5>
+            <div class="table-responsive">
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th style="width: 30%">Zone Name</th>
+                    <th style="width: 35%">Ease of Access</th>
+                    <th style="width: 35%">Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="fire-risk-access-tbody">
+                  <!-- Populated dynamically from drawn risks -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

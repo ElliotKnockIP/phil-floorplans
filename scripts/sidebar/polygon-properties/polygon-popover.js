@@ -67,6 +67,7 @@ import "./details-panel.js";
     },
     installIntercepts: {
       installKey: "__polygonPopoverInterceptInstalled",
+      maxAttempts: 100, // Wait up to 5 seconds for initialization
       shouldIntercept: (deviceType) => {
         return deviceType === "zone-polygon" || deviceType === "room-polygon" || deviceType === "risk-polygon" || deviceType === "safety-polygon";
       },

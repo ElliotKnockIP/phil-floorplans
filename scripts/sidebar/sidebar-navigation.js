@@ -228,6 +228,18 @@ export function initSidebarNavigation() {
     });
   }
 
+  // Setup Fire risk assessment modal button
+  const openFireRiskModalBtn = document.getElementById("open-fire-risk-modal");
+  if (openFireRiskModalBtn) {
+    openFireRiskModalBtn.addEventListener("click", () => {
+      const modal = document.getElementById("fire-risk-assessment-modal");
+      if (modal) {
+        const modalInstance = bootstrap.Modal.getOrCreateInstance(modal);
+        modalInstance.show();
+      }
+    });
+  }
+
   // Setup Safety risk assessment modal button
   const openSafetyRiskModalBtn = document.getElementById("open-safety-risk-modal");
   if (openSafetyRiskModalBtn) {

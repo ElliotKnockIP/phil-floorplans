@@ -100,22 +100,20 @@ const initIntruderRisk = () => {
   if (modalEl) {
     modalEl.addEventListener("show.bs.modal", () => {
       updateIntruderPremisesUse2();
-      updateAccessRiskTable();
-      updateConditionAssessmentTable();
+      updateIntruderRiskTable();
+      updateConditionAssessmentTable("risk-condition-assessment-tbody");
     });
   }
 };
 
-const updateConditionAssessmentTable = () => {
-  const tbody = document.getElementById("risk-condition-assessment-tbody");
+const updateConditionAssessmentTable = (tbodyId = "risk-condition-assessment-tbody") => {
+  const tbody = document.getElementById(tbodyId);
   if (!tbody) return;
 
   tbody.innerHTML = "";
 
   const canvas = window.fabricCanvas;
-  if (!canvas) return;
-
-  const accessPoints = canvas.getObjects().filter((o) => o.accessPointName);
+  const accessPoints = canvas ? canvas.getObjects().filter((o) => o.accessPointName) : [];
 
   if (accessPoints.length === 0) {
     const row = document.createElement("tr");
@@ -160,21 +158,22 @@ const updateConditionAssessmentTable = () => {
   });
 };
 
-const updateAccessRiskTable = () => {
-  const tbody = document.getElementById("risk-access-tbody");
+const updateRiskTable = (tbodyId, filterFn) => {
+  const tbody = document.getElementById(tbodyId);
   if (!tbody) return;
 
   tbody.innerHTML = "";
   const risks = window.risks || [];
+  const filteredRisks = risks.filter(filterFn);
 
-  if (risks.length === 0) {
+  if (filteredRisks.length === 0) {
     const row = document.createElement("tr");
-    row.innerHTML = `<td colspan="3" class="text-center text-muted">No risk zones found on canvas.</td>`;
+    row.innerHTML = `<td colspan="3" class="text-center text-muted">No risk zones found for this assessment.</td>`;
     tbody.appendChild(row);
     return;
   }
 
-  risks.forEach((risk, index) => {
+  filteredRisks.forEach((risk, index) => {
     const row = document.createElement("tr");
 
     // Access Elevation (Risk Name)
@@ -216,6 +215,22 @@ const updateAccessRiskTable = () => {
 
     tbody.appendChild(row);
   });
+};
+
+const updateIntruderRiskTable = () => {
+  updateRiskTable("risk-access-tbody", (r) => !!r.showInIntruder);
+};
+
+const updateCctvRiskTable = () => {
+  updateRiskTable("cctv-risk-access-tbody", (r) => !!r.showInCctv);
+};
+
+const updateAccessControlRiskTable = () => {
+  updateRiskTable("access-control-risk-access-tbody", (r) => !!r.showInAccess);
+};
+
+const updateFireRiskTable = () => {
+  updateRiskTable("fire-risk-access-tbody", (r) => !!r.showInFire);
 };
 
 // ----- Access control helpers -----
@@ -315,18 +330,50 @@ const initAccessControlRisk = () => {
   if (modalEl) {
     modalEl.addEventListener("show.bs.modal", () => {
       resetAccessControlForm();
+      updateAccessControlRiskTable();
+      updateConditionAssessmentTable("access-control-risk-condition-assessment-tbody");
     });
   }
 };
 
-// ----- CCTV (placeholder) -----
+// ----- Fire Risk -----
+const initFireRisk = () => {
+  const modalEl = document.getElementById("fire-risk-assessment-modal");
+  if (modalEl) {
+    modalEl.addEventListener("show.bs.modal", () => {
+      updateFireRiskTable();
+      updateConditionAssessmentTable("fire-risk-condition-assessment-tbody");
+    });
+  }
+};
+
+// ----- CCTV -----
 const initCctvRisk = () => {
-  // Template only; no runtime hooks required currently
+  const modalEl = document.getElementById("cctv-risk-assessment-modal");
+  if (modalEl) {
+    modalEl.addEventListener("show.bs.modal", () => {
+      updateCctvRiskTable();
+      updateConditionAssessmentTable("cctv-risk-condition-assessment-tbody");
+    });
+  }
 };
 
 // ----- Init wiring -----
-document.addEventListener("DOMContentLoaded", () => {
+let risksInitialized = false;
+
+const initAllRisks = () => {
+  if (risksInitialized) return;
+
+  // Check if critical elements exist (e.g. one of the modals)
+  if (!document.getElementById("intruder-risk-assessment-modal")) return;
+
   initIntruderRisk();
+  initFireRisk();
   initCctvRisk();
   initAccessControlRisk();
-});
+
+  risksInitialized = true;
+};
+
+document.addEventListener("DOMContentLoaded", initAllRisks);
+document.addEventListener("htmlIncludesLoaded", initAllRisks);
