@@ -236,6 +236,30 @@ export function handleObjectDeletion(fabricCanvas, activeObject) {
     return false;
   }
 
+  // Handle risks
+  if (activeObject.type === "polygon" && activeObject.class === "risk-polygon") {
+    return deleteRisk(fabricCanvas, activeObject);
+  }
+  if (activeObject.type === "i-text" && activeObject.class === "risk-text") {
+    const associatedPolygon = activeObject.associatedPolygon;
+    if (associatedPolygon) {
+      return deleteRisk(fabricCanvas, associatedPolygon);
+    }
+    return false;
+  }
+
+  // Handle safety zones
+  if (activeObject.type === "polygon" && activeObject.class === "safety-polygon") {
+    return deleteSafety(fabricCanvas, activeObject);
+  }
+  if (activeObject.type === "i-text" && activeObject.class === "safety-text") {
+    const associatedPolygon = activeObject.associatedPolygon;
+    if (associatedPolygon) {
+      return deleteSafety(fabricCanvas, associatedPolygon);
+    }
+    return false;
+  }
+
   // Handle walls
   if (activeObject.type === "circle" && activeObject.isWallCircle) {
     return deleteWallCircle(fabricCanvas, activeObject);
@@ -352,6 +376,56 @@ function deleteRoom(fabricCanvas, roomToDelete) {
   return true;
 }
 
+// Deletes a risk and its text
+function deleteRisk(fabricCanvas, riskToDelete) {
+  const riskIndex = window.risks ? window.risks.findIndex((risk) => risk.polygon === riskToDelete || risk.text === riskToDelete) : -1;
+  if (riskIndex === -1) return false;
+
+  const risk = window.risks[riskIndex];
+
+  [risk.polygon, risk.text].forEach((obj) => {
+    if (obj) {
+      obj.off();
+      fabricCanvas.remove(obj);
+    }
+  });
+
+  window.risks.splice(riskIndex, 1);
+
+  fabricCanvas.discardActiveObject();
+  window.hideDeviceProperties?.();
+  fabricCanvas.requestRenderAll();
+  try {
+    document.dispatchEvent(new Event("layers:items-changed"));
+  } catch (e) {}
+  return true;
+}
+
+// Deletes a safety zone and its text
+function deleteSafety(fabricCanvas, safetyToDelete) {
+  const safetyIndex = window.safetyZones ? window.safetyZones.findIndex((safety) => safety.polygon === safetyToDelete || safety.text === safetyToDelete) : -1;
+  if (safetyIndex === -1) return false;
+
+  const safety = window.safetyZones[safetyIndex];
+
+  [safety.polygon, safety.text].forEach((obj) => {
+    if (obj) {
+      obj.off();
+      fabricCanvas.remove(obj);
+    }
+  });
+
+  window.safetyZones.splice(safetyIndex, 1);
+
+  fabricCanvas.discardActiveObject();
+  window.hideDeviceProperties?.();
+  fabricCanvas.requestRenderAll();
+  try {
+    document.dispatchEvent(new Event("layers:items-changed"));
+  } catch (e) {}
+  return true;
+}
+
 // Sets up global delete functions
 try {
   if (!window.deleteZone) {
@@ -368,6 +442,22 @@ try {
       const canvas = target.canvas || (target.associatedPolygon && target.associatedPolygon.canvas) || null;
       if (!canvas) return false;
       return deleteRoom(canvas, target);
+    };
+  }
+  if (!window.deleteRisk) {
+    window.deleteRisk = (target) => {
+      if (!target) return false;
+      const canvas = target.canvas || (target.associatedPolygon && target.associatedPolygon.canvas) || null;
+      if (!canvas) return false;
+      return deleteRisk(canvas, target);
+    };
+  }
+  if (!window.deleteSafety) {
+    window.deleteSafety = (target) => {
+      if (!target) return false;
+      const canvas = target.canvas || (target.associatedPolygon && target.associatedPolygon.canvas) || null;
+      if (!canvas) return false;
+      return deleteSafety(canvas, target);
     };
   }
 } catch (e) {}

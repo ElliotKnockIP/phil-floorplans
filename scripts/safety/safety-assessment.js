@@ -174,6 +174,5 @@ window.updateSafetyAssessmentTable = updateSafetyAssessmentTable;
 window.updateHotspotsTable = updateHotspotsTable;
 
 // ----- Init wiring -----
-document.addEventListener("DOMContentLoaded", () => {
-  initSafetyAssessment();
-});
+document.addEventListener("DOMContentLoaded", initSafetyAssessment);
+document.addEventListener("htmlIncludesLoaded", initSafetyAssessment);

@@ -144,35 +144,45 @@ function populateForm(inputs, group) {
 }
 
 (function initHotspotPopover() {
-  const popover = document.getElementById("hotspot-popover");
-  if (!popover) return;
+  function initialize() {
+    const popover = document.getElementById("hotspot-popover");
+    if (!popover) return;
 
-  const basePopover = createPopoverBase("hotspot-popover", {
-    onClose: () => {
-      basePopover.currentTarget = null;
-    },
-  });
+    const basePopover = createPopoverBase("hotspot-popover", {
+      onClose: () => {
+        basePopover.currentTarget = null;
+      },
+    });
 
-  if (!basePopover) return;
+    if (!basePopover) return;
 
-  const inputs = bindInputs(basePopover);
+    const inputs = bindInputs(basePopover);
 
-  function openPopover(group) {
-    if (!group || basePopover.isDragging) return;
-    ensureDefaults(group);
-    populateForm(inputs, group);
+    function openPopover(group) {
+      if (!group || basePopover.isDragging) return;
+      ensureDefaults(group);
+      populateForm(inputs, group);
 
-    // Apply current colors to ensure visual matches stored value
-    if (group.hotspotColor) {
-      updateFillColor(group, group.hotspotColor);
+      // Apply current colors to ensure visual matches stored value
+      if (group.hotspotColor) {
+        updateFillColor(group, group.hotspotColor);
+      }
+      if (group.hotspotStroke) {
+        updateStrokeColor(group, group.hotspotStroke);
+      }
+
+      basePopover.openPopover(group);
     }
-    if (group.hotspotStroke) {
-      updateStrokeColor(group, group.hotspotStroke);
-    }
 
-    basePopover.openPopover(group);
+    window.showHotspotPopover = openPopover;
+    window.hideHotspotPopover = () => basePopover.closePopover();
   }
 
-  window.showHotspotPopover = openPopover;
-  window.hideHotspotPopover = () => basePopover.closePopover();
+  // Check if HTML is already loaded
+  if (document.getElementById("hotspot-popover")) {
+    initialize();
+  } else {
+    // Wait for HTML includes to load
+    document.addEventListener("htmlIncludesLoaded", initialize);
+  }
 })();

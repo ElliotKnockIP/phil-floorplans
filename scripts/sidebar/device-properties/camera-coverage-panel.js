@@ -1,23 +1,8 @@
 import { layers } from "../../canvas/interactions/LayerControls.js";
-import {
-  updateSliderTrack,
-  createSliderInputSync,
-  setupColorControls,
-  hexToRgba,
-  setObjectProperty,
-  setMultipleObjectProperties,
-  safeCanvasRender,
-  DEFAULT_PIXELS_PER_METER,
-  wrapGlobalFunction,
-  CAMERA_TYPES,
-  createPanelBase,
-} from "../sidebar-utils.js";
+import { updateSliderTrack, createSliderInputSync, setupColorControls, hexToRgba, setObjectProperty, setMultipleObjectProperties, safeCanvasRender, DEFAULT_PIXELS_PER_METER, wrapGlobalFunction, CAMERA_TYPES, createPanelBase } from "../sidebar-utils.js";
 import { initCameraSpecPanel } from "./camera-spec-panel.js";
 import { drawSideView } from "../../devices/camera/camera-diagram.js";
-import {
-  calculateCameraPhysics,
-  applyCameraPhysics,
-} from "../../devices/camera/camera-calculations.js";
+import { calculateCameraPhysics, applyCameraPhysics } from "../../devices/camera/camera-calculations.js";
 
 // Sets up the camera coverage panel with controls for angle, distance, opacity, and color
 export function initCameraCoveragePanel() {
@@ -75,14 +60,7 @@ export function initCameraCoveragePanel() {
     // Draw the side view
     const height = activeObject.coverageConfig.cameraHeight || 3;
     const tilt = activeObject.coverageConfig.cameraTilt ?? 25;
-    const fov =
-      activeObject.coverageConfig.sideFOV ||
-      (activeObject.angleDiff
-        ? activeObject.angleDiff(
-            activeObject.coverageConfig.startAngle,
-            activeObject.coverageConfig.endAngle
-          )
-        : 60);
+    const fov = activeObject.coverageConfig.sideFOV || (activeObject.angleDiff ? activeObject.angleDiff(activeObject.coverageConfig.startAngle, activeObject.coverageConfig.endAngle) : 60);
 
     // Pass minRange as deadZone (can be negative)
     drawSideView(sideViewCanvas, height, tilt, clampedRadiusMeters, minRangeMeters, fov);
@@ -102,14 +80,12 @@ export function initCameraCoveragePanel() {
     if (rgbMatch) {
       const [, r, g, b] = rgbMatch;
       const newFill = `rgba(${r}, ${g}, ${b}, ${finalOpacity})`;
-      if (activeObject.coverageArea)
-        setMultipleObjectProperties(activeObject.coverageArea, { fill: newFill });
+      if (activeObject.coverageArea) setMultipleObjectProperties(activeObject.coverageArea, { fill: newFill });
       activeObject.coverageConfig.fillColor = newFill;
     } else {
       // Use default gray color if no RGB found
       const newFill = `rgba(165, 155, 155, ${finalOpacity})`;
-      if (activeObject.coverageArea)
-        setMultipleObjectProperties(activeObject.coverageArea, { fill: newFill });
+      if (activeObject.coverageArea) setMultipleObjectProperties(activeObject.coverageArea, { fill: newFill });
       activeObject.coverageConfig.fillColor = newFill;
     }
   };
@@ -117,14 +93,7 @@ export function initCameraCoveragePanel() {
   // Updates how wide the camera coverage angle is
   panel.updateAngle = function (activeObject, angleSpan) {
     // Calculate the middle of the current angle range
-    const midAngle =
-      (activeObject.coverageConfig.startAngle +
-        activeObject.angleDiff(
-          activeObject.coverageConfig.startAngle,
-          activeObject.coverageConfig.endAngle
-        ) /
-          2) %
-      360;
+    const midAngle = (activeObject.coverageConfig.startAngle + activeObject.angleDiff(activeObject.coverageConfig.startAngle, activeObject.coverageConfig.endAngle) / 2) % 360;
     // Set new start and end angles centered around the middle
     activeObject.coverageConfig.startAngle = (midAngle - angleSpan / 2 + 360) % 360;
     activeObject.coverageConfig.endAngle = (midAngle + angleSpan / 2) % 360;
@@ -231,10 +200,7 @@ export function initCameraCoveragePanel() {
           // Show warning if focal length is set
           if (activeObject.focalLength && angleWarning) {
             const calculatedAngle = activeObject.coverageConfig.calculatedAngle;
-            if (
-              calculatedAngle !== undefined &&
-              Math.abs(Math.round(value) - calculatedAngle) > 1
-            ) {
+            if (calculatedAngle !== undefined && Math.abs(Math.round(value) - calculatedAngle) > 1) {
               angleWarning.style.display = "block";
             } else {
               angleWarning.style.display = "none";
@@ -346,14 +312,7 @@ export function initCameraCoveragePanel() {
           // Auto-adjust tilt if distance is limited by physics
           const height = activeObject.coverageConfig.cameraHeight || 3;
           const tilt = activeObject.coverageConfig.cameraTilt || 0;
-          const alpha =
-            (activeObject.coverageConfig.sideFOV ||
-              (activeObject.angleDiff
-                ? activeObject.angleDiff(
-                    activeObject.coverageConfig.startAngle,
-                    activeObject.coverageConfig.endAngle
-                  )
-                : 60)) / 2;
+          const alpha = (activeObject.coverageConfig.sideFOV || (activeObject.angleDiff ? activeObject.angleDiff(activeObject.coverageConfig.startAngle, activeObject.coverageConfig.endAngle) : 60)) / 2;
 
           // Calculate max possible distance with current tilt
           let maxDist = 10000;
@@ -539,9 +498,7 @@ export function initCameraCoveragePanel() {
     // Update angle controls
     if (group && group.coverageConfig && group.angleDiff && angleSlider && angleInput) {
       // Calculate current angle span from start and end angles
-      const currentAngleSpan = Math.round(
-        group.angleDiff(group.coverageConfig.startAngle, group.coverageConfig.endAngle)
-      );
+      const currentAngleSpan = Math.round(group.angleDiff(group.coverageConfig.startAngle, group.coverageConfig.endAngle));
       angleSlider.value = currentAngleSpan;
       angleInput.value = currentAngleSpan;
       updateSliderTrack(angleSlider, currentAngleSpan, 1, 360);
@@ -567,9 +524,7 @@ export function initCameraCoveragePanel() {
       const physics = calculateCameraPhysics(group);
       const pixelsPerMeter = group.canvas?.pixelsPerMeter || DEFAULT_PIXELS_PER_METER;
       const distance = (group.coverageConfig.radius || 10 * pixelsPerMeter) / pixelsPerMeter;
-      const deadZone = physics
-        ? physics.minRangeMeters
-        : (group.coverageConfig.minRange || 0) / pixelsPerMeter;
+      const deadZone = physics ? physics.minRangeMeters : (group.coverageConfig.minRange || 0) / pixelsPerMeter;
 
       drawSideView(sideViewCanvas, height, tilt, distance, deadZone, fov);
     }
@@ -579,15 +534,9 @@ export function initCameraCoveragePanel() {
   setupColorControls(coverageColorPicker, coverageColorIcons, (color) => {
     // Only update if it has a valid group and coverage area
     const currentGroup = panel.getCurrentGroup();
-    if (
-      currentGroup &&
-      currentGroup.canvas &&
-      currentGroup.coverageArea &&
-      currentGroup.coverageConfig
-    ) {
+    if (currentGroup && currentGroup.canvas && currentGroup.coverageArea && currentGroup.coverageConfig) {
       // Get current opacity from slider or config
-      const logicalOpacity =
-        parseFloat(opacitySlider?.value) || currentGroup.coverageConfig.opacity || 0.3;
+      const logicalOpacity = parseFloat(opacitySlider?.value) || currentGroup.coverageConfig.opacity || 0.3;
       const rgbaColorTemp = hexToRgba(color, logicalOpacity);
       // Extract RGB values to store base color without opacity
       const match = rgbaColorTemp.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);

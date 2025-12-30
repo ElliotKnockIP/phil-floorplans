@@ -1323,7 +1323,7 @@ class OptimizedDrawingObjectSerializer {
       });
     }
 
-    ["setupZoneTool", "setupRoomTool", "setupWallTool"].forEach((tool) => {
+    ["setupZoneTool", "setupRoomTool", "setupRiskTool", "setupSafetyTool", "setupWallTool"].forEach((tool) => {
       if (window[tool]) {
         try {
           window[tool](this.fabricCanvas);

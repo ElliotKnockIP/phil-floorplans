@@ -20,6 +20,12 @@ function ensureDefaults(group) {
   if (group.accessPointCondition === undefined) group.accessPointCondition = "";
   if (group.accessPointNotes === undefined) group.accessPointNotes = "";
 
+  // Risk assessment visibility flags
+  if (group.showInIntruder === undefined) group.showInIntruder = false;
+  if (group.showInCctv === undefined) group.showInCctv = false;
+  if (group.showInAccess === undefined) group.showInAccess = false;
+  if (group.showInFire === undefined) group.showInFire = false;
+
   const circle = getCircle(group);
   const text = getText(group);
 
@@ -122,16 +128,56 @@ function bindInputs(basePopover) {
     });
   }
 
-  return { nameInput, conditionSelect, notesInput };
+  // Risk Assessment Checkboxes
+  const showIntruder = document.getElementById("access-point-show-intruder");
+  const showCctv = document.getElementById("access-point-show-cctv");
+  const showAccess = document.getElementById("access-point-show-access");
+  const showFire = document.getElementById("access-point-show-fire");
+
+  [showIntruder, showCctv, showAccess, showFire].forEach((cb) => {
+    if (cb) preventEventPropagation(cb);
+  });
+
+  if (showIntruder) {
+    showIntruder.addEventListener("change", () => {
+      const target = basePopover.currentTarget;
+      if (target) target.showInIntruder = showIntruder.checked;
+    });
+  }
+  if (showCctv) {
+    showCctv.addEventListener("change", () => {
+      const target = basePopover.currentTarget;
+      if (target) target.showInCctv = showCctv.checked;
+    });
+  }
+  if (showAccess) {
+    showAccess.addEventListener("change", () => {
+      const target = basePopover.currentTarget;
+      if (target) target.showInAccess = showAccess.checked;
+    });
+  }
+  if (showFire) {
+    showFire.addEventListener("change", () => {
+      const target = basePopover.currentTarget;
+      if (target) target.showInFire = showFire.checked;
+    });
+  }
+
+  return { nameInput, conditionSelect, notesInput, showIntruder, showCctv, showAccess, showFire };
 }
 
 function populateForm(inputs, group) {
   if (!inputs || !group) return;
-  const { nameInput, conditionSelect, notesInput } = inputs;
+  const { nameInput, conditionSelect, notesInput, showIntruder, showCctv, showAccess, showFire } = inputs;
 
   if (nameInput) nameInput.value = group.accessPointName || "";
   if (conditionSelect) conditionSelect.value = group.accessPointCondition || "";
   if (notesInput) notesInput.value = group.accessPointNotes || "";
+
+  if (showIntruder) showIntruder.checked = !!group.showInIntruder;
+  if (showCctv) showCctv.checked = !!group.showInCctv;
+  if (showAccess) showAccess.checked = !!group.showInAccess;
+  if (showFire) showFire.checked = !!group.showInFire;
 
   // Sync color pickers
   const fillPicker = document.getElementById("access-point-fill-color-picker");
@@ -146,35 +192,45 @@ function populateForm(inputs, group) {
 }
 
 (function initAccessPointPopover() {
-  const popover = document.getElementById("access-point-popover");
-  if (!popover) return;
+  function initialize() {
+    const popover = document.getElementById("access-point-popover");
+    if (!popover) return;
 
-  const basePopover = createPopoverBase("access-point-popover", {
-    onClose: () => {
-      basePopover.currentTarget = null;
-    },
-  });
+    const basePopover = createPopoverBase("access-point-popover", {
+      onClose: () => {
+        basePopover.currentTarget = null;
+      },
+    });
 
-  if (!basePopover) return;
+    if (!basePopover) return;
 
-  const inputs = bindInputs(basePopover);
+    const inputs = bindInputs(basePopover);
 
-  function openPopover(group) {
-    if (!group || basePopover.isDragging) return;
-    ensureDefaults(group);
-    populateForm(inputs, group);
+    function openPopover(group) {
+      if (!group || basePopover.isDragging) return;
+      ensureDefaults(group);
+      populateForm(inputs, group);
 
-    // Apply current colors to ensure visual matches stored value
-    if (group.accessPointColor) {
-      updateFillColor(group, group.accessPointColor);
+      // Apply current colors to ensure visual matches stored value
+      if (group.accessPointColor) {
+        updateFillColor(group, group.accessPointColor);
+      }
+      if (group.accessPointStroke) {
+        updateStrokeColor(group, group.accessPointStroke);
+      }
+
+      basePopover.openPopover(group);
     }
-    if (group.accessPointStroke) {
-      updateStrokeColor(group, group.accessPointStroke);
-    }
 
-    basePopover.openPopover(group);
+    window.showAccessPointPopover = openPopover;
+    window.hideAccessPointPopover = () => basePopover.closePopover();
   }
 
-  window.showAccessPointPopover = openPopover;
-  window.hideAccessPointPopover = () => basePopover.closePopover();
+  // Check if HTML is already loaded
+  if (document.getElementById("access-point-popover")) {
+    initialize();
+  } else {
+    // Wait for HTML includes to load
+    document.addEventListener("htmlIncludesLoaded", initialize);
+  }
 })();

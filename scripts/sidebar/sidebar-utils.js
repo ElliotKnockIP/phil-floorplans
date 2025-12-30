@@ -2,6 +2,7 @@ import { applyLabelPosition } from "../devices/device-label-utils.js";
 
 // Updates the visual appearance of a slider track based on its value
 export function updateSliderTrack(slider, value, min, max) {
+  if (!slider) return;
   const percentage = ((value - min) / (max - min)) * 100;
   slider.style.background = `linear-gradient(to right, var(--orange-ip2, #f8794b) ${percentage}%, #e9ecef ${percentage}%)`;
 }

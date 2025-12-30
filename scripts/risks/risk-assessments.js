@@ -101,23 +101,34 @@ const initIntruderRisk = () => {
     modalEl.addEventListener("show.bs.modal", () => {
       updateIntruderPremisesUse2();
       updateIntruderRiskTable();
-      updateConditionAssessmentTable("risk-condition-assessment-tbody");
+      updateConditionAssessmentTable("risk-condition-assessment-tbody", "intruder");
     });
   }
 };
 
-const updateConditionAssessmentTable = (tbodyId = "risk-condition-assessment-tbody") => {
+const updateConditionAssessmentTable = (tbodyId = "risk-condition-assessment-tbody", riskType = null) => {
   const tbody = document.getElementById(tbodyId);
   if (!tbody) return;
 
   tbody.innerHTML = "";
 
   const canvas = window.fabricCanvas;
-  const accessPoints = canvas ? canvas.getObjects().filter((o) => o.accessPointName) : [];
+  let accessPoints = canvas ? canvas.getObjects().filter((o) => o.accessPointName) : [];
+
+  // Filter by risk type if provided
+  if (riskType) {
+    accessPoints = accessPoints.filter((ap) => {
+      if (riskType === "intruder") return !!ap.showInIntruder;
+      if (riskType === "cctv") return !!ap.showInCctv;
+      if (riskType === "access") return !!ap.showInAccess;
+      if (riskType === "fire") return !!ap.showInFire;
+      return true;
+    });
+  }
 
   if (accessPoints.length === 0) {
     const row = document.createElement("tr");
-    row.innerHTML = '<td colspan="3" class="text-center text-muted">No access points found on canvas.</td>';
+    row.innerHTML = '<td colspan="3" class="text-center text-muted">No access points found for this assessment.</td>';
     tbody.appendChild(row);
     return;
   }
@@ -331,7 +342,7 @@ const initAccessControlRisk = () => {
     modalEl.addEventListener("show.bs.modal", () => {
       resetAccessControlForm();
       updateAccessControlRiskTable();
-      updateConditionAssessmentTable("access-control-risk-condition-assessment-tbody");
+      updateConditionAssessmentTable("access-control-risk-condition-assessment-tbody", "access");
     });
   }
 };
@@ -342,7 +353,7 @@ const initFireRisk = () => {
   if (modalEl) {
     modalEl.addEventListener("show.bs.modal", () => {
       updateFireRiskTable();
-      updateConditionAssessmentTable("fire-risk-condition-assessment-tbody");
+      updateConditionAssessmentTable("fire-risk-condition-assessment-tbody", "fire");
     });
   }
 };
@@ -353,7 +364,7 @@ const initCctvRisk = () => {
   if (modalEl) {
     modalEl.addEventListener("show.bs.modal", () => {
       updateCctvRiskTable();
-      updateConditionAssessmentTable("cctv-risk-condition-assessment-tbody");
+      updateConditionAssessmentTable("cctv-risk-condition-assessment-tbody", "cctv");
     });
   }
 };

@@ -17,6 +17,7 @@ export const ObjectTypeUtils = {
     if (obj.type === "polygon" && obj.fill?.includes("165, 155, 155")) return false;
     if (obj.isResizeIcon === true) return false;
     if (obj.isConnectionSegment || obj.isNetworkSplitPoint || obj.isNetworkConnection || obj.isSegmentDistanceLabel || obj.isConnectionCustomLabel || obj.isChannelLabel) return false;
+    if (obj.type === "circle" && obj.radius <= 6 && !obj.isWallCircle) return false;
     if (obj.type === "circle" && obj.fill === "#f8794b" && obj.radius < 30 && !obj.isWallCircle) return false;
     return true;
   },
