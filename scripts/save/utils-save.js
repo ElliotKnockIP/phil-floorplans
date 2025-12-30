@@ -1,12 +1,5 @@
-import {
-  serializeRiskAssessment,
-  loadRiskAssessmentToSidebar,
-  serializeCctvRiskAssessment,
-  loadCctvRiskAssessmentToSidebar,
-  serializeAccessControlRiskAssessment,
-  loadAccessControlRiskAssessmentToSidebar,
-} from "./risk-assessment-save.js";
-import { isCameraType } from "../devices/device-types.js";
+import { serializeRiskAssessment, loadRiskAssessmentToSidebar, serializeCctvRiskAssessment, loadCctvRiskAssessmentToSidebar, serializeAccessControlRiskAssessment, loadAccessControlRiskAssessmentToSidebar } from "./risk-assessment-save.js";
+import { isCameraType } from "../devices/categories/device-types.js";
 
 // Shared delay utility for async operations
 export const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
@@ -37,6 +30,8 @@ export const ObjectTypeUtils = {
   isRoomObject: (obj) => (obj.type === "polygon" && obj.class === "room-polygon") || (obj.type === "i-text" && obj.class === "room-text"),
   // Checks if an object is a risk object
   isRiskObject: (obj) => (obj.type === "polygon" && obj.class === "risk-polygon") || (obj.type === "i-text" && obj.class === "risk-text"),
+  // Checks if an object is a safety object
+  isSafetyObject: (obj) => (obj.type === "polygon" && obj.class === "safety-polygon") || (obj.type === "i-text" && obj.class === "safety-text"),
   // Checks if an object is a wall object
   isWallObject: (obj) => (obj.type === "line" && !obj.deviceType && !obj.isResizeIcon && !obj.isConnectionLine && obj.stroke !== "grey" && obj.stroke !== "blue") || (obj.type === "circle" && obj.isWallCircle === true),
   // Checks if an object is a title block
@@ -107,7 +102,7 @@ export const SerializationUtils = {
   // Extracts custom properties from an object
   extractCustomProperties: (obj) => {
     const customProps = {};
-    const customKeys = ["isUploadedImage", "isLocked", "northArrowImage", "lockUniScaling", "strokeUniform", "cursorColor", "isConnectionLine", "isArrow"];
+    const customKeys = ["isUploadedImage", "isLocked", "northArrowImage", "lockUniScaling", "strokeUniform", "cursorColor", "isConnectionLine", "isArrow", "isAccessPoint", "accessPointLabel", "accessPointName", "accessPointCondition", "accessPointNotes", "accessPointColor", "groupType", "isHotspot", "hotspotLabel", "hotspotName", "hotspotSeverity", "hotspotNotes", "hotspotColor", "hotspotStroke"];
     customKeys.forEach((key) => {
       if (obj[key]) customProps[key] = obj[key];
     });
@@ -412,6 +407,8 @@ export const DrawingUtils = {
   }),
   // Determines the type of group object
   getGroupType: (group) => {
+    if (group.isAccessPoint || group.groupType === "accessPoint") return "accessPoint";
+    if (group.isHotspot || group.groupType === "hotspot") return "hotspot";
     if (group.isBuildingFront || group.groupType === "buildingFront") return "buildingFront";
     if (group.isArrow) return "arrow";
     const objects = group.getObjects();

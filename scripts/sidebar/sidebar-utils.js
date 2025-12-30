@@ -274,10 +274,29 @@ export function getHexFromFill(fill) {
 // === Polygon utility functions ===
 
 // Get devices in a polygon
-export function getDevicesInPolygon(polygon, fabricCanvas, isZone = true) {
+export function getDevicesInPolygon(polygon, fabricCanvas, typeOrIsZone = true) {
   const devices = [];
   const allObjects = fabricCanvas.getObjects();
+  const isRisk = typeOrIsZone === "risk";
+  const isZone = typeOrIsZone === true || typeOrIsZone === "zone";
+
   allObjects.forEach((obj) => {
+    if (isRisk) {
+      if (obj.isAccessPoint) {
+        const center = obj.getCenterPoint();
+        if (isPointInPolygon(center, polygon)) {
+          devices.push({
+            type: "access-point",
+            name: obj.accessPointName || `Access Point ${obj.accessPointLabel}`,
+            deviceType: "access-point",
+            object: obj,
+            info: "",
+          });
+        }
+      }
+      return;
+    }
+
     if (obj.type === "group" && obj.deviceType) {
       const deviceCenter = obj.getCenterPoint();
       if (isPointInPolygon(deviceCenter, polygon)) {
@@ -310,10 +329,10 @@ export function updateDevicesList(container, polygon, fabricCanvas, typeOrIsZone
   if (!container || !polygon || !fabricCanvas) return;
   // Support both legacy boolean and new string type parameter
   const isZone = typeOrIsZone === true || typeOrIsZone === "zone";
-  const typeName = typeof typeOrIsZone === "string" ? typeOrIsZone : (typeOrIsZone ? "zone" : "room");
-  const devices = getDevicesInPolygon(polygon, fabricCanvas, isZone);
+  const typeName = typeof typeOrIsZone === "string" ? typeOrIsZone : typeOrIsZone ? "zone" : "room";
+  const devices = getDevicesInPolygon(polygon, fabricCanvas, typeOrIsZone);
   if (devices.length === 0) {
-    container.innerHTML = '<span class="text-muted">No devices in this ' + typeName + "</span>";
+    container.innerHTML = '<span class="text-muted">No ' + (typeOrIsZone === "risk" ? "access points" : "devices") + " in this " + typeName + "</span>";
   } else {
     const deviceNames = devices.map((d) => d.name + d.info);
     const deviceCountMap = {};

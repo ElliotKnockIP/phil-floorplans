@@ -1,0 +1,74 @@
+<!-- Google Maps Modal -->
+<div class="modal custom-modal" id="mapModal" tabindex="-1" aria-labelledby="mapModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-header-content">
+          <div class="modal-header-left">
+            <h1 class="modal-title fs-4" id="mapModalLabel">Maps Satellite</h1>
+          </div>
+          <div class="modal-header-center">
+            <div class="background-steps">
+              <span class="step active">1</span>
+              <span>Source</span>
+            </div>
+            <span class="step-separator">></span>
+            <div class="background-steps">
+              <span class="step">2</span>
+              <span>Crop</span>
+            </div>
+            <span class="step-separator">></span>
+            <div class="background-steps">
+              <span class="step">3</span>
+              <span>Scale</span>
+            </div>
+          </div>
+          <div class="modal-header-right nav-buttons">
+            <button id="map-back-btn" class="modal-header-btn">
+              <div class="icon-label">
+                <img src="images/icons/back-black-arrow.svg" alt="Back Arrow" />
+                <span>Back</span>
+              </div>
+            </button>
+            <button id="map-next-btn" class="modal-header-btn">
+              <div class="icon-label">
+                <span>Next</span>
+                <img src="images/icons/forward-black-arrow.svg" alt="Next Arrow" />
+              </div>
+            </button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="map-container">
+          <form id="address-form">
+            <input type="text" id="maps-address-input" placeholder="Enter address, building name or postcode..." />
+          </form>
+          <div id="google-maps-container">
+            <div id="map"></div>
+            <!-- Capture shape controls -->
+            <div id="map-capture-controls">
+              <div class="btn-toggle-group" role="group" aria-label="Capture shape">
+                <button type="button" id="shape-square-btn" class="toggle-btn active">Square</button>
+                <button type="button" id="shape-rect-btn" class="toggle-btn">Rectangle</button>
+              </div>
+            </div>
+            <!-- Square Capture Overlay -->
+            <div id="map-capture-overlay">
+              <div class="capture-frame square">
+                <div class="capture-label">Capture Area</div>
+                <div class="capture-corners"></div>
+              </div>
+            </div>
+            <!-- Center crosshair for precise positioning -->
+            <div id="map-center-cross">
+              <div class="horizontal-line"></div>
+              <div class="vertical-line"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

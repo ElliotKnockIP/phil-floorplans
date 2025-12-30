@@ -210,7 +210,10 @@ export function drawSideView(canvas, height, tilt, distance, deadZone, fov) {
   context.textAlign = "center";
 
   // Dead zone label
-  const bottomDistanceMeters = typeof deadZone === "number" && !Number.isNaN(deadZone) ? deadZone : (bottomPoint.x - cameraX) / scaleX;
+  const bottomDistanceMeters =
+    typeof deadZone === "number" && !Number.isNaN(deadZone)
+      ? deadZone
+      : (bottomPoint.x - cameraX) / scaleX;
 
   // Draw positive dead zone (forward)
   if (bottomDistanceMeters > 0.05) {
@@ -220,7 +223,11 @@ export function drawSideView(canvas, height, tilt, distance, deadZone, fov) {
 
     if (deadZoneEndX < width - margin + 1) {
       context.fillStyle = "#e74c3c"; // Red for dead zone
-      context.fillText(`Dead: ${deadZoneMeters.toFixed(2)}m`, deadZoneStartX + (deadZoneEndX - deadZoneStartX) / 2, groundY + 15);
+      context.fillText(
+        `Dead: ${deadZoneMeters.toFixed(2)}m`,
+        deadZoneStartX + (deadZoneEndX - deadZoneStartX) / 2,
+        groundY + 15
+      );
       context.beginPath();
       context.moveTo(deadZoneStartX, groundY + 5);
       context.lineTo(deadZoneEndX, groundY + 5);
@@ -238,7 +245,11 @@ export function drawSideView(canvas, height, tilt, distance, deadZone, fov) {
     // Draw backward measurement (on lower line to avoid overlap)
     if (backStartX > margin - 1) {
       context.fillStyle = "#9b59b6"; // Purple for backward
-      context.fillText(`Back: ${absDist.toFixed(2)}m`, backStartX + (backEndX - backStartX) / 2, groundY + 15);
+      context.fillText(
+        `Back: ${absDist.toFixed(2)}m`,
+        backStartX + (backEndX - backStartX) / 2,
+        groundY + 15
+      );
       context.beginPath();
       context.moveTo(backStartX, groundY + 5);
       context.lineTo(backEndX, groundY + 5);
@@ -254,7 +265,11 @@ export function drawSideView(canvas, height, tilt, distance, deadZone, fov) {
       const rangeEndX = topGroundPoint.x; // Extend to where top ray hits ground
       if (rangeEndX < width - margin + 1) {
         context.fillStyle = "#27ae60"; // Green for forward coverage
-        context.fillText(`Range: ${forwardDist.toFixed(2)}m`, rangeStartX + (rangeEndX - rangeStartX) / 2, groundY + 30);
+        context.fillText(
+          `Range: ${forwardDist.toFixed(2)}m`,
+          rangeStartX + (rangeEndX - rangeStartX) / 2,
+          groundY + 30
+        );
         context.beginPath();
         context.moveTo(rangeStartX, groundY + 20);
         context.lineTo(rangeEndX, groundY + 20);
@@ -265,4 +280,3 @@ export function drawSideView(canvas, height, tilt, distance, deadZone, fov) {
     }
   }
 }
-

@@ -1,0 +1,98 @@
+<!-- Select Background Modal -->
+<div class="modal custom-modal" id="customModal" tabindex="-1" aria-labelledby="customModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-header-content">
+          <div class="modal-header-left">
+            <h1 class="modal-title fs-4" id="customModalLabel">Background Selection</h1>
+          </div>
+          <div class="modal-header-center">
+            <div class="background-steps">
+              <span class="step active">1</span>
+              <span>Source</span>
+            </div>
+            <span class="step-separator">></span>
+            <div class="background-steps">
+              <span class="step">2</span>
+              <span>Crop</span>
+            </div>
+            <span class="step-separator">></span>
+            <div class="background-steps">
+              <span class="step">3</span>
+              <span>Scale</span>
+            </div>
+          </div>
+          <div class="modal-header-right nav-buttons">
+            <button class="modal-header-btn disabled-btn">
+              <div class="icon-label">
+                <img src="images/icons/back-black-arrow.svg" alt="Back Arrow Icon" />
+                <span>Back</span>
+              </div>
+            </button>
+            <button class="modal-header-btn disabled-btn">
+              <div class="icon-label">
+                <span>Next</span>
+                <img src="images/icons/forward-black-arrow.svg" alt="Next Arrow Icon" />
+              </div>
+            </button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="split-container">
+          <!-- Left Panel -->
+          <div class="left-panel">
+            <!-- Upload Image Section -->
+            <div id="upload-file-btn" class="upload-section" style="cursor: pointer">
+              <div class="image-container">
+                <img src="images/content/upload-image-preview.png" alt="Upload Image Preview" draggable="false" />
+              </div>
+              <div class="options-content">
+                <h3>Upload Image</h3>
+                <p>Upload JPG or PNG images. Choose from your device and customize your project.</p>
+              </div>
+            </div>
+
+            <!-- Upload PDF Section -->
+            <div id="upload-pdf-btn" class="upload-section" style="cursor: pointer">
+              <div class="image-container">
+                <img src="images/content/upload-pdf-preview.png" alt="Upload PDF Preview" draggable="false" />
+              </div>
+              <div class="options-content">
+                <h3>Upload PDF</h3>
+                <p>Upload PDF files and convert them to images for your background.</p>
+              </div>
+            </div>
+          </div>
+
+          <!-- Right Panel -->
+          <div class="right-panel">
+            <!-- Google Maps Section -->
+            <div id="google-maps-btn" class="upload-section" style="cursor: pointer">
+              <div class="image-container">
+                <img src="images/content/google-maps-preview.png" alt="Google Maps Preview" draggable="false" />
+              </div>
+              <div class="options-content">
+                <h3>Google Maps</h3>
+                <p>Get high-resolution satellite and aerial imagery for locations worldwide.</p>
+              </div>
+            </div>
+
+            <!-- Custom Style Section -->
+            <div id="custom-style-btn" class="upload-section" style="cursor: pointer">
+              <div class="image-container">
+                <img src="images/content/custom-style-preview.png" alt="Custom Style Preview" draggable="false" />
+              </div>
+              <div class="options-content">
+                <h3>Custom Style</h3>
+                <p>Create a unique background with personalized colors, patterns, and designs.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

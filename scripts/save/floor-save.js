@@ -1,7 +1,6 @@
-// floor-save.js - Floor serialization and save/load operations
 import { NotificationSystem, delay } from "./utils-save.js";
 
-// Global settings configuration - single source of truth
+// Global settings configuration
 const GLOBAL_SETTINGS_CONFIG = {
   defaults: {
     globalIconTextVisible: true,
@@ -13,14 +12,10 @@ const GLOBAL_SETTINGS_CONFIG = {
     globalCompleteDeviceIndicator: true,
     defaultDeviceIconSize: 30,
   },
-  booleanKeys: new Set([
-    "globalIconTextVisible",
-    "globalTextBackground",
-    "globalBoldText",
-    "globalCompleteDeviceIndicator",
-  ]),
+  booleanKeys: new Set(["globalIconTextVisible", "globalTextBackground", "globalBoldText", "globalCompleteDeviceIndicator"]),
 };
 
+// Floor serialization and save/load operations
 export class FloorSerializer {
   constructor(fabricCanvas, saveSystem, floorManager) {
     this.fabricCanvas = fabricCanvas;
@@ -240,4 +235,3 @@ export class FloorSerializer {
     this.fabricCanvas.renderAll();
   }
 }
-

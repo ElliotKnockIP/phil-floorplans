@@ -1,35 +1,37 @@
 // Main canvas initialization and module setup
-import { initCanvasOperations } from "./canvas-operations.js";
-import { initDragDropDevices } from "../devices/drag-drop-devices.js";
-import { initSelectBackground } from "../background/select-background.js";
-import { initCanvasLayers } from "./canvas-layers.js";
-import { initCanvasPrint } from "../export/canvas-print.js";
-import { initCanvasCrop } from "../export/canvas-crop.js";
-import { initCanvasSnapping } from "./canvas-snapping.js";
-import { initContextMenu } from "./context-menu.js";
+import { CanvasOperations } from "./CanvasOperations.js";
+import { BackgroundManager } from "../background/BackgroundManager.js";
+import { LayerControls } from "./interactions/LayerControls.js";
+import { PrintReporter } from "./export/PrintReport.js";
+import { ScreenshotCropper } from "./export/Screenshot.js";
+import { CanvasSnapping } from "./interactions/Snapping.js";
+import { ContextMenu } from "./interactions/ContextMenu.js";
+import { CanvasUndoSystem } from "./interactions/UndoRedo.js";
 
 // Drawing tools
 import { setupTextTools } from "../drawing/text-tools.js";
 import { setupShapeTools } from "../drawing/shapes.js";
 import { setupMeasurementTools } from "../drawing/measurements.js";
-import { setupWallTool } from "../drawing/walls.js";
-import { setupZoneTool, setupRoomTool, setupRiskTool } from "../drawing/polygon-drawer.js";
+import { setupWallTool } from "../drawing/Wall.js";
+import { setupZoneTool, setupRoomTool, setupRiskTool, setupSafetyTool } from "../drawing/polygon-drawer.js";
 import { setupNorthArrowTool } from "../drawing/north-arrow.js";
 import { setupTitleBlockTool } from "../drawing/titleblock.js";
-import { setupLineTools } from "../drawing/lines.js";
+import { setupLineTools } from "../drawing/Line.js";
 import { setupBuildingFrontTool } from "../drawing/building-front.js";
 import { setupImageUploadTool } from "../drawing/upload-image.js";
-import { setupNetworkLinkTool } from "../drawing/network-link.js";
+import { setupNetworkLinkTool } from "../drawing/NetworkLink.js";
 
 // Device and system modules
-import { initTakeoffFeature } from "../devices/device-takeoff.js";
+import { initTakeoffFeature } from "../devices/DeviceTakeoff.js";
+import { DeviceFactory } from "../devices/DeviceFactory.js";
+import { DeviceSettings } from "../devices/DeviceSettings.js";
+import { CameraCore } from "../devices/camera/CameraCore.js";
+import { CustomIcons } from "../devices/categories/CustomIcons.js";
+import { TextDevices } from "../devices/categories/TextDevices.js";
 import { SaveSystem } from "../save/save-system.js";
-import { addCameraCoverage } from "../devices/camera/camera-core.js";
-import { initFloorManager } from "../floor/floor-manager.js";
-import { CanvasUndoSystem } from "./canvas-undo.js";
-import { TopologyManager } from "../network/topology-manager.js";
-import { initTopologyBuilder } from "../network/topology-builder.js";
-import { initGlobalSettings } from "../devices/device-settings.js";
+import { initFloorManager } from "../floor/FloorManager.js";
+import { NetworkManager } from "../network/NetworkManager.js";
+import { initTopologyBuilder } from "../network/topology/TopologyBuilder.js";
 
 // Fixes browser compatibility issues
 (function () {
@@ -66,33 +68,104 @@ document.addEventListener("hide.bs.modal", (event) => {
   }
 });
 
+// Flag to track if HTML includes are loaded
+let htmlIncludesLoaded = false;
+let domLoaded = false;
+
+// Listen for HTML includes loaded event
+document.addEventListener("htmlIncludesLoaded", () => {
+  htmlIncludesLoaded = true;
+  tryInitCanvas();
+});
+
+// Listen for window load
+window.addEventListener("load", () => {
+  domLoaded = true;
+  tryInitCanvas();
+});
+
+// Try to initialize canvas when both conditions are met
+function tryInitCanvas() {
+  // If HTML includes exist in the page, wait for them to load
+  const hasIncludes = document.querySelector("[data-include]") !== null;
+
+  if (domLoaded && (htmlIncludesLoaded || !hasIncludes)) {
+    initCanvas();
+  }
+}
+
 // Sets up the main canvas and all modules
-window.onload = function () {
+function initCanvas() {
   const container = document.querySelector(".canvas-container");
   const fabricCanvas = new fabric.Canvas("canvas-layout", {
     width: container.clientWidth,
     height: container.clientHeight,
+    fireRightClick: true,
+    stopContextMenu: true,
   });
 
   // Make canvas available globally
   window.fabricCanvas = fabricCanvas;
 
+  const subSidebar = document.getElementById("sub-sidebar");
+
   // Initialize core canvas features
-  const coreModules = [() => initCanvasOperations(fabricCanvas), () => initDragDropDevices(fabricCanvas), () => initSelectBackground(fabricCanvas), () => initCanvasLayers(fabricCanvas), () => initCanvasPrint(fabricCanvas), () => initCanvasCrop(fabricCanvas), () => initContextMenu(fabricCanvas)];
+  const coreModules = [
+    () => new CanvasOperations(fabricCanvas),
+    () => {
+      const bgManager = new BackgroundManager(fabricCanvas);
+      bgManager.initialize();
+      bgManager.setupReplaceBackground();
+      bgManager.setupChangeScale();
+      window.backgroundManager = bgManager;
+    },
+    () => {
+      const layerControls = new LayerControls(fabricCanvas);
+      window.layerControls = layerControls;
+    },
+    () => {
+      const cropper = new ScreenshotCropper(fabricCanvas, subSidebar);
+      window.canvasCrop = cropper;
+    },
+    () => new PrintReporter(fabricCanvas),
+    () => new ContextMenu(fabricCanvas),
+  ];
 
   coreModules.forEach((init) => init());
 
   // Initialize snapping and expose API
-  const snappingAPI = initCanvasSnapping(fabricCanvas);
-  window.canvasSnapping = snappingAPI;
+  const snappingInstance = new CanvasSnapping(fabricCanvas);
+  window.canvasSnapping = {
+    setSnapThreshold: (threshold) => snappingInstance.setSnapThreshold(threshold),
+    getSnapThreshold: () => snappingInstance.getSnapThreshold(),
+    setZoneSnapThreshold: (threshold) => snappingInstance.setZoneSnapThreshold(threshold),
+    setRoomSnapThreshold: (threshold) => snappingInstance.setRoomSnapThreshold(threshold),
+    setSafetySnapThreshold: (threshold) => snappingInstance.setSafetySnapThreshold(threshold),
+    isDeviceSnappingEnabled: () => snappingInstance.isDeviceSnappingEnabled(),
+    clearSnapLines: () => snappingInstance.clearSnapLines(),
+    isSnapping: () => snappingInstance.isSnapping(),
+    hasBackgroundImage: () => snappingInstance.hasBackgroundImage(),
+  };
 
   // Initialize drawing tools
-  const drawingTools = [() => setupTextTools(fabricCanvas), () => setupShapeTools(fabricCanvas), () => setupMeasurementTools(fabricCanvas), () => setupWallTool(fabricCanvas), () => setupZoneTool(fabricCanvas), () => setupRoomTool(fabricCanvas), () => setupRiskTool(fabricCanvas), () => setupNorthArrowTool(fabricCanvas), () => setupTitleBlockTool(fabricCanvas), () => setupLineTools(fabricCanvas), () => setupBuildingFrontTool(fabricCanvas), () => setupImageUploadTool(fabricCanvas), () => setupNetworkLinkTool(fabricCanvas)];
+  const drawingTools = [
+    () => setupTextTools(fabricCanvas),
+    () => setupShapeTools(fabricCanvas),
+    () => setupMeasurementTools(fabricCanvas),
+    () => setupWallTool(fabricCanvas),
+    () => setupZoneTool(fabricCanvas),
+    () => setupRoomTool(fabricCanvas),
+    () => setupRiskTool(fabricCanvas),
+    () => setupSafetyTool(fabricCanvas),
+    () => setupNorthArrowTool(fabricCanvas),
+    () => setupTitleBlockTool(fabricCanvas),
+    () => setupLineTools(fabricCanvas),
+    () => setupBuildingFrontTool(fabricCanvas),
+    () => setupImageUploadTool(fabricCanvas),
+    () => setupNetworkLinkTool(fabricCanvas),
+  ];
 
   drawingTools.forEach((setup) => setup());
-
-  // Set up camera coverage
-  window.addCameraCoverage = addCameraCoverage;
 
   // Create save system
   const enhancedSaveSystem = new SaveSystem(fabricCanvas);
@@ -108,11 +181,18 @@ window.onload = function () {
   const takeoffGenerator = initTakeoffFeature(fabricCanvas);
 
   // Initialize network topology
-  const topologyManager = new TopologyManager(fabricCanvas);
+  const topologyManager = new NetworkManager(fabricCanvas);
   initTopologyBuilder(fabricCanvas, topologyManager);
 
   // Initialize global settings
-  initGlobalSettings(fabricCanvas);
+  new DeviceSettings(fabricCanvas);
+
+  // Initialize project library
+  import("../save/project-library.js").then((module) => {
+    const { ProjectManager } = module;
+    const projectManager = new ProjectManager(fabricCanvas, enhancedSaveSystem);
+    window.projectManager = projectManager;
+  });
 
   // Expose global APIs
   const globalAPIs = {
@@ -173,4 +253,4 @@ window.onload = function () {
       }
     }
   }, 500);
-};
+}

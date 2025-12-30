@@ -1,9 +1,17 @@
-import { closeSidebar, setDefaultCursor, setupDeletion, applyStandardStyling } from "./drawing-utils.js";
+import {
+  closeSidebar,
+  setDefaultCursor,
+  setupDeletion,
+  applyStandardStyling,
+} from "./drawing-utils.js";
 
 // Sets up image upload tool
 export function setupImageUploadTool(fabricCanvas) {
   const button = document.getElementById("upload-image-btn");
-  setupDeletion(fabricCanvas, (obj) => obj.type === "image" && obj.isUploadedImage && !obj.isLocked);
+  setupDeletion(
+    fabricCanvas,
+    (obj) => obj.type === "image" && obj.isUploadedImage && !obj.isLocked
+  );
 
   setupImageLockUnlock(fabricCanvas);
 

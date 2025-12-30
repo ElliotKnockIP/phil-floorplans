@@ -1,0 +1,68 @@
+<!-- Access Point Popover -->
+<div class="property-popover" id="access-point-popover" style="display: none">
+  <div class="popover-arrow"></div>
+  <div class="popover-header">
+    <span id="access-point-popover-title">Access Point</span>
+    <button id="access-point-popover-close" style="background: none; border: none; color: white; cursor: pointer; font-size: 18px">X</button>
+  </div>
+
+  <div class="sliding-panels">
+    <div class="slide-panel active" data-panel="access-point">
+      <div class="form-group">
+        <label class="form-label" for="access-point-name-input">Name</label>
+        <input type="text" class="form-control form-control-sm" id="access-point-name-input" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="access-point-condition-select">Condition</label>
+        <select class="form-control form-control-sm" id="access-point-condition-select">
+          <option value="">Select...</option>
+          <option value="good">Good</option>
+          <option value="defective">Defective</option>
+          <option value="not-suitable">Not Suitable</option>
+          <option value="other">Other</option>
+          <option value="na">N/A</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="access-point-notes-input">Notes</label>
+        <textarea class="form-control form-control-sm" id="access-point-notes-input" rows="3"></textarea>
+      </div>
+
+      <div class="form-group">
+        <span class="form-label">Fill Colour:</span>
+        <div class="color-grid access-point-fill-colour">
+          <div class="colour-icon" data-color="#fff200" style="background-color: #fff200"></div>
+          <div class="colour-icon" data-color="#00ff00" style="background-color: #00ff00"></div>
+          <div class="colour-icon" data-color="#ff0000" style="background-color: #ff0000"></div>
+          <div class="colour-icon" data-color="#0000ff" style="background-color: #0000ff"></div>
+          <div class="colour-icon" data-color="#ffffff" style="background-color: #ffffff"></div>
+          <div class="colour-icon" data-color="#000000" style="background-color: #000000"></div>
+          <div class="colour-icon" data-color="#ffa500" style="background-color: #ffa500"></div>
+          <div class="colour-picker-icon">
+            <input type="color" id="access-point-fill-color-picker" />
+            <span class="color-picker-emoji">🎨</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <span class="form-label">Stroke Colour:</span>
+        <div class="color-grid access-point-stroke-colour">
+          <div class="colour-icon" data-color="#002b45" style="background-color: #002b45"></div>
+          <div class="colour-icon" data-color="#000000" style="background-color: #000000"></div>
+          <div class="colour-icon" data-color="#ffffff" style="background-color: #ffffff"></div>
+          <div class="colour-icon" data-color="#ff0000" style="background-color: #ff0000"></div>
+          <div class="colour-icon" data-color="#00ff00" style="background-color: #00ff00"></div>
+          <div class="colour-icon" data-color="#0000ff" style="background-color: #0000ff"></div>
+          <div class="colour-icon" data-color="#808080" style="background-color: #808080"></div>
+          <div class="colour-picker-icon">
+            <input type="color" id="access-point-stroke-color-picker" />
+            <span class="color-picker-emoji">🎨</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

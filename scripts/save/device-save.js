@@ -1,6 +1,5 @@
-import { addCameraCoverage } from "../devices/camera/camera-core.js";
 import { attachLabelBehavior, getDefaultLabelOffset } from "../devices/device-label-utils.js";
-import { CAMERA_TYPES, IMAGE_MAP, isCameraType } from "../devices/device-types.js";
+import { CAMERA_TYPES, IMAGE_MAP, isCameraType } from "../devices/categories/device-types.js";
 import { ObjectTypeUtils } from "./utils-save.js";
 
 class CameraDeviceSerializer {
@@ -41,7 +40,10 @@ class CameraDeviceSerializer {
       const groupCenter = group.getCenterPoint();
       const isCamera = this.isCameraDevice(group.deviceType);
       // Find the image and circle parts of the device
-      const [imageObj, circleObj] = [group.getObjects().find((obj) => obj.type === "image"), group.getObjects().find((obj) => obj.type === "circle")];
+      const [imageObj, circleObj] = [
+        group.getObjects().find((obj) => obj.type === "image"),
+        group.getObjects().find((obj) => obj.type === "circle"),
+      ];
 
       const deviceData = {
         id: group.id || `device_${Date.now()}_${Math.random()}`,
@@ -74,7 +76,12 @@ class CameraDeviceSerializer {
           sensorSize: group.sensorSize || "",
           resolution: group.resolution || "",
           // Check if label is hidden by checking group or text object
-          labelHidden: group.labelHidden !== undefined ? !!group.labelHidden : group.textObject ? !!group.textObject._isHidden : false,
+          labelHidden:
+            group.labelHidden !== undefined
+              ? !!group.labelHidden
+              : group.textObject
+              ? !!group.textObject._isHidden
+              : false,
         },
         individualObjects: {
           image: imageObj
@@ -146,7 +153,11 @@ class CameraDeviceSerializer {
       }
 
       if (group.textObject && group.deviceType !== "text-device") {
-        const isTextVisible = !group.textObject._isHidden && group.textObject.visible !== false && (!group.textObject.canvas || group.textObject.canvas.getObjects().includes(group.textObject));
+        const isTextVisible =
+          !group.textObject._isHidden &&
+          group.textObject.visible !== false &&
+          (!group.textObject.canvas ||
+            group.textObject.canvas.getObjects().includes(group.textObject));
         const scaleFactor = group.scaleFactor || 1;
         const defaultOffset = getDefaultLabelOffset(group);
         const labelOffset = group.labelOffset
@@ -238,7 +249,8 @@ class CameraDeviceSerializer {
           try {
             await this.loadCameraDevice(serializedData.cameraDevices[i], true);
             // Add small delay between loading devices to prevent overload
-            if (i < serializedData.cameraDevices.length - 1) await new Promise((resolve) => setTimeout(resolve, 50));
+            if (i < serializedData.cameraDevices.length - 1)
+              await new Promise((resolve) => setTimeout(resolve, 50));
           } catch (error) {
             console.error(`Failed to load device ${i + 1}:`, error);
           }
@@ -257,7 +269,15 @@ class CameraDeviceSerializer {
     return new Promise((resolve, reject) => {
       try {
         // Skip if device already exists at this position
-        const duplicate = this.fabricCanvas.getObjects().find((obj) => this.isDevice(obj) && obj.deviceType === deviceData.deviceType && Math.abs(obj.left - deviceData.position.left) < 1 && Math.abs(obj.top - deviceData.position.top) < 1);
+        const duplicate = this.fabricCanvas
+          .getObjects()
+          .find(
+            (obj) =>
+              this.isDevice(obj) &&
+              obj.deviceType === deviceData.deviceType &&
+              Math.abs(obj.left - deviceData.position.left) < 1 &&
+              Math.abs(obj.top - deviceData.position.top) < 1
+          );
         if (duplicate) return resolve(duplicate);
 
         if (deviceData.deviceType === "text-device" && deviceData.textDeviceConfig) {
@@ -300,7 +320,8 @@ class CameraDeviceSerializer {
             ...deviceData.visual,
           });
           group.deviceType = "text-device";
-          group.id = deviceData.id || `device_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+          group.id =
+            deviceData.id || `device_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
           group.textDeviceConfig = config;
           group.initialLabelText = config.text;
           group.scaleFactor = deviceData.scaleFactor || 1;
@@ -314,7 +335,8 @@ class CameraDeviceSerializer {
             fontWeight: window.globalBoldText ? "bold" : "normal",
             fill: window.globalTextColor || "#FFFFFF",
             selectable: false,
-            backgroundColor: window.globalTextBackground !== false ? "rgba(20, 18, 18, 0.8)" : "transparent",
+            backgroundColor:
+              window.globalTextBackground !== false ? "rgba(20, 18, 18, 0.8)" : "transparent",
             originX: "center",
             originY: "top",
             isDeviceLabel: true,
@@ -325,7 +347,8 @@ class CameraDeviceSerializer {
           group.textObject = labelText;
           group.on("selected", () => {
             if (window.suppressDeviceProperties) return;
-            if (window.showDeviceProperties) window.showDeviceProperties("text-device", labelText, group);
+            if (window.showDeviceProperties)
+              window.showDeviceProperties("text-device", labelText, group);
           });
           group.on("deselected", () => {
             if (window.hideDeviceProperties) window.hideDeviceProperties();
@@ -337,7 +360,8 @@ class CameraDeviceSerializer {
           return resolve(group);
         }
 
-        let imgSrc = IMAGE_MAP[deviceData.deviceType] || `./images/devices/${deviceData.deviceType}`;
+        let imgSrc =
+          IMAGE_MAP[deviceData.deviceType] || `./images/devices/${deviceData.deviceType}`;
         if (deviceData.customImageSrc) imgSrc = deviceData.customImageSrc;
 
         fabric.Image.fromURL(
@@ -396,12 +420,19 @@ class CameraDeviceSerializer {
                 radius: finalCircleRadius,
               });
               group.deviceType = deviceData.deviceType;
-              group.id = deviceData.id || group.id || `device_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+              group.id =
+                deviceData.id ||
+                group.id ||
+                `device_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
               if (deviceData.customImageSrc) group.hasCustomIcon = true;
               Object.assign(group, deviceData.deviceProperties || {});
               // Ensure group coordinates are recalculated after setting dimensions
               group.setCoords();
-              if (group.textObject && group.deviceProperties && typeof group.deviceProperties.labelHidden === "boolean") {
+              if (
+                group.textObject &&
+                group.deviceProperties &&
+                typeof group.deviceProperties.labelHidden === "boolean"
+              ) {
                 const hidden = !!group.deviceProperties.labelHidden;
                 group.labelHidden = hidden;
                 group.textObject._isHidden = hidden;
@@ -419,7 +450,9 @@ class CameraDeviceSerializer {
                 };
                 delete group.coverageConfig.currentCoverage;
                 if (!group.coverageConfig.baseColor && group.coverageConfig.fillColor) {
-                  const match = group.coverageConfig.fillColor.match(/rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i);
+                  const match = group.coverageConfig.fillColor.match(
+                    /rgba?\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i
+                  );
                   if (match) {
                     const [, r, g, b] = match;
                     group.coverageConfig.baseColor = `rgb(${r}, ${g}, ${b})`;
@@ -427,15 +460,18 @@ class CameraDeviceSerializer {
                 }
               }
               this.fabricCanvas.add(group);
-              if (deviceData.textLabel) this.createTextLabel(group, deviceData.textLabel, group.scaleFactor || scaleFactor);
+              if (deviceData.textLabel)
+                this.createTextLabel(group, deviceData.textLabel, group.scaleFactor || scaleFactor);
               if (!skipSelection) this.addDeviceEventHandlers(group);
               else group._deferEventHandlers = true;
-              if (deviceData.coverageConfig) this.addCameraCoverageDelayed(group, deviceData.coverageConfig);
+              if (deviceData.coverageConfig)
+                this.addCameraCoverageDelayed(group, deviceData.coverageConfig);
               group.bringToFront();
               if (group.textObject && !group.textObject._isHidden) group.textObject.bringToFront();
               if (!skipSelection) this.fabricCanvas.setActiveObject(group);
               setTimeout(() => {
-                if (typeof window.updateDeviceCompleteIndicator === "function") window.updateDeviceCompleteIndicator(group);
+                if (typeof window.updateDeviceCompleteIndicator === "function")
+                  window.updateDeviceCompleteIndicator(group);
               }, 100);
               resolve(group);
             } catch (error) {
@@ -463,8 +499,10 @@ class CameraDeviceSerializer {
     }
     const groupCenter = group.getCenterPoint();
     const defaultTop = groupCenter.y + 20 * scaleFactor + 10;
-    const initialLeft = typeof textData.position?.left === "number" ? textData.position.left : groupCenter.x;
-    const initialTop = typeof textData.position?.top === "number" ? textData.position.top : defaultTop;
+    const initialLeft =
+      typeof textData.position?.left === "number" ? textData.position.left : groupCenter.x;
+    const initialTop =
+      typeof textData.position?.top === "number" ? textData.position.top : defaultTop;
 
     const text = new fabric.Text(textData.text, {
       left: initialLeft,
@@ -487,13 +525,18 @@ class CameraDeviceSerializer {
         y: Number.isFinite(textData.offset.y) ? textData.offset.y : defaultOffset.y,
       };
       group.hasCustomLabelOffset = !!textData.hasCustomOffset;
-    } else if (typeof textData.position?.left === "number" && typeof textData.position?.top === "number") {
+    } else if (
+      typeof textData.position?.left === "number" &&
+      typeof textData.position?.top === "number"
+    ) {
       group.labelOffset = {
         x: textData.position.left - groupCenter.x,
         y: textData.position.top - groupCenter.y,
       };
       const threshold = 1;
-      group.hasCustomLabelOffset = Math.abs(group.labelOffset.x) > threshold || Math.abs(group.labelOffset.y - defaultOffset.y) > threshold;
+      group.hasCustomLabelOffset =
+        Math.abs(group.labelOffset.x) > threshold ||
+        Math.abs(group.labelOffset.y - defaultOffset.y) > threshold;
     } else {
       group.labelOffset = { ...defaultOffset };
       group.hasCustomLabelOffset = false;
@@ -513,7 +556,11 @@ class CameraDeviceSerializer {
     this.bindTextToGroup(group, text);
     if (!isTextDevice) {
       setTimeout(() => {
-        if (window.initCanvasLayers && shouldBeVisible && this.fabricCanvas.getObjects().includes(text)) {
+        if (
+          window.initCanvasLayers &&
+          shouldBeVisible &&
+          this.fabricCanvas.getObjects().includes(text)
+        ) {
           this.fabricCanvas.fire("object:added", { target: text });
         }
         this.fabricCanvas.renderAll();
@@ -528,7 +575,9 @@ class CameraDeviceSerializer {
       if (group.coverageArea && this.fabricCanvas.getObjects().includes(group.coverageArea)) return;
       // Clean up any old coverage areas left behind
       const allObjects = this.fabricCanvas.getObjects();
-      const orphanedCoverage = allObjects.filter((obj) => (obj.isCoverage || obj.isResizeIcon === true) && !obj.parentGroup);
+      const orphanedCoverage = allObjects.filter(
+        (obj) => (obj.isCoverage || obj.isResizeIcon === true) && !obj.parentGroup
+      );
       orphanedCoverage.forEach((obj) => {
         this.fabricCanvas.remove(obj);
       });
@@ -565,7 +614,10 @@ class CameraDeviceSerializer {
           this.fabricCanvas.renderAll();
           if (!shouldBeVisible) {
             setTimeout(() => {
-              if (group.coverageArea && this.fabricCanvas.getObjects().includes(group.coverageArea)) {
+              if (
+                group.coverageArea &&
+                this.fabricCanvas.getObjects().includes(group.coverageArea)
+              ) {
                 group.coverageArea.visible = false;
                 group.coverageArea.set({ visible: false });
                 this.fabricCanvas.renderAll();
@@ -591,7 +643,8 @@ class CameraDeviceSerializer {
     if (group._deviceDeselectedHandler) group.off("deselected", group._deviceDeselectedHandler);
     group._deviceSelectedHandler = () => {
       if (window.suppressDeviceProperties) return;
-      if (window.showDeviceProperties) window.showDeviceProperties(group.deviceType, group.textObject, group);
+      if (window.showDeviceProperties)
+        window.showDeviceProperties(group.deviceType, group.textObject, group);
       group.bringToFront();
       if (group.textObject && !group.textObject._isHidden) group.textObject.bringToFront();
       this.fabricCanvas.renderAll();
@@ -602,7 +655,13 @@ class CameraDeviceSerializer {
     group.on("selected", group._deviceSelectedHandler);
     group.on("deselected", group._deviceDeselectedHandler);
     group.on("removed", () => {
-      ["textObject", "coverageArea", "leftResizeIcon", "rightResizeIcon", "rotateResizeIcon"].forEach((prop) => {
+      [
+        "textObject",
+        "coverageArea",
+        "leftResizeIcon",
+        "rightResizeIcon",
+        "rotateResizeIcon",
+      ].forEach((prop) => {
         if (group[prop]) this.fabricCanvas.remove(group[prop]);
       });
       this.fabricCanvas.renderAll();

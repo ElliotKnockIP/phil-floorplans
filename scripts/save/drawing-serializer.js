@@ -11,6 +11,7 @@ class OptimizedDrawingObjectSerializer {
   isZoneObject = ObjectTypeUtils.isZoneObject;
   isRoomObject = ObjectTypeUtils.isRoomObject;
   isRiskObject = ObjectTypeUtils.isRiskObject;
+  isSafetyObject = ObjectTypeUtils.isSafetyObject;
   isWallObject = ObjectTypeUtils.isWallObject;
   isTitleBlockObject = ObjectTypeUtils.isTitleBlockObject;
 
@@ -32,10 +33,16 @@ class OptimizedDrawingObjectSerializer {
       zones: this.serializeZones(),
       rooms: this.serializeRooms(),
       risks: this.serializeRisks(),
+      safetyZones: this.serializeSafetyZones(),
       walls: DrawingUtils.serializeWalls(this.fabricCanvas),
       titleblocks: DrawingUtils.serializeTitleBlocks(this.fabricCanvas),
       canvasSettings: DrawingUtils.getCanvasSettings(this.fabricCanvas),
-      globalState: { zonesArray: window.zones || [], roomsArray: window.rooms || [], risksArray: window.risks || [] },
+      globalState: {
+        zonesArray: window.zones || [],
+        roomsArray: window.rooms || [],
+        risksArray: window.risks || [],
+        safetyZonesArray: window.safetyZones || [],
+      },
       topology: window.topologyManager?.getConnectionsData?.() || [],
     };
   }
@@ -43,8 +50,8 @@ class OptimizedDrawingObjectSerializer {
   // Saves one drawing object's data
   serializeDrawingObject(obj) {
     try {
-      // Skip zones, rooms, risks, walls, and titleblocks
-      if (this.isZoneObject(obj) || this.isRoomObject(obj) || this.isRiskObject(obj) || this.isWallObject(obj) || this.isTitleBlockObject(obj)) return null;
+      // Skip zones, rooms, risks, safety zones, walls, and titleblocks
+      if (this.isZoneObject(obj) || this.isRoomObject(obj) || this.isRiskObject(obj) || this.isSafetyObject(obj) || this.isWallObject(obj) || this.isTitleBlockObject(obj)) return null;
 
       const baseData = SerializationUtils.extractBaseData(obj);
 
@@ -175,6 +182,61 @@ class OptimizedDrawingObjectSerializer {
       };
     }
 
+    if (groupType === "accessPoint") {
+      const circle = objects.find((o) => o.type === "circle");
+      const text = objects.find((o) => o.type === "i-text" || o.type === "text" || o.type === "textbox");
+
+      return {
+        ...baseData,
+        drawingType: "group",
+        groupType: "accessPoint",
+        properties: {
+          width: obj.width,
+          height: obj.height,
+          accessPointLabel: obj.accessPointLabel || "",
+          accessPointName: obj.accessPointName || "",
+          accessPointCondition: obj.accessPointCondition || "",
+          accessPointNotes: obj.accessPointNotes || "",
+          accessPointColor: obj.accessPointColor || (circle && circle.fill) || "#fff200",
+          lockUniScaling: obj.lockUniScaling ?? true,
+          subTargetCheck: obj.subTargetCheck ?? false,
+        },
+        accessPointData: {
+          circle: circle ? DrawingUtils.extractProps(circle, ["radius", "fill", "stroke", "strokeWidth", "strokeUniform", "left", "top", "originX", "originY", "scaleX", "scaleY", "angle"]) : null,
+          text: text ? DrawingUtils.getTextData(text, obj) : null,
+        },
+        isAccessPoint: true,
+      };
+    }
+
+    if (groupType === "hotspot") {
+      const circle = objects.find((o) => o.type === "circle");
+      const text = objects.find((o) => o.type === "i-text" || o.type === "text" || o.type === "textbox");
+
+      return {
+        ...baseData,
+        drawingType: "group",
+        groupType: "hotspot",
+        properties: {
+          width: obj.width,
+          height: obj.height,
+          hotspotLabel: obj.hotspotLabel || "",
+          hotspotName: obj.hotspotName || "",
+          hotspotSeverity: obj.hotspotSeverity || "",
+          hotspotNotes: obj.hotspotNotes || "",
+          hotspotColor: obj.hotspotColor || (circle && circle.fill) || "#ff6b35",
+          hotspotStroke: obj.hotspotStroke || (circle && circle.stroke) || "#8b0000",
+          lockUniScaling: obj.lockUniScaling ?? true,
+          subTargetCheck: obj.subTargetCheck ?? false,
+        },
+        hotspotData: {
+          circle: circle ? DrawingUtils.extractProps(circle, ["radius", "fill", "stroke", "strokeWidth", "strokeUniform", "left", "top", "originX", "originY", "scaleX", "scaleY", "angle"]) : null,
+          text: text ? DrawingUtils.getTextData(text, obj) : null,
+        },
+        isHotspot: true,
+      };
+    }
+
     return {
       ...baseData,
       drawingType: "group",
@@ -251,12 +313,35 @@ class OptimizedDrawingObjectSerializer {
             riskName: r.riskName || p.riskName || `Risk ${i + 1}`,
             riskNotes: r.riskNotes || p.riskNotes || "",
             riskColor: r.riskColor || p.stroke || "#e53935",
-            area: r.area || p.area || 0,
-            height: r.height || p.height || 2.4,
-            volume: r.volume || p.volume || 0,
             devices: r.devices || [],
             polygon: DrawingUtils.extractProps(p, ["points", "fill", "stroke", "strokeWidth", "strokeDashArray", "left", "top", "scaleX", "scaleY", "angle", "class", "selectable", "evented", "hasControls", "hasBorders", "hoverCursor", "perPixelTargetFind"]),
             text: this.getTextObjectData(r.text),
+          };
+        } catch (e) {
+          return null;
+        }
+      })
+      .filter(Boolean);
+  }
+
+  // Saves all safety zone polygons to JSON
+  serializeSafetyZones() {
+    if (!window.safetyZones?.length) return [];
+    return window.safetyZones
+      .filter((s) => s.polygon && this.fabricCanvas.getObjects().includes(s.polygon) && s.text && this.fabricCanvas.getObjects().includes(s.text))
+      .map((s, i) => {
+        try {
+          const p = s.polygon;
+          return {
+            id: `safety_${i}`,
+            safetyName: s.safetyName || p.safetyName || `Safety ${i + 1}`,
+            safetyNotes: s.safetyNotes || p.safetyNotes || "",
+            safetySubDetails: s.safetySubDetails || [],
+            safetyContainment: s.safetyContainment || "",
+            safetyColor: s.safetyColor || p.stroke || "#f9a825",
+            devices: s.devices || [],
+            polygon: DrawingUtils.extractProps(p, ["points", "fill", "stroke", "strokeWidth", "strokeDashArray", "left", "top", "scaleX", "scaleY", "angle", "class", "selectable", "evented", "hasControls", "hasBorders", "hoverCursor", "perPixelTargetFind"]),
+            text: this.getTextObjectData(s.text),
           };
         } catch (e) {
           return null;
@@ -317,6 +402,7 @@ class OptimizedDrawingObjectSerializer {
         window.zones = serializedData.globalState.zonesArray || [];
         window.rooms = serializedData.globalState.roomsArray || [];
         window.risks = serializedData.globalState.risksArray || [];
+        window.safetyZones = serializedData.globalState.safetyZonesArray || [];
       }
 
       // Clean up potential conflicts
@@ -338,15 +424,23 @@ class OptimizedDrawingObjectSerializer {
         }
       }
 
-      // Load zones, rooms, risks, walls, and title blocks in order
+      // Load zones, rooms, risks, safety zones, walls, and title blocks in order
       if (serializedData.zones?.length) await this.loadZones(serializedData.zones);
       if (serializedData.rooms?.length) await this.loadRooms(serializedData.rooms);
       if (serializedData.risks?.length) await this.loadRisks(serializedData.risks);
+      if (serializedData.safetyZones?.length) await this.loadSafetyZones(serializedData.safetyZones);
       if (serializedData.walls?.circles?.length || serializedData.walls?.lines?.length) {
         await new Promise((r) => setTimeout(r, 200));
         await this.loadWalls(serializedData.walls);
       }
       if (serializedData.titleblocks?.length) await this.loadTitleBlocks(serializedData.titleblocks);
+
+      // Bring hotspots and access points to front so they appear above polygons
+      this.fabricCanvas.getObjects().forEach((obj) => {
+        if (obj.isHotspot || obj.isAccessPoint) {
+          obj.bringToFront();
+        }
+      });
 
       this.fabricCanvas.requestRenderAll();
       setTimeout(() => this.reinitializeDrawingTools(), 300);
@@ -481,8 +575,14 @@ class OptimizedDrawingObjectSerializer {
         callback(this.createArrowGroup(objectData, props));
       } else if (objectData.groupType === "measurement") {
         callback(this.createMeasurementGroup(objectData, props));
+      } else if (objectData.groupType === "accessPoint") {
+        callback(this.createAccessPointGroup(objectData, props));
+      } else if (objectData.groupType === "hotspot") {
+        callback(this.createHotspotGroup(objectData, props));
       } else if (objectData.groupType === "buildingFront") {
         callback(this.createBuildingFrontGroup(objectData, props));
+      } else if (reject) {
+        reject(new Error("Unsupported drawing object type"));
       }
     };
   }
@@ -520,6 +620,144 @@ class OptimizedDrawingObjectSerializer {
     });
     this.applyStandardStyling(group, false);
     group.set({ borderScaleFactor: 1 });
+    return group;
+  }
+
+  createAccessPointGroup(objectData, props) {
+    const circleData = objectData.accessPointData?.circle || {};
+    const textData = objectData.accessPointData?.text || {};
+    const storedColor = objectData.properties?.accessPointColor || circleData.fill;
+
+    const circle = new fabric.Circle({
+      radius: circleData.radius || 16,
+      fill: storedColor || "#fff200",
+      stroke: circleData.stroke || "#002b45",
+      strokeWidth: circleData.strokeWidth ?? 4,
+      strokeUniform: circleData.strokeUniform ?? true,
+      left: circleData.left ?? 0,
+      top: circleData.top ?? 0,
+      originX: circleData.originX || "center",
+      originY: circleData.originY || "center",
+      scaleX: circleData.scaleX || 1,
+      scaleY: circleData.scaleY || 1,
+      angle: circleData.angle || 0,
+      selectable: false,
+      evented: false,
+    });
+
+    const labelText = textData.text || objectData.properties?.accessPointLabel || textData.accessPointLabel || "1";
+    const accessPointName = objectData.properties?.accessPointName || `Access Point ${labelText}`;
+    const accessPointCondition = objectData.properties?.accessPointCondition || "";
+    const accessPointNotes = objectData.properties?.accessPointNotes || "";
+
+    const text = new fabric.IText(labelText, {
+      fontSize: textData.fontSize || 16,
+      fontFamily: textData.fontFamily || "Arial",
+      fontWeight: textData.fontWeight || "700",
+      fill: textData.fill || "#002b45",
+      backgroundColor: textData.backgroundColor || "",
+      originX: textData.originX || "center",
+      originY: textData.originY || "center",
+      left: textData.left ?? 0,
+      top: textData.top ?? 0,
+      angle: textData.angle || 0,
+      selectable: false,
+      evented: false,
+    });
+
+    const group = new fabric.Group([circle, text], {
+      ...props,
+      hasControls: true,
+      hasBorders: true,
+      isAccessPoint: true,
+      groupType: "accessPoint",
+      accessPointLabel: labelText,
+      accessPointName,
+      accessPointCondition,
+      accessPointNotes,
+      accessPointColor: storedColor || circle.fill,
+      lockUniScaling: props.lockUniScaling ?? true,
+      subTargetCheck: props.subTargetCheck ?? false,
+    });
+
+    this.applyStandardStyling(group, true);
+    group.set({ lockUniScaling: true });
+
+    const parsedNumber = parseInt(labelText, 10);
+    if (!Number.isNaN(parsedNumber)) {
+      const next = parsedNumber + 1;
+      window.accessPointCounter = Math.max(window.accessPointCounter || 1, next);
+    }
+    return group;
+  }
+
+  createHotspotGroup(objectData, props) {
+    const circleData = objectData.hotspotData?.circle || {};
+    const textData = objectData.hotspotData?.text || {};
+    const storedColor = objectData.properties?.hotspotColor || circleData.fill;
+    const storedStroke = objectData.properties?.hotspotStroke || circleData.stroke;
+
+    const circle = new fabric.Circle({
+      radius: circleData.radius || 16,
+      fill: storedColor || "#ff6b35",
+      stroke: storedStroke || "#8b0000",
+      strokeWidth: circleData.strokeWidth ?? 4,
+      strokeUniform: circleData.strokeUniform ?? true,
+      left: circleData.left ?? 0,
+      top: circleData.top ?? 0,
+      originX: circleData.originX || "center",
+      originY: circleData.originY || "center",
+      scaleX: circleData.scaleX || 1,
+      scaleY: circleData.scaleY || 1,
+      angle: circleData.angle || 0,
+      selectable: false,
+      evented: false,
+    });
+
+    const labelText = textData.text || objectData.properties?.hotspotLabel || textData.hotspotLabel || "1";
+    const hotspotName = objectData.properties?.hotspotName || `Hotspot ${labelText}`;
+    const hotspotSeverity = objectData.properties?.hotspotSeverity || "";
+    const hotspotNotes = objectData.properties?.hotspotNotes || "";
+
+    const text = new fabric.IText(labelText, {
+      fontSize: textData.fontSize || 16,
+      fontFamily: textData.fontFamily || "Arial",
+      fontWeight: textData.fontWeight || "700",
+      fill: textData.fill || "#ffffff",
+      backgroundColor: textData.backgroundColor || "",
+      originX: textData.originX || "center",
+      originY: textData.originY || "center",
+      left: textData.left ?? 0,
+      top: textData.top ?? 0,
+      angle: textData.angle || 0,
+      selectable: false,
+      evented: false,
+    });
+
+    const group = new fabric.Group([circle, text], {
+      ...props,
+      hasControls: true,
+      hasBorders: true,
+      isHotspot: true,
+      groupType: "hotspot",
+      hotspotLabel: labelText,
+      hotspotName,
+      hotspotSeverity,
+      hotspotNotes,
+      hotspotColor: storedColor || circle.fill,
+      hotspotStroke: storedStroke || circle.stroke,
+      lockUniScaling: props.lockUniScaling ?? true,
+      subTargetCheck: props.subTargetCheck ?? false,
+    });
+
+    this.applyStandardStyling(group, true);
+    group.set({ lockUniScaling: true });
+
+    const parsedNumber = parseInt(labelText, 10);
+    if (!Number.isNaN(parsedNumber)) {
+      const next = parsedNumber + 1;
+      window.hotspotCounter = Math.max(window.hotspotCounter || 1, next);
+    }
     return group;
   }
 
@@ -613,7 +851,13 @@ class OptimizedDrawingObjectSerializer {
     setTimeout(() => window.maintainRiskLayerOrder?.(), 100);
   }
 
-  // Loads zones, rooms, or risks polygons with their text labels
+  // Loads safety zones data
+  async loadSafetyZones(safetyZonesData) {
+    await this.loadPolygonTextData("safetyZones", safetyZonesData);
+    setTimeout(() => window.maintainSafetyLayerOrder?.(), 100);
+  }
+
+  // Loads zones, rooms, risks, or safety zones polygons with their text labels
   async loadPolygonTextData(type, dataArray) {
     const arrayName = window[type];
     if (arrayName?.length > 0) {
@@ -642,6 +886,13 @@ class OptimizedDrawingObjectSerializer {
           };
         } else if (type === "rooms") {
           props = { roomName: itemData.roomName, roomNotes: itemData.roomNotes };
+        } else if (type === "safetyZones") {
+          props = {
+            safetyName: itemData.safetyName,
+            safetyNotes: itemData.safetyNotes,
+            safetySubDetails: itemData.safetySubDetails || [],
+            safetyContainment: itemData.safetyContainment || "",
+          };
         } else {
           props = { riskName: itemData.riskName, riskNotes: itemData.riskNotes };
         }
@@ -672,6 +923,17 @@ class OptimizedDrawingObjectSerializer {
             volume: itemData.volume,
             devices: itemData.devices || [],
           });
+        } else if (type === "safetyZones") {
+          window[type].push({
+            polygon,
+            text,
+            safetyName: itemData.safetyName,
+            safetyNotes: itemData.safetyNotes,
+            safetySubDetails: itemData.safetySubDetails || [],
+            safetyContainment: itemData.safetyContainment || "",
+            safetyColor: itemData.safetyColor,
+            devices: itemData.devices || [],
+          });
         } else {
           window[type].push({
             polygon,
@@ -679,13 +941,10 @@ class OptimizedDrawingObjectSerializer {
             riskName: itemData.riskName,
             riskNotes: itemData.riskNotes,
             riskColor: itemData.riskColor,
-            area: itemData.area,
-            height: itemData.height,
-            volume: itemData.volume,
             devices: itemData.devices || [],
           });
         }
-        const handlerMethod = type === "zones" ? "addZoneEventHandlers" : type === "rooms" ? "addRoomEventHandlers" : "addRiskEventHandlers";
+        const handlerMethod = type === "zones" ? "addZoneEventHandlers" : type === "rooms" ? "addRoomEventHandlers" : type === "safetyZones" ? "addSafetyEventHandlers" : "addRiskEventHandlers";
         this[handlerMethod](polygon, text);
         await new Promise((r) => setTimeout(r, 50));
       } catch (e) {
@@ -733,8 +992,7 @@ class OptimizedDrawingObjectSerializer {
           isWallCircle: true,
           deletable: ci.deletable !== undefined ? ci.deletable : false,
         });
-        circle._wallUpdateHandler = () => this.updateConnectedWallLines(circle);
-        circle.on("moving", circle._wallUpdateHandler);
+        // Events will be bound by Wall class via walls:loaded event
         this.fabricCanvas.add(circle);
         loadedCircles.push(circle);
       } catch (e) {
@@ -758,10 +1016,11 @@ class OptimizedDrawingObjectSerializer {
           lockMovementY: li.lockMovementY !== false,
           perPixelTargetFind: li.perPixelTargetFind !== false,
           borderColor: li.borderColor || "#f8794b",
+          isWallLine: true,
         });
         if (li.startCircleIndex !== null && li.startCircleIndex >= 0 && loadedCircles[li.startCircleIndex]) line.startCircle = loadedCircles[li.startCircleIndex];
         if (li.endCircleIndex !== null && li.endCircleIndex >= 0 && loadedCircles[li.endCircleIndex]) line.endCircle = loadedCircles[li.endCircleIndex];
-        line.on("removed", () => this.handleWallLineDeletion(line));
+        // Events will be bound by Wall class via walls:loaded event
         this.fabricCanvas.add(line);
       } catch (e) {
         console.error("Failed to load wall line:", e);
@@ -773,6 +1032,7 @@ class OptimizedDrawingObjectSerializer {
       this.organizeWallLayers();
       this.ensureCameraResizeIconsOnTop();
       this.fabricCanvas.requestRenderAll();
+      document.dispatchEvent(new Event("walls:loaded"));
     }, 200);
   }
 
@@ -949,6 +1209,19 @@ class OptimizedDrawingObjectSerializer {
     );
   }
 
+  addSafetyEventHandlers(polygon, text) {
+    this.addPolygonTextEventHandlers(
+      polygon,
+      text,
+      "safety",
+      (p) => {
+        const s = window.safetyZones.find((s) => s.polygon === p);
+        if (s && window.showSafetyProperties) window.showSafetyProperties(p, text, s);
+      },
+      () => window.maintainSafetyLayerOrder?.()
+    );
+  }
+
   addPolygonTextEventHandlers(polygon, text, type, showProps, maintainOrder) {
     polygon.off();
     text.off();
@@ -968,7 +1241,7 @@ class OptimizedDrawingObjectSerializer {
     const polygonMovingHandler = () => {
       if (!polygon || !this.fabricCanvas.getObjects().includes(polygon)) return;
       // Don't update originalCenter on move - this is what enables snapping
-      // The canvas-snapping.js handles the snapping logic separately
+      // The Snapping.js handles the snapping logic separately
       if (text && this.fabricCanvas.getObjects().includes(text)) {
         const center = polygon.getCenterPoint();
         text.set({ left: center.x + (text.offsetX || 0), top: center.y + (text.offsetY || 0) });
@@ -1004,10 +1277,7 @@ class OptimizedDrawingObjectSerializer {
     polygon.on("deselected", () => {
       setTimeout(() => {
         const active = this.fabricCanvas.getActiveObject();
-        const isRelated = active && (
-          active === text ||
-          (active.data && active.data.polygon === polygon)
-        );
+        const isRelated = active && (active === text || (active.data && active.data.polygon === polygon));
         if (isRelated) return;
         window.hideDeviceProperties?.();
         disablePolygonEditing(this.fabricCanvas, polygon);
@@ -1023,10 +1293,7 @@ class OptimizedDrawingObjectSerializer {
     text.on("deselected", () => {
       setTimeout(() => {
         const active = this.fabricCanvas.getActiveObject();
-        const isRelated = active && (
-          active === polygon ||
-          (active.data && active.data.polygon === polygon)
-        );
+        const isRelated = active && (active === polygon || (active.data && active.data.polygon === polygon));
         if (isRelated) return;
         window.hideDeviceProperties?.();
         disablePolygonEditing(this.fabricCanvas, polygon);

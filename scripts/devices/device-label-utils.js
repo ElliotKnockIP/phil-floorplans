@@ -1,14 +1,21 @@
+// Device label utility functions
+
 const OFFSET_MARGIN = 10;
 const CUSTOM_OFFSET_THRESHOLD = 1;
 
+// Get default label offset for a device group
 export function getDefaultLabelOffset(group) {
   if (!group) {
     return { x: 0, y: OFFSET_MARGIN + 20 };
   }
-  const scaleFactor = typeof group.scaleFactor === "number" && !Number.isNaN(group.scaleFactor) ? group.scaleFactor : 1;
+  const scaleFactor =
+    typeof group.scaleFactor === "number" && !Number.isNaN(group.scaleFactor)
+      ? group.scaleFactor
+      : 1;
   return { x: 0, y: 20 * scaleFactor + OFFSET_MARGIN };
 }
 
+// Set drag state for a text label
 export function setLabelDragState(text, enabled) {
   if (!text) return;
 
@@ -32,11 +39,15 @@ export function setLabelDragState(text, enabled) {
   }
 }
 
+// Apply label position relative to its parent group
 export function applyLabelPosition(group) {
   if (!group || !group.textObject) return;
   const text = group.textObject;
   const canvas = group.canvas || text.canvas;
-  const center = typeof group.getCenterPoint === "function" ? group.getCenterPoint() : { x: group.left || 0, y: group.top || 0 };
+  const center =
+    typeof group.getCenterPoint === "function"
+      ? group.getCenterPoint()
+      : { x: group.left || 0, y: group.top || 0 };
   const defaultOffset = getDefaultLabelOffset(group);
 
   if (!group.labelOffset) {
@@ -58,6 +69,7 @@ export function applyLabelPosition(group) {
   }
 }
 
+// Attach label behavior to a device group
 export function attachLabelBehavior(group, text, fabricCanvas = null) {
   if (!group || !text) return;
   const canvas = fabricCanvas || group.canvas || text.canvas;
@@ -68,6 +80,7 @@ export function attachLabelBehavior(group, text, fabricCanvas = null) {
   applyLabelPosition(group);
   setLabelDragState(text, !!window.globalLabelDragEnabled);
 
+  // Update position when group moves
   const updatePosition = () => {
     applyLabelPosition(group);
     if (typeof group.bringToFront === "function") group.bringToFront();
@@ -81,6 +94,7 @@ export function attachLabelBehavior(group, text, fabricCanvas = null) {
   group._labelMoveHandler = updatePosition;
   group.on("moving", group._labelMoveHandler);
 
+  // Handle text changes
   if (text._labelChangedHandler) {
     text.off("changed", text._labelChangedHandler);
   }
@@ -94,6 +108,7 @@ export function attachLabelBehavior(group, text, fabricCanvas = null) {
   };
   text.on("changed", text._labelChangedHandler);
 
+  // Handle text moving
   if (text._labelMovingHandler) {
     text.off("moving", text._labelMovingHandler);
   }
@@ -104,20 +119,26 @@ export function attachLabelBehavior(group, text, fabricCanvas = null) {
       return;
     }
 
-    const center = typeof group.getCenterPoint === "function" ? group.getCenterPoint() : { x: group.left || 0, y: group.top || 0 };
+    const center =
+      typeof group.getCenterPoint === "function"
+        ? group.getCenterPoint()
+        : { x: group.left || 0, y: group.top || 0 };
     group.labelOffset = {
       x: (text.left || 0) - center.x,
       y: (text.top || 0) - center.y,
     };
 
     const defaultOffset = getDefaultLabelOffset(group);
-    group.hasCustomLabelOffset = Math.abs(group.labelOffset.x || 0) > CUSTOM_OFFSET_THRESHOLD || Math.abs((group.labelOffset.y || 0) - defaultOffset.y) > CUSTOM_OFFSET_THRESHOLD;
+    group.hasCustomLabelOffset =
+      Math.abs(group.labelOffset.x || 0) > CUSTOM_OFFSET_THRESHOLD ||
+      Math.abs((group.labelOffset.y || 0) - defaultOffset.y) > CUSTOM_OFFSET_THRESHOLD;
 
     if (typeof text.setCoords === "function") text.setCoords();
     if (canvas && typeof canvas.requestRenderAll === "function") canvas.requestRenderAll();
   };
   text.on("moving", text._labelMovingHandler);
 
+  // Handle mouse up on text
   if (typeof text.on === "function" && !text._labelMouseUpHandler) {
     text._labelMouseUpHandler = () => {
       if (canvas && typeof canvas.renderAll === "function") canvas.renderAll();
@@ -125,6 +146,7 @@ export function attachLabelBehavior(group, text, fabricCanvas = null) {
     text.on("mouseup", text._labelMouseUpHandler);
   }
 
+  // Add update function to group
   if (!group.updateLabelPosition) {
     group.updateLabelPosition = () => applyLabelPosition(group);
   }
@@ -132,8 +154,37 @@ export function attachLabelBehavior(group, text, fabricCanvas = null) {
   updatePosition();
 }
 
+// Set group label drag state
 export function setGroupLabelDragState(group, enabled) {
   if (!group || !group.textObject) return;
   setLabelDragState(group.textObject, enabled);
 }
 
+// Get next available device number for labeling
+export function getNextAvailableDeviceNumber(fabricCanvas, isCamera) {
+  const prefix = isCamera ? "Camera " : "Device ";
+  const usedNumbers = new Set();
+
+  fabricCanvas.getObjects().forEach((obj) => {
+    let text = "";
+    if (obj.textObject && obj.textObject.text) {
+      text = obj.textObject.text;
+    } else if (obj.type === "text" || obj.type === "i-text") {
+      text = obj.text;
+    }
+
+    if (text && text.startsWith(prefix)) {
+      const numStr = text.substring(prefix.length);
+      if (numStr.length > 0 && !isNaN(numStr)) {
+        const num = parseInt(numStr, 10);
+        usedNumbers.add(num);
+      }
+    }
+  });
+
+  let next = 1;
+  while (usedNumbers.has(next)) {
+    next++;
+  }
+  return next;
+}

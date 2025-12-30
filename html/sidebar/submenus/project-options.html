@@ -1,0 +1,106 @@
+<h5 class="drawing-tools-section-title" style="margin-top: 0px">Operations</h5>
+<div class="tools-grid">
+  <div class="tool-item" data-bs-toggle="modal" data-bs-target="#customModal">
+    <div class="tool-icon"><img src="./images/icons/upload-background.svg" alt="Background Icon" /></div>
+    <div class="tool-label">Background</div>
+  </div>
+
+  <div class="tool-item" id="clear-canvas-btn">
+    <div class="tool-icon"><img src="./images/icons/clear-canvas.svg" alt="Clear Canvas Icon" /></div>
+    <div class="tool-label">Clear Canvas</div>
+  </div>
+
+  <div class="tool-item" id="save-project-btn">
+    <div class="tool-icon"><img src="./images/icons/save.svg" alt="Save Icon" /></div>
+    <div class="tool-label">Save Project</div>
+  </div>
+
+  <div class="tool-item" id="load-project-btn">
+    <div class="tool-icon"><img src="./images/icons/open.svg" alt="Open Icon" /></div>
+    <div class="tool-label">Load Project</div>
+    <input type="file" id="load-project-input" accept=".json" style="display: none" />
+  </div>
+
+  <div class="tool-item" id="project-library-btn">
+    <div class="tool-icon"><img src="./images/icons/project-library.svg" alt="Project Library Icon" /></div>
+    <div class="tool-label">Project Library</div>
+  </div>
+
+  <div class="tool-item" id="change-scale-btn">
+    <div class="tool-icon"><img src="./images/icons/measurement.svg" alt="Change Scale Icon" /></div>
+    <div class="tool-label">Change Scale</div>
+  </div>
+
+  <div class="tool-item" id="replace-background-btn">
+    <div class="tool-icon"><img src="./images/icons/replace-background.svg" alt="Replace Background Icon" /></div>
+    <div class="tool-label">Replace BG</div>
+  </div>
+</div>
+
+<hr />
+
+<!-- Floor Management Section -->
+<h5 class="drawing-tools-section-title" style="margin-top: 0px">Floor Management</h5>
+
+<div class="mb-3">
+  <span class="form-label text-white" style="font-size: 0.9rem">Current Floor:</span>
+  <div class="d-flex align-items-center gap-2">
+    <button id="floor-prev" class="btn btn-sm">&lt;</button>
+    <div id="floor-display">Floor 1</div>
+    <button id="floor-next" class="btn btn-sm">&gt;</button>
+  </div>
+</div>
+
+<div class="mb-3">
+  <div class="d-flex gap-2">
+    <button id="floor-add" class="btn btn-sm">Add Floor</button>
+    <button id="floor-rename" class="btn btn-sm">Rename Floor</button>
+  </div>
+</div>
+
+<div class="mb-3">
+  <button id="floor-delete" class="btn btn-sm">Delete Floor</button>
+</div>
+
+<div class="mb-3">
+  <span class="form-label text-white">Quick Jump:</span>
+  <div class="d-flex flex-wrap gap-2" id="floor-quick-jump">
+    <!-- Floor buttons will be dynamically added here by JavaScript -->
+  </div>
+</div>
+
+<hr />
+
+<!-- Reports & Screenshots Section -->
+<h5 class="drawing-tools-section-title">Reports</h5>
+<div class="tools-grid">
+  <div class="tool-item" id="download-background-btn">
+    <div class="tool-icon"><img src="./images/icons/download.svg" alt="Download Icon" /></div>
+    <div class="tool-label">Download</div>
+  </div>
+
+  <div class="tool-item" id="generate-takeoff-btn">
+    <div class="tool-icon"><img src="./images/icons/takeoff.svg" alt="Takeoff Icon" /></div>
+    <div class="tool-label">Takeoff</div>
+  </div>
+
+  <div class="tool-item" id="print-btn">
+    <div class="tool-icon"><img src="./images/icons/print.svg" alt="Print Project Icon" /></div>
+    <div class="tool-label">Print Report</div>
+  </div>
+
+  <div class="tool-item" id="capture-screenshot-btn">
+    <div class="tool-icon"><img src="./images/icons/capture-screenshot.svg" alt="Capture Screenshot Icon" /></div>
+    <div class="tool-label">Screenshot</div>
+  </div>
+
+  <div class="tool-item" id="open-topology-builder-btn">
+    <div class="tool-icon"><img src="./images/icons/network-link.svg" alt="Topology Map Icon" /></div>
+    <div class="tool-label">Topology Map</div>
+  </div>
+</div>
+<div id="no-screenshot-taken" class="logo-preview"><span style="color: #999">No Screenshot Taken</span></div>
+
+<div id="screenshot-previews" style="margin-top: 10px">
+  <div data-include="html/modals/project/screenshot-preview.html"></div>
+</div>

@@ -5,7 +5,7 @@
 // - Coverage area drawing and icon positioning
 // Note: Side view diagram is in camera-diagram.js
 
-import { layers } from "../../canvas/canvas-layers.js";
+import { layers } from "../../canvas/interactions/LayerControls.js";
 import { angleDiff, createCoveragePoints } from "./camera-calculations.js";
 import { createDoriZones } from "./camera-dori.js";
 
@@ -30,7 +30,8 @@ export const updateSlider = (sliderId, inputId, value, min, max) => {
 // ============================================================================
 
 // Chooses the right dash pattern for the coverage edge
-const getStrokeDashArray = (edgeStyle) => (edgeStyle === "dashed" ? [10, 5] : edgeStyle === "dotted" ? [2, 2] : null);
+const getStrokeDashArray = (edgeStyle) =>
+  edgeStyle === "dashed" ? [10, 5] : edgeStyle === "dotted" ? [2, 2] : null;
 
 // Figures out where the resize icons should sit around the camera
 const calculateIconPositions = (camera, angleSpan, isFullCircle, center) => {
@@ -39,14 +40,25 @@ const calculateIconPositions = (camera, angleSpan, isFullCircle, center) => {
   const end = camera.coverageConfig.endAngle;
 
   return {
-    leftRad: fabric.util.degreesToRadians(isFullCircle || isSmallAngle ? (start - 5 + 360) % 360 : start),
+    leftRad: fabric.util.degreesToRadians(
+      isFullCircle || isSmallAngle ? (start - 5 + 360) % 360 : start
+    ),
     rightRad: fabric.util.degreesToRadians(isFullCircle || isSmallAngle ? (start + 5) % 360 : end),
     midRad: fabric.util.degreesToRadians((start + angleSpan / 2) % 360),
   };
 };
 
 // Moves and turns a resize icon so it lines up with the camera
-export const updateIconPosition = (icon, camera, center, angle, radius, iconScale, shouldShow, iconType) => {
+export const updateIconPosition = (
+  icon,
+  camera,
+  center,
+  angle,
+  radius,
+  iconScale,
+  shouldShow,
+  iconType
+) => {
   if (!icon) return;
 
   let adjustedRadius = radius;
@@ -119,7 +131,28 @@ export function updateCoverageDisplay(fabricCanvas, cameraIcon) {
 
   const center = cameraIcon.getCenterPoint();
   // Use imported angleDiff
-  const angleSpan = angleDiff(cameraIcon.coverageConfig.startAngle, cameraIcon.coverageConfig.endAngle);
+  const angleSpan = angleDiff(
+    cameraIcon.coverageConfig.startAngle,
+    cameraIcon.coverageConfig.endAngle
+  );
+
+  // Create a hash of current coverage state to avoid unnecessary updates
+  const currentState = {
+    center: `${center.x.toFixed(1)},${center.y.toFixed(1)}`,
+    angles: `${cameraIcon.coverageConfig.startAngle},${cameraIcon.coverageConfig.endAngle}`,
+    radius: cameraIcon.coverageConfig.radius,
+    minRange: cameraIcon.coverageConfig.minRange,
+    visible: cameraIcon.coverageConfig.visible,
+    doriEnabled: cameraIcon.coverageConfig.doriEnabled,
+    projectionMode: cameraIcon.coverageConfig.projectionMode,
+  };
+  const stateHash = JSON.stringify(currentState);
+
+  // Skip update if nothing changed
+  if (cameraIcon.lastCoverageState === stateHash) {
+    return;
+  }
+  cameraIcon.lastCoverageState = stateHash;
 
   if (cameraIcon.coverageArea) {
     // Clear the old coverage drawing before adding the new one
@@ -128,12 +161,16 @@ export function updateCoverageDisplay(fabricCanvas, cameraIcon) {
   }
 
   const opacitySlider = document.getElementById("camera-opacity-slider");
-  let opacity = cameraIcon.coverageConfig.opacity ?? (opacitySlider ? parseFloat(opacitySlider.value) : 0.3);
+  let opacity =
+    cameraIcon.coverageConfig.opacity ?? (opacitySlider ? parseFloat(opacitySlider.value) : 0.3);
   if (isNaN(opacity) || opacity < 0) opacity = 0.3;
   cameraIcon.coverageConfig.opacity = opacity;
 
   const baseColor = cameraIcon.coverageConfig.baseColor || "rgb(165, 155, 155)";
-  const fillColor = baseColor.replace(/rgb\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)\)/i, (_, r, g, b) => `rgba(${r}, ${g}, ${b}, ${opacity * layers.devices.opacity})`);
+  const fillColor = baseColor.replace(
+    /rgb\((\d+)\s*,\s*(\d+)\s*,\s*(\d+)\)/i,
+    (_, r, g, b) => `rgba(${r}, ${g}, ${b}, ${opacity * layers.devices.opacity})`
+  );
   cameraIcon.coverageConfig.fillColor = fillColor;
 
   const { radius, minRange = 0, doriEnabled, visible, edgeStyle } = cameraIcon.coverageConfig;
@@ -144,11 +181,24 @@ export function updateCoverageDisplay(fabricCanvas, cameraIcon) {
     const doriZones = doriEnabled ? createDoriZones(cameraIcon, fabricCanvas, commonProps) : [];
 
     if (doriZones.length > 0) {
-      coverageArea = new fabric.Group(doriZones, { ...commonProps, visible: visible && layers.devices.visible, isCoverage: true });
+      coverageArea = new fabric.Group(doriZones, {
+        ...commonProps,
+        visible: visible && layers.devices.visible,
+        isCoverage: true,
+      });
     } else {
       // Block coverage lines with walls so the shape hugs barriers
-      const walls = fabricCanvas.getObjects("line").filter((l) => l.isWallLine || l.startCircle || l.endCircle);
-      const points = createCoveragePoints(walls, cameraIcon, cameraIcon.coverageConfig.startAngle, cameraIcon.coverageConfig.endAngle, center.x, center.y);
+      const walls = fabricCanvas
+        .getObjects("line")
+        .filter((l) => l.isWallLine || l.startCircle || l.endCircle);
+      const points = createCoveragePoints(
+        walls,
+        cameraIcon,
+        cameraIcon.coverageConfig.startAngle,
+        cameraIcon.coverageConfig.endAngle,
+        center.x,
+        center.y
+      );
 
       coverageArea = new fabric.Polygon(points, {
         ...commonProps,
@@ -171,15 +221,50 @@ export function updateCoverageDisplay(fabricCanvas, cameraIcon) {
     coverageArea.setCoords();
   }
 
-  const { leftRad, rightRad, midRad } = calculateIconPositions(cameraIcon, angleSpan, angleSpan >= 359.9, center);
-  const shouldShow = fabricCanvas.getActiveObject() === cameraIcon && visible && layers.devices.visible;
+  const { leftRad, rightRad, midRad } = calculateIconPositions(
+    cameraIcon,
+    angleSpan,
+    angleSpan >= 359.9,
+    center
+  );
+  const shouldShow =
+    fabricCanvas.getActiveObject() === cameraIcon && visible && layers.devices.visible;
 
-  updateIconPosition(cameraIcon.leftResizeIcon, cameraIcon, center, leftRad, radius, 0.03, shouldShow, "left");
-  updateIconPosition(cameraIcon.rightResizeIcon, cameraIcon, center, rightRad, radius, 0.03, shouldShow, "right");
-  updateIconPosition(cameraIcon.rotateResizeIcon, cameraIcon, center, midRad, radius, 0.06, shouldShow, "rotate");
+  updateIconPosition(
+    cameraIcon.leftResizeIcon,
+    cameraIcon,
+    center,
+    leftRad,
+    radius,
+    0.03,
+    shouldShow,
+    "left"
+  );
+  updateIconPosition(
+    cameraIcon.rightResizeIcon,
+    cameraIcon,
+    center,
+    rightRad,
+    radius,
+    0.03,
+    shouldShow,
+    "right"
+  );
+  updateIconPosition(
+    cameraIcon.rotateResizeIcon,
+    cameraIcon,
+    center,
+    midRad,
+    radius,
+    0.06,
+    shouldShow,
+    "rotate"
+  );
 
   cameraIcon.bringToFront();
   if (cameraIcon.textObject?.visible) cameraIcon.textObject.bringToFront();
-  [cameraIcon.leftResizeIcon, cameraIcon.rightResizeIcon, cameraIcon.rotateResizeIcon].forEach((i) => i?.visible && i.bringToFront());
+  [cameraIcon.leftResizeIcon, cameraIcon.rightResizeIcon, cameraIcon.rotateResizeIcon].forEach(
+    (i) => i?.visible && i.bringToFront()
+  );
   fabricCanvas.requestRenderAll();
 }

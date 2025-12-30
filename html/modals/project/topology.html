@@ -1,0 +1,46 @@
+<!-- Topology Builder Modal -->
+<div class="modal fade custom-modal" id="topologyModal" tabindex="-1" aria-labelledby="topologyModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-header-content">
+          <div class="modal-header-left">
+            <h1 class="modal-title fs-5" id="topologyModalLabel">Topology Map</h1>
+          </div>
+          <div class="modal-header-right nav-buttons">
+            <button id="topology-autolayout" class="modal-header-btn">
+              <div class="icon-label">
+                <img src="images/icons/auto-layout-black.svg" alt="Auto Layout Icon" />
+                <span>Auto layout</span>
+              </div>
+            </button>
+            <button id="topology-add-screenshot" class="modal-header-btn">
+              <div class="icon-label">
+                <img src="images/icons/screenshot-black.svg" alt="Add Screenshot Icon" />
+                <span>Add Screenshot</span>
+              </div>
+            </button>
+            <button id="topology-print" class="modal-header-btn">
+              <div class="icon-label">
+                <img src="images/icons/print-black.svg" alt="Print Icon" />
+                <span>Print</span>
+              </div>
+            </button>
+            <button id="topology-download" class="modal-header-btn">
+              <div class="icon-label">
+                <img src="images/icons/download-black.svg" alt="Download Icon" />
+                <span>Download</span>
+              </div>
+            </button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-body" style="height: 70vh; display: flex">
+        <div id="topology-canvas-wrapper" style="flex: 1; border: 1px solid #ddd; border-radius: 6px; overflow: hidden; position: relative; background: #fff">
+          <canvas id="topology-canvas"></canvas>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

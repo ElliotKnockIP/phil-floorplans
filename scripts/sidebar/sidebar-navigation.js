@@ -1,8 +1,41 @@
 import { initializeDrawingTools } from "../drawing/drawing-utils.js";
-import { setupDeviceItemDrag } from "../devices/drag-drop-devices.js";
-import { setupReplaceBackgroundHandler } from "../background/select-background.js";
+import { BackgroundManager } from "../background/BackgroundManager.js";
+import { DEVICE_TYPE_TO_IMAGE } from "../devices/categories/device-types.js";
 
-document.addEventListener("DOMContentLoaded", function () {
+/**
+ * Sets up drag event listeners for device items in the sidebar.
+ */
+export function setupDeviceItemDrag() {
+  // Add drag event listeners to all device items
+  document.querySelectorAll(".device-item").forEach((item) => {
+    item.addEventListener("dragstart", function (e) {
+      const deviceType = this.dataset.device;
+      const imagePath = DEVICE_TYPE_TO_IMAGE[deviceType];
+
+      if (imagePath) {
+        // Set the image path as drag data to maintain compatibility with existing drop handler
+        e.dataTransfer.setData("text/plain", imagePath);
+        e.dataTransfer.effectAllowed = "copy";
+
+        // Add dragging class for visual feedback
+        this.classList.add("dragging");
+        document.body.classList.add("dragging");
+      }
+    });
+
+    item.addEventListener("dragend", function (e) {
+      // Remove dragging class
+      this.classList.remove("dragging");
+      document.body.classList.remove("dragging");
+    });
+  });
+}
+
+/**
+ * Initialize sidebar navigation functionality
+ * This is called after HTML includes are loaded
+ */
+export function initSidebarNavigation() {
   const subSidebar = document.getElementById("sub-sidebar");
   const subSidebarTitle = document.getElementById("sub-sidebar-title");
   const closeSidebarBtn = document.getElementById("close-sub-sidebar");
@@ -87,8 +120,7 @@ document.addEventListener("DOMContentLoaded", function () {
     });
   }
 
-  // Setup replace background handler
-  setupReplaceBackgroundHandler();
+  // Background handlers are now set up in canvas-init.js
 
   // Close sidebar when clicking outside of it
   document.addEventListener("click", function (event) {
@@ -195,4 +227,31 @@ document.addEventListener("DOMContentLoaded", function () {
       }
     });
   }
+
+  // Setup Safety risk assessment modal button
+  const openSafetyRiskModalBtn = document.getElementById("open-safety-risk-modal");
+  if (openSafetyRiskModalBtn) {
+    openSafetyRiskModalBtn.addEventListener("click", () => {
+      const modal = document.getElementById("safety-assessment-modal");
+      if (modal) {
+        const modalInstance = bootstrap.Modal.getOrCreateInstance(modal);
+        modalInstance.show();
+      }
+    });
+  }
+}
+
+// Initialize on DOMContentLoaded for backwards compatibility when HTML is inline
+// When using HTML includes, call initSidebarNavigation() after includes are loaded
+document.addEventListener("DOMContentLoaded", function () {
+  // Check if sidebar is already loaded (inline HTML)
+  const sidebar = document.getElementById("sidebar");
+  if (sidebar && sidebar.children.length > 0 && !sidebar.hasAttribute("data-include")) {
+    initSidebarNavigation();
+  }
+});
+
+// Also listen for htmlIncludesLoaded event when using the HTML loader
+document.addEventListener("htmlIncludesLoaded", function () {
+  initSidebarNavigation();
 });

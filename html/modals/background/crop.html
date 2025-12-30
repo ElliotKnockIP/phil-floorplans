@@ -1,0 +1,52 @@
+<!-- Crop Background Modal -->
+<div class="modal custom-modal" id="cropModal" tabindex="-1" aria-labelledby="cropModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-header-content">
+          <div class="modal-header-left">
+            <h1 class="modal-title fs-4" id="cropModalLabel">Crop Background</h1>
+          </div>
+          <div class="modal-header-center">
+            <div class="background-steps">
+              <span class="step finish">1</span>
+              <span>Source</span>
+            </div>
+            <span class="step-separator">></span>
+            <div class="background-steps">
+              <span class="step active">2</span>
+              <span>Crop</span>
+            </div>
+            <span class="step-separator">></span>
+            <div class="background-steps">
+              <span class="step">3</span>
+              <span>Scale</span>
+            </div>
+          </div>
+          <div class="modal-header-right nav-buttons">
+            <button id="crop-back-btn" class="modal-header-btn">
+              <div class="icon-label">
+                <img src="images/icons/back-black-arrow.svg" alt="Back Arrow" />
+                <span>Back</span>
+              </div>
+            </button>
+            <button id="crop-next-btn" class="modal-header-btn">
+              <div class="icon-label">
+                <span>Next</span>
+                <img src="images/icons/forward-black-arrow.svg" alt="Next Arrow" />
+              </div>
+            </button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="crop-container">
+          <div id="crop-result-container">
+            <img id="croppable-image" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

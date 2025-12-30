@@ -50,10 +50,6 @@ class SaveSystem {
       const drawingData = this.drawingSerializer.serializeDrawingObjects();
       const clientDetails = this.serializeClientDetails();
       const screenshots = this.serializeScreenshots();
-      const riskAssessment = this.serializeRiskAssessment();
-      const cctvRiskAssessment = this.serializeCctvRiskAssessment();
-      const accessControlRiskAssessment = this.serializeAccessControlRiskAssessment();
-
       // Serialize topology data with error handling
       let topologyData;
       try {
@@ -112,9 +108,6 @@ class SaveSystem {
         canvas: canvasData,
         clientDetails,
         screenshots,
-        riskAssessment,
-        cctvRiskAssessment,
-        accessControlRiskAssessment,
         topology: topologyData,
         settings,
       };
@@ -175,6 +168,7 @@ class SaveSystem {
           window.zones = [];
           window.rooms = [];
           window.risks = [];
+          window.safetyZones = [];
 
           // Apply settings
           const savedSettings = projectData.settings || {};
@@ -204,10 +198,6 @@ class SaveSystem {
           // Sidebar data
           if (projectData.clientDetails) await this.loadClientDetailsToSidebar(projectData.clientDetails);
           if (projectData.screenshots) await this.loadScreenshotsToSidebar(projectData.screenshots);
-          if (projectData.riskAssessment) await this.loadRiskAssessmentToSidebar(projectData.riskAssessment);
-          if (projectData.cctvRiskAssessment) await this.loadCctvRiskAssessmentToSidebar(projectData.cctvRiskAssessment);
-          if (projectData.accessControlRiskAssessment) await this.loadAccessControlRiskAssessmentToSidebar(projectData.accessControlRiskAssessment);
-
           // Background first
           if (projectData.canvas?.objects) {
             const backgroundObjects = projectData.canvas.objects.filter((obj) => obj.type === "image" && (obj.isBackground || (!obj.selectable && !obj.evented)));

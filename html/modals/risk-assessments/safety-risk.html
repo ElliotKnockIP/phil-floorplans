@@ -1,0 +1,61 @@
+<!-- Safety Risk Assessment Modal -->
+<div class="modal fade custom-modal" id="safety-assessment-modal" tabindex="-1" aria-labelledby="safetyAssessmentModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-header-content">
+          <div class="modal-header-left">
+            <h1 class="modal-title fs-5" id="safetyAssessmentModalLabel">Safety Risk Assessment</h1>
+          </div>
+          <div class="modal-header-right nav-buttons">
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-body">
+        <!-- Hotspots Overview -->
+        <div class="card mb-3 risk-assessment-card" id="hotspots-overview-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Safety Hotspots</h5>
+            <div class="table-responsive">
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th style="width: 20%">Hotspot</th>
+                    <th style="width: 20%">Severity</th>
+                    <th style="width: 60%">Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="hotspots-assessment-tbody">
+                  <!-- Hotspots will be populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Safety Areas Overview -->
+        <div class="card mb-3 risk-assessment-card" id="safety-assessment-overview-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Safety Risk Areas Overview</h5>
+            <div class="table-responsive">
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th style="width: 15%">Risk Area</th>
+                    <th style="width: 15%">Risk Assessment</th>
+                    <th style="width: 35%">Control Measures</th>
+                    <th style="width: 35%">Notes</th>
+                  </tr>
+                </thead>
+                <tbody id="safety-assessment-tbody">
+                  <!-- Safety assessments will be populated dynamically -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

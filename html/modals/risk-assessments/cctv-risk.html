@@ -1,0 +1,418 @@
+<!-- CCTV Risk Assessment Modal -->
+<div class="modal fade custom-modal" id="cctv-risk-assessment-modal" tabindex="-1" aria-labelledby="cctvRiskAssessmentModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-header-content">
+          <div class="modal-header-left">
+            <h1 class="modal-title fs-5" id="cctvRiskAssessmentModalLabel">CCTV Risk Assessment</h1>
+          </div>
+          <div class="modal-header-right nav-buttons">
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-body">
+        <!-- Premises Section -->
+        <div class="card mb-3 risk-assessment-card" id="cctv-risk-premises-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Premises</h5>
+            <div class="row g-2">
+              <div class="col-12 col-md-6">
+                <label for="cctv-risk-premises-type" class="form-label">Premises Type</label>
+                <select id="cctv-risk-premises-type" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="domestic">Domestic</option>
+                  <option value="commercial">Commercial</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="cctv-risk-opening-times" class="form-label">Opening Times</label>
+                <select id="cctv-risk-opening-times" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="8am-6pm">8am-6pm</option>
+                  <option value="late-opening">Late Opening</option>
+                  <option value="24-hour">24 Hr M-F</option>
+                  <option value="live-on-property">Live on Property</option>
+                  <option value="unoccupied-for-long-periods">Unoccupied for Long Periods</option>
+                  <option value="unoccupied">Unoccupied</option>
+                  <option value="na">N/A</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Requirements Section -->
+        <div class="card mb-3 risk-assessment-card" id="cctv-risk-user-requirements-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">User Requirements</h5>
+            <div class="row g-2">
+              <div class="col-12">
+                <label for="cctv-risk-user-requirements" class="form-label"></label>
+                <textarea id="cctv-risk-user-requirements" class="form-control survey-textarea" rows="3"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Access Section -->
+        <div class="card mb-3 risk-assessment-card" id="cctv-risk-access-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Access</h5>
+            <div class="table-responsive">
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Access Elevation</th>
+                    <th>Ease of Access</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Front</td>
+                    <td>
+                      <select id="cctv-risk-access-front-ease" class="form-select form-select-sm">
+                        <option value="">Select...</option>
+                        <option value="easy">Easy</option>
+                        <option value="controlled">Controlled</option>
+                        <option value="restricted">Restricted</option>
+                        <option value="na">N/A</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" id="cctv-risk-access-front-notes" class="form-control form-control-sm" placeholder="" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Side 1</td>
+                    <td>
+                      <select id="cctv-risk-access-side1-ease" class="form-select form-select-sm">
+                        <option value="">Select...</option>
+                        <option value="easy">Easy</option>
+                        <option value="controlled">Controlled</option>
+                        <option value="restricted">Restricted</option>
+                        <option value="na">N/A</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" id="cctv-risk-access-side1-notes" class="form-control form-control-sm" placeholder="" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Side 2</td>
+                    <td>
+                      <select id="cctv-risk-access-side2-ease" class="form-select form-select-sm">
+                        <option value="">Select...</option>
+                        <option value="easy">Easy</option>
+                        <option value="controlled">Controlled</option>
+                        <option value="restricted">Restricted</option>
+                        <option value="na">N/A</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" id="cctv-risk-access-side2-notes" class="form-control form-control-sm" placeholder="" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Rear</td>
+                    <td>
+                      <select id="cctv-risk-access-rear-ease" class="form-select form-select-sm">
+                        <option value="">Select...</option>
+                        <option value="easy">Easy</option>
+                        <option value="controlled">Controlled</option>
+                        <option value="restricted">Restricted</option>
+                        <option value="na">N/A</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" id="cctv-risk-access-rear-notes" class="form-control form-control-sm" placeholder="" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Roof</td>
+                    <td>
+                      <select id="cctv-risk-access-roof-ease" class="form-select form-select-sm">
+                        <option value="">Select...</option>
+                        <option value="easy">Easy</option>
+                        <option value="controlled">Controlled</option>
+                        <option value="restricted">Restricted</option>
+                        <option value="na">N/A</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" id="cctv-risk-access-roof-notes" class="form-control form-control-sm" placeholder="" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Garage</td>
+                    <td>
+                      <select id="cctv-risk-access-garage-ease" class="form-select form-select-sm">
+                        <option value="">Select...</option>
+                        <option value="easy">Easy</option>
+                        <option value="controlled">Controlled</option>
+                        <option value="restricted">Restricted</option>
+                        <option value="na">N/A</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" id="cctv-risk-access-garage-notes" class="form-control form-control-sm" placeholder="" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Shed/Store</td>
+                    <td>
+                      <select id="cctv-risk-access-shed-ease" class="form-select form-select-sm">
+                        <option value="">Select...</option>
+                        <option value="easy">Easy</option>
+                        <option value="controlled">Controlled</option>
+                        <option value="restricted">Restricted</option>
+                        <option value="na">N/A</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" id="cctv-risk-access-shed-notes" class="form-control form-control-sm" placeholder="" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Controlled Access Closed Site</td>
+                    <td>
+                      <select id="cctv-risk-access-controlled-ease" class="form-select form-select-sm">
+                        <option value="">Select...</option>
+                        <option value="easy">Easy</option>
+                        <option value="controlled">Controlled</option>
+                        <option value="restricted">Restricted</option>
+                        <option value="na">N/A</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" id="cctv-risk-access-controlled-notes" class="form-control form-control-sm" placeholder="" />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Crime Risk Assessment Section -->
+        <div class="card mb-3 risk-assessment-card" id="cctv-risk-crime-assessment-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Crime Risk Assessment</h5>
+            <div class="row g-2">
+              <div class="col-12 col-md-6">
+                <label for="cctv-risk-area-crime-rating" class="form-label">Area Crime Rating</label>
+                <select id="cctv-risk-area-crime-rating" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="low">Low</option>
+                  <option value="nominal">Nominal</option>
+                  <option value="high">High</option>
+                  <option value="very-high">Very High</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Current Risk Section -->
+            <div class="mt-4">
+              <div class="table-responsive">
+                <table class="table table-bordered">
+                  <thead>
+                    <tr>
+                      <th style="width: 30%">Current Risk</th>
+                      <th style="width: 35%">Risk if Loss Value</th>
+                      <th style="width: 35%">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Property</td>
+                      <td>
+                        <input type="number" id="cctv-risk-property-loss-value" class="form-control form-control-sm" placeholder="" />
+                      </td>
+                      <td>
+                        <input type="text" id="cctv-risk-property-notes" class="form-control form-control-sm" placeholder="" />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Stock</td>
+                      <td>
+                        <input type="number" id="cctv-risk-stock-loss-value" class="form-control form-control-sm" placeholder="" />
+                      </td>
+                      <td>
+                        <input type="text" id="cctv-risk-stock-notes" class="form-control form-control-sm" placeholder="" />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Damage</td>
+                      <td>
+                        <input type="number" id="cctv-risk-damage-loss-value" class="form-control form-control-sm" placeholder="" />
+                      </td>
+                      <td>
+                        <input type="text" id="cctv-risk-damage-notes" class="form-control form-control-sm" placeholder="" />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="mt-3 d-flex justify-content-center">
+                <div class="form-check d-flex align-items-center">
+                  <input class="form-check-input" type="checkbox" id="cctv-risk-no-disclose-crime-theft" />
+                  <label class="form-check-label" for="cctv-risk-no-disclose-crime-theft"> Client does not wish to disclose a Crime & Theft Record </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- CCTV VSS System Requirements Section -->
+        <div class="card mb-3 risk-assessment-card" id="cctv-risk-system-requirements-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">CCTV VSS System Requirements</h5>
+            <h6 class="card-subtitle mb-3" style="font-weight: bold">System Requirements</h6>
+            <div class="row g-2">
+              <div class="col-12 col-md-4">
+                <label for="cctv-risk-system-recording-days" class="form-label">System Recording Days</label>
+                <input type="number" id="cctv-risk-system-recording-days" class="form-control" placeholder="" />
+              </div>
+              <div class="col-12 col-md-4">
+                <label for="cctv-risk-recording-quality" class="form-label">Recording Quality</label>
+                <select id="cctv-risk-recording-quality" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="low">Low</option>
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-4">
+                <label class="form-label">Monitoring Required</label>
+                <div class="d-flex align-items-center gap-3">
+                  <div class="form-check d-flex align-items-center">
+                    <input class="form-check-input" type="radio" name="cctv-risk-monitoring-required" id="cctv-risk-monitoring-required-yes" value="yes" />
+                    <label class="form-check-label" for="cctv-risk-monitoring-required-yes">Yes</label>
+                  </div>
+                  <div class="form-check d-flex align-items-center">
+                    <input class="form-check-input" type="radio" name="cctv-risk-monitoring-required" id="cctv-risk-monitoring-required-no" value="no" checked />
+                    <label class="form-check-label" for="cctv-risk-monitoring-required-no">No</label>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="row g-2 mt-4">
+              <div class="col-12 col-md-6">
+                <label for="cctv-risk-recording-equipment" class="form-label">Recording Equipment (NVR Type) Specified</label>
+                <input type="text" id="cctv-risk-recording-equipment" class="form-control" placeholder="" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="cctv-risk-approximate-storage" class="form-label">Approximate Storage (TB)</label>
+                <input type="number" id="cctv-risk-approximate-storage" class="form-control" placeholder="" step="0.01" />
+              </div>
+            </div>
+
+            <div class="table-responsive mt-4">
+              <table class="table table-bordered" style="margin-bottom: 0">
+                <thead>
+                  <tr>
+                    <th style="font-weight: bold; text-align: left">Network Connections & Router if Required</th>
+                    <th style="font-weight: bold; text-align: center">Installed</th>
+                    <th style="font-weight: bold; text-align: center">Type</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td style="vertical-align: middle">Network Connection Required</td>
+                    <td style="vertical-align: middle; text-align: center">
+                      <div class="d-flex align-items-center justify-content-center gap-3">
+                        <div class="form-check d-flex align-items-center">
+                          <input class="form-check-input" type="radio" name="cctv-risk-network-connection-installed" id="cctv-risk-network-connection-installed-yes" value="yes" />
+                          <label class="form-check-label" for="cctv-risk-network-connection-installed-yes">Yes</label>
+                        </div>
+                        <div class="form-check d-flex align-items-center">
+                          <input class="form-check-input" type="radio" name="cctv-risk-network-connection-installed" id="cctv-risk-network-connection-installed-no" value="no" />
+                          <label class="form-check-label" for="cctv-risk-network-connection-installed-no">No</label>
+                        </div>
+                      </div>
+                    </td>
+                    <td style="vertical-align: middle">
+                      <input type="text" id="cctv-risk-network-connection-type" class="form-control" placeholder="" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td style="vertical-align: middle">Network Router & Network Security Installed</td>
+                    <td style="vertical-align: middle; text-align: center">
+                      <div class="d-flex align-items-center justify-content-center gap-3">
+                        <div class="form-check d-flex align-items-center">
+                          <input class="form-check-input" type="radio" name="cctv-risk-network-router-installed" id="cctv-risk-network-router-installed-yes" value="yes" />
+                          <label class="form-check-label" for="cctv-risk-network-router-installed-yes">Yes</label>
+                        </div>
+                        <div class="form-check d-flex align-items-center">
+                          <input class="form-check-input" type="radio" name="cctv-risk-network-router-installed" id="cctv-risk-network-router-installed-no" value="no" />
+                          <label class="form-check-label" for="cctv-risk-network-router-installed-no">No</label>
+                        </div>
+                      </div>
+                    </td>
+                    <td style="vertical-align: middle">
+                      <input type="text" id="cctv-risk-network-router-type" class="form-control" placeholder="" />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+
+            <h6 class="card-subtitle mb-3 mt-4" style="font-weight: bold">Additional Equipment or Notes</h6>
+            <div class="row g-2">
+              <div class="col-12">
+                <label for="cctv-risk-additional-equipment-notes" class="form-label"></label>
+                <textarea id="cctv-risk-additional-equipment-notes" class="form-control survey-textarea" rows="3"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Risk Assessment Outcome Section -->
+        <div class="card mb-3 risk-assessment-card" id="cctv-risk-assessment-outcome-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Risk Assessment Outcome</h5>
+            <div class="row g-2">
+              <div class="col-12 col-md-6">
+                <label for="cctv-risk-vss-standard" class="form-label">VSS Standard</label>
+                <select id="cctv-risk-vss-standard" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="not-certificated">Not Certificated</option>
+                  <option value="ssaib-ss2002">SSAIB SS2002</option>
+                  <option value="nsi-ncp-104-3">NSI NCP 104.3</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="cctv-risk-monitoring" class="form-label">Monitoring</label>
+                <select id="cctv-risk-monitoring" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="self-monitored">Self Monitored</option>
+                  <option value="police-monitored">Police Monitored</option>
+                  <option value="monitored-commercial-non-police">Monitored Commercial non police</option>
+                  <option value="not-monitored">Not Monitored</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="cctv-risk-arc-name" class="form-label">ARC Name</label>
+                <input type="text" id="cctv-risk-arc-name" class="form-control" placeholder="" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="cctv-risk-alarm-response" class="form-label">Alarm Response</label>
+                <select id="cctv-risk-alarm-response" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="neighbour">Neighbour</option>
+                  <option value="keyholder">Keyholder</option>
+                  <option value="security-company">Security Company</option>
+                  <option value="police">Police</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

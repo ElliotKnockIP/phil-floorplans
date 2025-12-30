@@ -1,5 +1,5 @@
 // Handles touch drag-drop for devices and pinch-to-zoom/pan for Fabric canvas
-import { addCameraCoverage } from "../devices/camera/camera-core.js";
+import { DeviceFactory } from "../devices/DeviceFactory.js";
 
 (function () {
   // Waits until window.fabricCanvas is available
@@ -28,142 +28,7 @@ import { addCameraCoverage } from "../devices/camera/camera-core.js";
     const canvasX = (localX - vpt[4]) / zoom;
     const canvasY = (localY - vpt[5]) / zoom;
 
-    const isCamera = options.isCamera === true || imgSrc.includes("camera");
-    window.cameraCounter = window.cameraCounter || 1;
-    window.deviceCounter = window.deviceCounter || 1;
-    const labelText = isCamera ? `Camera ${window.cameraCounter++}` : `Device ${window.deviceCounter++}`;
-
-    window.fabric.Image.fromURL(
-      imgSrc,
-      (img) => {
-        const defaultIconSize = Math.max(1, Math.min(100, window.defaultDeviceIconSize || 30));
-        const scaleFactor = defaultIconSize / 30;
-
-        img.set({
-          scaleX: defaultIconSize / img.width,
-          scaleY: defaultIconSize / img.height,
-          originX: "center",
-          originY: "center",
-          deviceType: options.deviceType || imgSrc.split("/").pop(),
-          coverageConfig: isCamera
-            ? {
-                startAngle: 270,
-                endAngle: 0,
-                fillColor: "rgba(165, 155, 155, 0.3)",
-                visible: true,
-                radius: 175,
-                isInitialized: true,
-                opacity: 0.3,
-              }
-            : null,
-        });
-
-        const circleRadius = 20 * scaleFactor;
-        const circle = new window.fabric.Circle({
-          radius: circleRadius,
-          fill: "#f8794b",
-          originX: "center",
-          originY: "center",
-        });
-
-        const group = new window.fabric.Group([circle, img], {
-          left: canvasX,
-          top: canvasY,
-          originX: "center",
-          originY: "center",
-          selectable: true,
-          hasControls: false,
-          borderColor: "#000000",
-          borderScaleFactor: 2,
-          hoverCursor: isCamera ? "move" : "default",
-          scaleFactor: scaleFactor,
-        });
-
-        // Ensure device has a stable id for topology
-        if (!group.id) {
-          group.id = `device_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
-        }
-
-        group.initialLabelText = labelText;
-        group.deviceType = img.deviceType;
-        group.coverageConfig = img.coverageConfig;
-        group.location = "";
-        group.mountedPosition = "";
-        group.partNumber = "";
-        group.stockNumber = "";
-        group.ipAddress = "";
-        group.subnetMask = "";
-        group.gatewayAddress = "";
-        group.macAddress = "";
-
-        const fontSize = 12 * scaleFactor;
-        const text = new window.fabric.Text(labelText, {
-          left: canvasX,
-          top: canvasY + circleRadius + 10,
-          fontFamily: "Poppins, sans-serif",
-          fontSize: fontSize,
-          fill: "#FFFFFF",
-          selectable: false,
-          backgroundColor: "rgba(20, 18, 18, 0.8)",
-          originX: "center",
-          originY: "top",
-          isDeviceLabel: true,
-          visible: true,
-        });
-
-        group.textObject = text;
-
-        group.on("moving", () => {
-          const center = group.getCenterPoint();
-          const sf = group.scaleFactor || 1;
-          text.set({ left: center.x, top: center.y + 20 * sf + 10 });
-          text.setCoords();
-          group.bringToFront();
-          if (text.visible !== false) text.bringToFront();
-          fabricCanvas.requestRenderAll();
-        });
-
-        text.on("changed", () => {
-          const center = group.getCenterPoint();
-          const sf = group.scaleFactor || 1;
-          text.set({ left: center.x, top: center.y + 20 * sf + 10 });
-          text.setCoords();
-          fabricCanvas.renderAll();
-        });
-
-        group.on("selected", () => {
-          if (window.suppressDeviceProperties) return;
-          window.showDeviceProperties(group.deviceType, group.textObject, group);
-          group.bringToFront();
-          if (text.visible !== false) text.bringToFront();
-          fabricCanvas.renderAll();
-        });
-
-        group.on("deselected", () => window.hideDeviceProperties && window.hideDeviceProperties());
-
-        group.on("removed", () => {
-          if (text) fabricCanvas.remove(text);
-          if (group.coverageArea) fabricCanvas.remove(group.coverageArea);
-          if (group.leftResizeIcon) fabricCanvas.remove(group.leftResizeIcon);
-          if (group.rightResizeIcon) fabricCanvas.remove(group.rightResizeIcon);
-          if (group.rotateResizeIcon) fabricCanvas.remove(group.rotateResizeIcon);
-          fabricCanvas.renderAll();
-        });
-
-        fabricCanvas.add(group);
-        fabricCanvas.add(text);
-        group.bringToFront();
-        if (text.visible !== false) text.bringToFront();
-        fabricCanvas.setActiveObject(group);
-
-        if (isCamera) {
-          addCameraCoverage(fabricCanvas, group);
-        }
-
-        fabricCanvas.renderAll();
-      },
-      { crossOrigin: "anonymous" }
-    );
+    DeviceFactory.createDevice(fabricCanvas, imgSrc, canvasX, canvasY, options);
   }
 
   // Setup touch-based device dragging from sidebar
@@ -183,7 +48,11 @@ import { addCameraCoverage } from "../devices/camera/camera-core.js";
         const canvasRect = canvasElement.getBoundingClientRect();
         const x = commitEvent.changedTouches[0].clientX;
         const y = commitEvent.changedTouches[0].clientY;
-        const overCanvas = x >= canvasRect.left && x <= canvasRect.right && y >= canvasRect.top && y <= canvasRect.bottom;
+        const overCanvas =
+          x >= canvasRect.left &&
+          x <= canvasRect.right &&
+          y >= canvasRect.top &&
+          y <= canvasRect.bottom;
         if (overCanvas) {
           createDeviceOnCanvas(fabricCanvas, dragState.imgSrc, x, y, dragState.options || {});
         }
@@ -201,7 +70,9 @@ import { addCameraCoverage } from "../devices/camera/camera-core.js";
       dragState.lastY = t.clientY;
       const ghost = dragState.ghost;
       if (ghost) {
-        ghost.style.transform = `translate(${dragState.lastX - dragState.offsetX}px, ${dragState.lastY - dragState.offsetY}px)`;
+        ghost.style.transform = `translate(${dragState.lastX - dragState.offsetX}px, ${
+          dragState.lastY - dragState.offsetY
+        }px)`;
       }
       e.preventDefault();
     }
@@ -224,7 +95,10 @@ import { addCameraCoverage } from "../devices/camera/camera-core.js";
           const dragOptions = isCustom
             ? {
                 isCamera: deviceItem.dataset.isCamera === "1",
-                deviceType: deviceItem.dataset.isCamera === "1" ? "custom-camera-icon.png" : "custom-device-icon.png",
+                deviceType:
+                  deviceItem.dataset.isCamera === "1"
+                    ? "custom-camera-icon.png"
+                    : "custom-device-icon.png",
               }
             : {};
 
@@ -304,10 +178,20 @@ import { addCameraCoverage } from "../devices/camera/camera-core.js";
 
       longPressTimer = setTimeout(() => {
         try {
-          const pointer = fabricCanvas.getPointer({ clientX: touch.clientX, clientY: touch.clientY }, true);
-          longPressTarget = fabricCanvas.findTarget({ clientX: touch.clientX, clientY: touch.clientY });
+          const pointer = fabricCanvas.getPointer(
+            { clientX: touch.clientX, clientY: touch.clientY },
+            true
+          );
+          longPressTarget = fabricCanvas.findTarget({
+            clientX: touch.clientX,
+            clientY: touch.clientY,
+          });
 
-          if (longPressTarget && window._fabricContextMenu && typeof window._fabricContextMenu.showMenu === "function") {
+          if (
+            longPressTarget &&
+            window._fabricContextMenu &&
+            typeof window._fabricContextMenu.showMenu === "function"
+          ) {
             window._fabricContextMenu.showMenu(longPressTarget, touch.clientX, touch.clientY);
           }
         } catch (err) {
@@ -450,4 +334,3 @@ import { addCameraCoverage } from "../devices/camera/camera-core.js";
     init();
   }
 })();
-

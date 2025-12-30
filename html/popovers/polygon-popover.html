@@ -1,0 +1,402 @@
+<!-- Polygon Properties Popover (Zones & Rooms) - Updated with Navigation -->
+<div class="property-popover" id="polygon-popover" style="display: none">
+  <div class="popover-arrow"></div>
+  <div class="popover-header">
+    <span id="polygon-popover-title">Zone Properties</span>
+    <button id="polygon-popover-close" style="background: none; border: none; color: white; cursor: pointer; font-size: 18px">×</button>
+  </div>
+
+  <div class="panel-navigation">
+    <div class="nav-item active" data-panel="details">Details</div>
+    <div class="nav-item" data-panel="appearance">Appearance</div>
+  </div>
+
+  <div class="sliding-panels">
+    <!-- Panel: Details -->
+    <div class="slide-panel active" data-panel="details">
+      <!-- Zone Properties -->
+      <div id="zone-properties">
+        <div class="mb-3">
+          <label for="zone-label-input" class="form-label">Zone Name:</label>
+          <input type="text" class="form-control" id="zone-label-input" placeholder="Enter zone name" />
+        </div>
+
+        <div class="mb-3">
+          <label for="zone-number-input" class="form-label">Zone Number:</label>
+          <input type="text" class="form-control" id="zone-number-input" placeholder="Enter zone number" />
+        </div>
+
+        <div class="mb-3">
+          <label for="zone-resistance-value-input" class="form-label">Zone Resistance Value:</label>
+          <input type="text" class="form-control" id="zone-resistance-value-input" placeholder="Enter zone resistance value" />
+        </div>
+
+        <div class="mb-3">
+          <label for="zone-notes-input" class="form-label">Zone Notes:</label>
+          <input type="text" class="form-control" id="zone-notes-input" placeholder="Enter zone notes" />
+        </div>
+
+        <div class="mb-3">
+          <label for="zone-height-slider" class="form-label">Zone Height (m):</label>
+          <div class="slider-group">
+            <input type="range" class="form-range flex-grow-1 slider" id="zone-height-slider" min="1" max="10" step="0.1" value="2.4" />
+            <span id="zone-height-input" class="slider-value">2.4m</span>
+          </div>
+          <small id="zone-warning" class="text-warning"></small>
+        </div>
+
+        <div class="mb-3">
+          <span class="form-label">Devices in Zone:</span>
+          <div id="zone-devices-list" class="bg-light p-2 rounded text-dark" style="max-height: 200px; overflow-y: auto"></div>
+        </div>
+      </div>
+
+      <!-- Room Properties -->
+      <div id="room-properties" style="display: none">
+        <div class="mb-3">
+          <label for="room-label-input" class="form-label">Room Name:</label>
+          <input type="text" class="form-control" id="room-label-input" placeholder="Enter room name" />
+        </div>
+
+        <div class="mb-3">
+          <label for="room-notes-input" class="form-label">Room Notes:</label>
+          <input type="text" class="form-control" id="room-notes-input" placeholder="Enter room notes" />
+        </div>
+
+        <div class="mb-3">
+          <label for="room-height-slider" class="form-label">Room Height (m):</label>
+          <div class="slider-group">
+            <input type="range" class="form-range flex-grow-1 slider" id="room-height-slider" min="1" max="10" step="0.1" value="2.4" />
+            <span id="room-height-input" class="slider-value">2.4m</span>
+          </div>
+          <small id="room-warning" class="text-warning"></small>
+        </div>
+
+        <div class="mb-3">
+          <span class="form-label">Devices in Room:</span>
+          <div id="room-devices-list" class="bg-light p-2 rounded text-dark" style="max-height: 200px; overflow-y: auto"></div>
+        </div>
+      </div>
+
+      <!-- Risk Properties -->
+      <div id="risk-properties" style="display: none">
+        <div class="mb-3">
+          <label for="risk-label-input" class="form-label">Risk Name:</label>
+          <input type="text" class="form-control" id="risk-label-input" placeholder="Enter risk name" />
+        </div>
+
+        <div class="mb-3">
+          <label for="risk-notes-input" class="form-label">Risk Notes:</label>
+          <input type="text" class="form-control" id="risk-notes-input" placeholder="Enter risk description" />
+        </div>
+
+        <div class="mb-3">
+          <label for="risk-ease-select" class="form-label">Ease of Access:</label>
+          <select class="form-select" id="risk-ease-select">
+            <option value="">Select...</option>
+            <option value="easy">Easy</option>
+            <option value="controlled">Controlled</option>
+            <option value="restricted">Restricted</option>
+            <option value="na">N/A</option>
+          </select>
+        </div>
+
+        <div class="mb-3">
+          <span class="form-label">Access Points in Risk Area:</span>
+          <div id="risk-devices-list" class="bg-light p-2 rounded text-dark" style="max-height: 200px; overflow-y: auto"></div>
+        </div>
+      </div>
+
+      <!-- Safety Properties -->
+      <div id="safety-properties" style="display: none">
+        <div class="mb-3">
+          <label for="safety-label-input" class="form-label">Safety Area Name:</label>
+          <input type="text" class="form-control" id="safety-label-input" placeholder="Enter safety area name" />
+        </div>
+
+        <div class="mb-3">
+          <label for="safety-notes-input" class="form-label">General Notes:</label>
+          <input type="text" class="form-control" id="safety-notes-input" placeholder="Enter general notes" />
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label">Risk Assessments:</label>
+          <div id="safety-sub-details-list" class="mb-2" style="max-height: 300px; overflow-y: auto"></div>
+          <button type="button" class="btn btn-sm btn-outline-primary w-100" id="safety-add-sub-detail-btn"><i class="bi bi-plus"></i> Add Risk Assessment</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Zone Panel: Appearance -->
+    <div class="slide-panel" data-panel="appearance">
+      <div id="zone-appearance-properties">
+        <div class="row mb-3">
+          <div class="col-6">
+            <div class="checkbox-group">
+              <input class="form-check-input" type="checkbox" id="zone-name-toggle" checked />
+              <label class="form-check-label" for="zone-name-toggle"> Show Name </label>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="checkbox-group">
+              <input class="form-check-input" type="checkbox" id="zone-area-toggle" />
+              <label class="form-check-label" for="zone-area-toggle"> Show Area </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-6">
+            <div class="checkbox-group">
+              <input class="form-check-input" type="checkbox" id="zone-volume-toggle" />
+              <label class="form-check-label" for="zone-volume-toggle"> Show Volume </label>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="checkbox-group">
+              <input class="form-check-input" type="checkbox" id="zone-notes-toggle" />
+              <label class="form-check-label" for="zone-notes-toggle"> Show Notes </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <span class="form-label">Zone Colour:</span>
+          <div class="change-zone-colour colour-palette">
+            <div class="colour-icon" data-color="#E05252" style="background-color: #e05252"></div>
+            <div class="colour-icon" data-color="#52E052" style="background-color: #52e052"></div>
+            <div class="colour-icon" data-color="#5252E0" style="background-color: #5252e0"></div>
+            <div class="colour-icon" data-color="#E0E052" style="background-color: #e0e052"></div>
+            <div class="colour-icon" data-color="#52E0E0" style="background-color: #52e0e0"></div>
+            <div class="colour-icon" data-color="#E052E0" style="background-color: #e052e0"></div>
+            <div class="colour-icon" data-color="#00BFFF" style="background-color: #00bfff"></div>
+            <label class="colour-picker-icon">
+              <input type="color" id="zone-color-picker" />
+              <span>🎨</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="zone-text-size-slider" class="form-label">Zone Text Size (px):</label>
+          <div class="slider-group">
+            <input type="range" class="form-range flex-grow-1 slider" id="zone-text-size-slider" min="1" max="100" step="1" value="15" />
+            <span id="zone-text-size-input" class="slider-value">15px</span>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <span class="form-label">Zone Text Colour:</span>
+          <div class="zone-text-colour colour-palette">
+            <div class="colour-icon" data-color="#000000" style="background-color: #000000"></div>
+            <div class="colour-icon" data-color="#4A4A4A" style="background-color: #4a4a4a"></div>
+            <div class="colour-icon" data-color="#B22222" style="background-color: #b22222"></div>
+            <div class="colour-icon" data-color="#228B22" style="background-color: #228b22"></div>
+            <div class="colour-icon" data-color="#1E3A8A" style="background-color: #1e3a8a"></div>
+            <div class="colour-icon" data-color="#5B2C6F" style="background-color: #5b2c6f"></div>
+            <div class="colour-icon" data-color="#2f4f4f" style="background-color: #2f4f4f"></div>
+            <label class="colour-picker-icon">
+              <input type="color" id="zone-text-color-picker" />
+              <span>🎨</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Room Appearance Properties -->
+      <div id="room-appearance-properties" style="display: none">
+        <div class="row mb-3">
+          <div class="col-6">
+            <div class="checkbox-group">
+              <input class="form-check-input" type="checkbox" id="room-name-toggle" checked />
+              <label class="form-check-label" for="room-name-toggle"> Show Name </label>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="checkbox-group">
+              <input class="form-check-input" type="checkbox" id="room-area-toggle" />
+              <label class="form-check-label" for="room-area-toggle"> Show Area </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="row mb-3">
+          <div class="col-6">
+            <div class="checkbox-group">
+              <input class="form-check-input" type="checkbox" id="room-volume-toggle" />
+              <label class="form-check-label" for="room-volume-toggle"> Show Volume </label>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="checkbox-group">
+              <input class="form-check-input" type="checkbox" id="room-notes-toggle" />
+              <label class="form-check-label" for="room-notes-toggle"> Show Notes </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <span class="form-label">Room Outline Color:</span>
+          <div class="change-room-colour colour-palette">
+            <div class="colour-icon" data-color="#0066cc" style="background-color: #0066cc"></div>
+            <div class="colour-icon" data-color="#cc0066" style="background-color: #cc0066"></div>
+            <div class="colour-icon" data-color="#66cc00" style="background-color: #66cc00"></div>
+            <div class="colour-icon" data-color="#cc6600" style="background-color: #cc6600"></div>
+            <div class="colour-icon" data-color="#6600cc" style="background-color: #6600cc"></div>
+            <div class="colour-icon" data-color="#00cc66" style="background-color: #00cc66"></div>
+            <div class="colour-icon" data-color="#cc0000" style="background-color: #cc0000"></div>
+            <label class="colour-picker-icon">
+              <input type="color" id="room-color-picker" />
+              <span>🎨</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="room-text-size-slider" class="form-label">Room Text Size (px):</label>
+          <div class="slider-group">
+            <input type="range" class="form-range flex-grow-1 slider" id="room-text-size-slider" min="10" max="30" step="1" value="14" />
+            <span id="room-text-size-input" class="slider-value">14px</span>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <span class="form-label">Room Text Color:</span>
+          <div class="room-text-colour colour-palette">
+            <div class="colour-icon" data-color="#0066cc" style="background-color: #0066cc"></div>
+            <div class="colour-icon" data-color="#000000" style="background-color: #000000"></div>
+            <div class="colour-icon" data-color="#cc0066" style="background-color: #cc0066"></div>
+            <div class="colour-icon" data-color="#66cc00" style="background-color: #66cc00"></div>
+            <div class="colour-icon" data-color="#cc6600" style="background-color: #cc6600"></div>
+            <div class="colour-icon" data-color="#6600cc" style="background-color: #6600cc"></div>
+            <div class="colour-icon" data-color="#333333" style="background-color: #333333"></div>
+            <label class="colour-picker-icon">
+              <input type="color" id="room-text-color-picker" />
+              <span>🎨</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Risk Appearance Properties -->
+      <div id="risk-appearance-properties" style="display: none">
+        <div class="row mb-3">
+          <div class="col-6">
+            <div class="checkbox-group">
+              <input class="form-check-input" type="checkbox" id="risk-name-toggle" checked />
+              <label class="form-check-label" for="risk-name-toggle"> Show Name </label>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="checkbox-group">
+              <input class="form-check-input" type="checkbox" id="risk-notes-toggle" />
+              <label class="form-check-label" for="risk-notes-toggle"> Show Notes </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <span class="form-label">Risk Outline Color:</span>
+          <div class="change-risk-colour colour-palette">
+            <div class="colour-icon" data-color="#9c27b0" style="background-color: #9c27b0"></div>
+            <div class="colour-icon" data-color="#673ab7" style="background-color: #673ab7"></div>
+            <div class="colour-icon" data-color="#00897b" style="background-color: #00897b"></div>
+            <div class="colour-icon" data-color="#0288d1" style="background-color: #0288d1"></div>
+            <div class="colour-icon" data-color="#c2185b" style="background-color: #c2185b"></div>
+            <div class="colour-icon" data-color="#7b1fa2" style="background-color: #7b1fa2"></div>
+            <div class="colour-icon" data-color="#00695c" style="background-color: #00695c"></div>
+            <label class="colour-picker-icon">
+              <input type="color" id="risk-color-picker" />
+              <span>🎨</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="risk-text-size-slider" class="form-label">Risk Text Size (px):</label>
+          <div class="slider-group">
+            <input type="range" class="form-range flex-grow-1 slider" id="risk-text-size-slider" min="10" max="30" step="1" value="13" />
+            <span id="risk-text-size-input" class="slider-value">13px</span>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <span class="form-label">Risk Text Color:</span>
+          <div class="risk-text-colour colour-palette">
+            <div class="colour-icon" data-color="#9c27b0" style="background-color: #9c27b0"></div>
+            <div class="colour-icon" data-color="#000000" style="background-color: #000000"></div>
+            <div class="colour-icon" data-color="#673ab7" style="background-color: #673ab7"></div>
+            <div class="colour-icon" data-color="#00897b" style="background-color: #00897b"></div>
+            <div class="colour-icon" data-color="#c2185b" style="background-color: #c2185b"></div>
+            <div class="colour-icon" data-color="#0288d1" style="background-color: #0288d1"></div>
+            <div class="colour-icon" data-color="#333333" style="background-color: #333333"></div>
+            <label class="colour-picker-icon">
+              <input type="color" id="risk-text-color-picker" />
+              <span>🎨</span>
+            </label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Safety Appearance Properties -->
+      <div id="safety-appearance-properties" style="display: none">
+        <div class="row mb-3">
+          <div class="col-6">
+            <div class="checkbox-group">
+              <input class="form-check-input" type="checkbox" id="safety-name-toggle" checked />
+              <label class="form-check-label" for="safety-name-toggle"> Show Name </label>
+            </div>
+          </div>
+          <div class="col-6">
+            <div class="checkbox-group">
+              <input class="form-check-input" type="checkbox" id="safety-notes-toggle" />
+              <label class="form-check-label" for="safety-notes-toggle"> Show Notes </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <span class="form-label">Safety Zone Color:</span>
+          <div class="change-safety-colour colour-palette">
+            <div class="colour-icon" data-color="#e65100" style="background-color: #e65100"></div>
+            <div class="colour-icon" data-color="#f57f17" style="background-color: #f57f17"></div>
+            <div class="colour-icon" data-color="#f9a825" style="background-color: #f9a825"></div>
+            <div class="colour-icon" data-color="#fbc02d" style="background-color: #fbc02d"></div>
+            <div class="colour-icon" data-color="#fdd835" style="background-color: #fdd835"></div>
+            <div class="colour-icon" data-color="#ff8f00" style="background-color: #ff8f00"></div>
+            <div class="colour-icon" data-color="#ff6f00" style="background-color: #ff6f00"></div>
+            <label class="colour-picker-icon">
+              <input type="color" id="safety-color-picker" />
+              <span>🎨</span>
+            </label>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label for="safety-text-size-slider" class="form-label">Safety Text Size (px):</label>
+          <div class="slider-group">
+            <input type="range" class="form-range flex-grow-1 slider" id="safety-text-size-slider" min="10" max="30" step="1" value="13" />
+            <span id="safety-text-size-input" class="slider-value">13px</span>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <span class="form-label">Safety Text Color:</span>
+          <div class="safety-text-colour colour-palette">
+            <div class="colour-icon" data-color="#f9a825" style="background-color: #f9a825"></div>
+            <div class="colour-icon" data-color="#000000" style="background-color: #000000"></div>
+            <div class="colour-icon" data-color="#795548" style="background-color: #795548"></div>
+            <div class="colour-icon" data-color="#ff8f00" style="background-color: #ff8f00"></div>
+            <div class="colour-icon" data-color="#e65100" style="background-color: #e65100"></div>
+            <div class="colour-icon" data-color="#bf360c" style="background-color: #bf360c"></div>
+            <div class="colour-icon" data-color="#333333" style="background-color: #333333"></div>
+            <label class="colour-picker-icon">
+              <input type="color" id="safety-text-color-picker" />
+              <span>🎨</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -3,7 +3,7 @@ import { updatePolygonText, updatePolygonColor } from "../sidebar-utils.js";
 import { calculateArea } from "../sidebar-utils.js";
 import { updateControlPointColors } from "../../drawing/polygon-editing.js";
 
-// Sets up the appearance panel for zones, rooms, and risks with colors, text size, and toggles
+// Sets up the appearance panel for zones, rooms, risks, and safety zones with colors, text size, and toggles
 export function initAppearancePanel(detailsPanelInstance) {
   // Zone controls
   const zoneTextSizeInput = document.getElementById("zone-text-size-input");
@@ -40,9 +40,18 @@ export function initAppearancePanel(detailsPanelInstance) {
   const riskTextColorIcons = document.querySelectorAll(".risk-text-colour .colour-icon");
 
   const riskNameToggle = document.getElementById("risk-name-toggle");
-  const riskAreaToggle = document.getElementById("risk-area-toggle");
-  const riskVolumeToggle = document.getElementById("risk-volume-toggle");
   const riskNotesToggle = document.getElementById("risk-notes-toggle");
+
+  // Safety controls
+  const safetyTextSizeInput = document.getElementById("safety-text-size-input");
+  const safetyTextSizeSlider = document.getElementById("safety-text-size-slider");
+  const safetyColorPicker = document.getElementById("safety-color-picker");
+  const safetyColorIcons = document.querySelectorAll(".change-safety-colour .colour-icon");
+  const safetyTextColorPicker = document.getElementById("safety-text-color-picker");
+  const safetyTextColorIcons = document.querySelectorAll(".safety-text-colour .colour-icon");
+
+  const safetyNameToggle = document.getElementById("safety-name-toggle");
+  const safetyNotesToggle = document.getElementById("safety-notes-toggle");
 
   // Updates zone text display when toggles change
   function updateZoneText() {
@@ -123,17 +132,7 @@ export function initAppearancePanel(detailsPanelInstance) {
     const canvas = currentRiskPolygon.canvas;
     const name = currentRiskPolygon.riskName;
     const notes = currentRiskPolygon.riskNotes || "";
-    const area = calculateArea(currentRiskPolygon.points, canvas);
-    const height = currentRiskText.displayHeight || currentRiskPolygon.height || 2.4;
-    const volume = area * height;
-    updatePolygonText(currentRiskPolygon, currentRiskText, canvas, { name: riskNameToggle, area: riskAreaToggle, volume: riskVolumeToggle, notes: riskNotesToggle }, name, notes, height, false);
-
-    currentRiskPolygon.area = area;
-    currentRiskPolygon.volume = volume;
-    if (currentRisk) {
-      currentRisk.area = area;
-      currentRisk.volume = volume;
-    }
+    updatePolygonText(currentRiskPolygon, currentRiskText, canvas, { name: riskNameToggle, area: null, volume: null, notes: riskNotesToggle }, name, notes, 0, false);
   }
 
   // Updates risk border color
@@ -159,9 +158,43 @@ export function initAppearancePanel(detailsPanelInstance) {
     }
   }
 
+  // Updates safety text display when toggles change
+  function updateSafetyText() {
+    const { currentSafety, currentSafetyPolygon, currentSafetyText } = detailsPanelInstance.getCurrentSafety();
+    if (!currentSafetyPolygon || !currentSafetyText || !currentSafetyPolygon.canvas) return;
+    const canvas = currentSafetyPolygon.canvas;
+    const name = currentSafetyPolygon.safetyName;
+    const notes = currentSafetyPolygon.safetyNotes || "";
+    updatePolygonText(currentSafetyPolygon, currentSafetyText, canvas, { name: safetyNameToggle, area: null, volume: null, notes: safetyNotesToggle }, name, notes, 0, false);
+  }
+
+  // Updates safety border color
+  function updateSafetyColor(color) {
+    const { currentSafety, currentSafetyPolygon, currentSafetyText } = detailsPanelInstance.getCurrentSafety();
+    if (!currentSafetyPolygon || !currentSafetyText || !currentSafety) return;
+    // Convert hex to rgba for fill (0.3 opacity for safety zones)
+    const r = parseInt(color.slice(1, 3), 16);
+    const g = parseInt(color.slice(3, 5), 16);
+    const b = parseInt(color.slice(5, 7), 16);
+    const fillColor = `rgba(${r}, ${g}, ${b}, 0.3)`;
+    setMultipleObjectProperties(currentSafetyPolygon, { fill: fillColor, stroke: color }, currentSafetyPolygon.canvas);
+    setMultipleObjectProperties(currentSafetyText, { fill: color, cursorColor: color });
+    currentSafety.safetyColor = color;
+    updateControlPointColors(currentSafetyPolygon);
+  }
+
+  // Updates safety text color
+  function updateSafetyTextColor(color) {
+    const { currentSafetyText } = detailsPanelInstance.getCurrentSafety();
+    if (currentSafetyText) {
+      setMultipleObjectProperties(currentSafetyText, { fill: color, cursorColor: color });
+    }
+  }
+
   window.updateZoneText = updateZoneText;
   window.updateRoomText = updateRoomText;
   window.updateRiskText = updateRiskText;
+  window.updateSafetyText = updateSafetyText;
 
   // Sets up zone text size slider
   createSliderInputSync(
@@ -256,14 +289,36 @@ export function initAppearancePanel(detailsPanelInstance) {
 
   // Sets up risk toggles for showing/hiding name, area, volume, notes
   createToggleHandler(riskNameToggle, () => updateRiskText());
-  createToggleHandler(riskAreaToggle, () => updateRiskText());
-  createToggleHandler(riskVolumeToggle, () => updateRiskText());
   createToggleHandler(riskNotesToggle, () => updateRiskText());
 
   setupColorControls(riskColorPicker, riskColorIcons, updateRiskColor);
   setupColorControls(riskTextColorPicker, riskTextColorIcons, updateRiskTextColor);
 
   [riskTextSizeInput, riskTextSizeSlider].forEach((el) => {
+    if (el) preventEventPropagation(el, ["click"]);
+  });
+
+  // Sets up safety text size slider
+  createSliderInputSync(
+    safetyTextSizeSlider,
+    safetyTextSizeInput,
+    (size) => {
+      const { currentSafetyPolygon, currentSafetyText } = detailsPanelInstance.getCurrentSafety();
+      if (currentSafetyPolygon && currentSafetyText && currentSafetyPolygon.canvas) {
+        setMultipleObjectProperties(currentSafetyText, { fontSize: size }, currentSafetyPolygon.canvas);
+      }
+    },
+    { min: 10, max: 30, step: 1, format: (value) => value + "px" }
+  );
+
+  // Sets up safety toggles for showing/hiding name and notes
+  createToggleHandler(safetyNameToggle, () => updateSafetyText());
+  createToggleHandler(safetyNotesToggle, () => updateSafetyText());
+
+  setupColorControls(safetyColorPicker, safetyColorIcons, updateSafetyColor);
+  setupColorControls(safetyTextColorPicker, safetyTextColorIcons, updateSafetyTextColor);
+
+  [safetyTextSizeInput, safetyTextSizeSlider].forEach((el) => {
     if (el) preventEventPropagation(el, ["click"]);
   });
 
@@ -343,25 +398,48 @@ export function initAppearancePanel(detailsPanelInstance) {
         }
         if (riskColorPicker && polygon.stroke) riskColorPicker.value = getHexFromFill(polygon.stroke);
         if (riskTextColorPicker && textObject && textObject.fill) riskTextColorPicker.value = getHexFromFill(textObject.fill);
-        if (riskNameToggle && riskAreaToggle && riskVolumeToggle && riskNotesToggle && textObject) {
+        if (riskNameToggle && riskNotesToggle && textObject) {
           const hidden = !!textObject._isHidden;
           if (hidden) {
             riskNameToggle.checked = false;
-            riskAreaToggle.checked = false;
-            riskVolumeToggle.checked = false;
             riskNotesToggle.checked = false;
           } else {
             const textLines = (textObject.text || "")
               .split("\n")
               .map((l) => l.trim())
               .filter(Boolean);
-            const hasNameLine = textLines.length > 0 && !textLines[0].startsWith("Area:") && !textLines[0].startsWith("Volume:") && !textLines[0].startsWith("Notes:");
+            const hasNameLine = textLines.length > 0 && !textLines[0].startsWith("Area:") && !textLines[0].startsWith("Notes:");
             riskNameToggle.checked = !!hasNameLine;
-            riskAreaToggle.checked = textLines.some((line) => line.startsWith("Area:"));
-            riskVolumeToggle.checked = textLines.some((line) => line.startsWith("Volume:"));
             riskNotesToggle.checked = textLines.some((line) => line.startsWith("Notes:"));
           }
           updateRiskText();
+        }
+      } else if (type === "safety") {
+        if (safetyTextSizeInput && safetyTextSizeSlider && textObject) {
+          let textSizeValue = textObject.fontSize || 13;
+          if (isNaN(textSizeValue) || textSizeValue < 10 || textSizeValue > 30) textSizeValue = 13;
+          safetyTextSizeInput.textContent = textSizeValue + "px";
+          safetyTextSizeSlider.value = textSizeValue;
+          textObject.fontSize = textSizeValue;
+          updateSliderTrack(safetyTextSizeSlider, textSizeValue, 10, 30);
+        }
+        if (safetyColorPicker && polygon.stroke) safetyColorPicker.value = getHexFromFill(polygon.stroke);
+        if (safetyTextColorPicker && textObject && textObject.fill) safetyTextColorPicker.value = getHexFromFill(textObject.fill);
+        if (safetyNameToggle && safetyNotesToggle && textObject) {
+          const hidden = !!textObject._isHidden;
+          if (hidden) {
+            safetyNameToggle.checked = false;
+            safetyNotesToggle.checked = false;
+          } else {
+            const textLines = (textObject.text || "")
+              .split("\n")
+              .map((l) => l.trim())
+              .filter(Boolean);
+            const hasNameLine = textLines.length > 0 && !textLines[0].startsWith("Area:") && !textLines[0].startsWith("Notes:");
+            safetyNameToggle.checked = !!hasNameLine;
+            safetyNotesToggle.checked = textLines.some((line) => line.startsWith("Notes:"));
+          }
+          updateSafetyText();
         }
       }
     },

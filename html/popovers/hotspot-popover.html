@@ -1,0 +1,68 @@
+<!-- Hotspot Popover (Safety) -->
+<div class="property-popover" id="hotspot-popover" style="display: none">
+  <div class="popover-arrow"></div>
+  <div class="popover-header" style="background: linear-gradient(135deg, #ff6b35 0%, #8b0000 100%)">
+    <span id="hotspot-popover-title">Safety Hotspot</span>
+    <button id="hotspot-popover-close" style="background: none; border: none; color: white; cursor: pointer; font-size: 18px">X</button>
+  </div>
+
+  <div class="sliding-panels">
+    <div class="slide-panel active" data-panel="hotspot">
+      <div class="form-group">
+        <label class="form-label" for="hotspot-name-input">Name</label>
+        <input type="text" class="form-control form-control-sm" id="hotspot-name-input" />
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="hotspot-severity-select">Severity</label>
+        <select class="form-control form-control-sm" id="hotspot-severity-select">
+          <option value="">Select...</option>
+          <option value="low">Low</option>
+          <option value="medium">Medium</option>
+          <option value="high">High</option>
+          <option value="critical">Critical</option>
+          <option value="na">N/A</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="hotspot-notes-input">Notes</label>
+        <textarea class="form-control form-control-sm" id="hotspot-notes-input" rows="3"></textarea>
+      </div>
+
+      <div class="form-group">
+        <span class="form-label">Fill Colour:</span>
+        <div class="color-grid hotspot-fill-colour">
+          <div class="colour-icon" data-color="#ff6b35" style="background-color: #ff6b35"></div>
+          <div class="colour-icon" data-color="#ff0000" style="background-color: #ff0000"></div>
+          <div class="colour-icon" data-color="#ffa500" style="background-color: #ffa500"></div>
+          <div class="colour-icon" data-color="#ffff00" style="background-color: #ffff00"></div>
+          <div class="colour-icon" data-color="#800080" style="background-color: #800080"></div>
+          <div class="colour-icon" data-color="#000000" style="background-color: #000000"></div>
+          <div class="colour-icon" data-color="#ffffff" style="background-color: #ffffff"></div>
+          <div class="colour-picker-icon">
+            <input type="color" id="hotspot-fill-color-picker" />
+            <span class="color-picker-emoji">🎨</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <span class="form-label">Stroke Colour:</span>
+        <div class="color-grid hotspot-stroke-colour">
+          <div class="colour-icon" data-color="#8b0000" style="background-color: #8b0000"></div>
+          <div class="colour-icon" data-color="#000000" style="background-color: #000000"></div>
+          <div class="colour-icon" data-color="#ffffff" style="background-color: #ffffff"></div>
+          <div class="colour-icon" data-color="#ff0000" style="background-color: #ff0000"></div>
+          <div class="colour-icon" data-color="#800080" style="background-color: #800080"></div>
+          <div class="colour-icon" data-color="#4b0082" style="background-color: #4b0082"></div>
+          <div class="colour-icon" data-color="#808080" style="background-color: #808080"></div>
+          <div class="colour-picker-icon">
+            <input type="color" id="hotspot-stroke-color-picker" />
+            <span class="color-picker-emoji">🎨</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

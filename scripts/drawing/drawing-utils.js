@@ -436,7 +436,10 @@ function getLineEndpoints(line) {
   } catch (e) {
     return [
       { x: line.x1 || line.left || 0, y: line.y1 || line.top || 0 },
-      { x: line.x2 || (line.left || 0) + (line.width || 0), y: line.y2 || (line.top || 0) + (line.height || 0) },
+      {
+        x: line.x2 || (line.left || 0) + (line.width || 0),
+        y: line.y2 || (line.top || 0) + (line.height || 0),
+      },
     ];
   }
 }
@@ -550,6 +553,12 @@ export function setupDeletion(fabricCanvas, condition = () => true) {
     window._deletionHandler = (e) => {
       if (currentTool) return;
 
+      // Don't delete if an input field is focused
+      const activeElement = document.activeElement;
+      const isInputFocused = activeElement && (activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA" || activeElement.tagName === "SELECT" || activeElement.isContentEditable);
+
+      if (isInputFocused) return;
+
       if (e.key === "Delete" || e.key === "Backspace") {
         const active = fabricCanvas.getActiveObject();
         if (!active) return;
@@ -658,7 +667,9 @@ export function setupColorPicker(fabricCanvas) {
       if (active.fill !== undefined) {
         const currentFill = active.fill || "rgba(0, 0, 0, 1)";
         const alpha = currentFill.match(/rgba?\(\d+,\s*\d+,\s*\d+,\s*([\d.]+)\)/)?.[1] || 1;
-        active.set({ fill: `rgba(${parseInt(newColor.slice(1, 3), 16)}, ${parseInt(newColor.slice(3, 5), 16)}, ${parseInt(newColor.slice(5, 7), 16)}, ${alpha})` });
+        active.set({
+          fill: `rgba(${parseInt(newColor.slice(1, 3), 16)}, ${parseInt(newColor.slice(3, 5), 16)}, ${parseInt(newColor.slice(5, 7), 16)}, ${alpha})`,
+        });
       }
       if (active.stroke !== undefined) {
         active.set({ stroke: newColor });
@@ -965,6 +976,6 @@ export function initializeDrawingTools() {
     });
   }
 
-  // Initialize with first tool selected (Wall Boundaries) - just set the variable, no visual changes
+  // Initialize with first tool selected (Wall Boundaries)
   selectedTool = "wall-boundaries";
 }

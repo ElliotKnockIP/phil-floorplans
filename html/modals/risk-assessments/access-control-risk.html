@@ -1,0 +1,599 @@
+<!-- Access Control Risk Assessment Modal -->
+<div class="modal fade custom-modal" id="access-control-risk-assessment-modal" tabindex="-1" aria-labelledby="accessControlRiskAssessmentModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-lg">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-header-content">
+          <div class="modal-header-left">
+            <h1 class="modal-title fs-5" id="accessControlRiskAssessmentModalLabel">Access Control Risk Assessment</h1>
+          </div>
+          <div class="modal-header-right nav-buttons">
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-body">
+        <!-- Premises Section -->
+        <div class="card mb-3 risk-assessment-card" id="access-control-risk-premises-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Premises</h5>
+            <div class="row g-2">
+              <div class="col-12 col-md-6">
+                <label for="access-control-risk-premises-type" class="form-label">Premises Type</label>
+                <select id="access-control-risk-premises-type" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="domestic">Domestic</option>
+                  <option value="commercial">Commercial</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="access-control-risk-opening-times" class="form-label">Opening Times</label>
+                <select id="access-control-risk-opening-times" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="8am-6pm">8am-6pm</option>
+                  <option value="late-opening">Late Opening</option>
+                  <option value="24-hour">24 Hr M-F</option>
+                  <option value="live-on-property">Live on Property</option>
+                  <option value="unoccupied-for-long-periods">Unoccupied for Long Periods</option>
+                  <option value="unoccupied">Unoccupied</option>
+                  <option value="na">N/A</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- User Requirements Section -->
+        <div class="card mb-3 risk-assessment-card" id="access-control-risk-user-requirements-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">User Requirements</h5>
+            <div class="row g-2">
+              <div class="col-12">
+                <label for="access-control-risk-user-requirements" class="form-label"></label>
+                <textarea id="access-control-risk-user-requirements" class="form-control survey-textarea" rows="3"></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Access Section -->
+        <div class="card mb-3 risk-assessment-card" id="access-control-risk-access-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Access</h5>
+            <div class="table-responsive">
+              <table class="table table-bordered">
+                <thead>
+                  <tr>
+                    <th>Access Elevation</th>
+                    <th>Ease of Access</th>
+                    <th>Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Front</td>
+                    <td>
+                      <select id="access-control-risk-access-front-ease" class="form-select form-select-sm">
+                        <option value="">Select...</option>
+                        <option value="easy">Easy</option>
+                        <option value="controlled">Controlled</option>
+                        <option value="restricted">Restricted</option>
+                        <option value="na">N/A</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" id="access-control-risk-access-front-notes" class="form-control form-control-sm" placeholder="" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Side 1</td>
+                    <td>
+                      <select id="access-control-risk-access-side1-ease" class="form-select form-select-sm">
+                        <option value="">Select...</option>
+                        <option value="easy">Easy</option>
+                        <option value="controlled">Controlled</option>
+                        <option value="restricted">Restricted</option>
+                        <option value="na">N/A</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" id="access-control-risk-access-side1-notes" class="form-control form-control-sm" placeholder="" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Side 2</td>
+                    <td>
+                      <select id="access-control-risk-access-side2-ease" class="form-select form-select-sm">
+                        <option value="">Select...</option>
+                        <option value="easy">Easy</option>
+                        <option value="controlled">Controlled</option>
+                        <option value="restricted">Restricted</option>
+                        <option value="na">N/A</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" id="access-control-risk-access-side2-notes" class="form-control form-control-sm" placeholder="" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Rear</td>
+                    <td>
+                      <select id="access-control-risk-access-rear-ease" class="form-select form-select-sm">
+                        <option value="">Select...</option>
+                        <option value="easy">Easy</option>
+                        <option value="controlled">Controlled</option>
+                        <option value="restricted">Restricted</option>
+                        <option value="na">N/A</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" id="access-control-risk-access-rear-notes" class="form-control form-control-sm" placeholder="" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Roof</td>
+                    <td>
+                      <select id="access-control-risk-access-roof-ease" class="form-select form-select-sm">
+                        <option value="">Select...</option>
+                        <option value="easy">Easy</option>
+                        <option value="controlled">Controlled</option>
+                        <option value="restricted">Restricted</option>
+                        <option value="na">N/A</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" id="access-control-risk-access-roof-notes" class="form-control form-control-sm" placeholder="" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Garage</td>
+                    <td>
+                      <select id="access-control-risk-access-garage-ease" class="form-select form-select-sm">
+                        <option value="">Select...</option>
+                        <option value="easy">Easy</option>
+                        <option value="controlled">Controlled</option>
+                        <option value="restricted">Restricted</option>
+                        <option value="na">N/A</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" id="access-control-risk-access-garage-notes" class="form-control form-control-sm" placeholder="" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Shed/Store</td>
+                    <td>
+                      <select id="access-control-risk-access-shed-ease" class="form-select form-select-sm">
+                        <option value="">Select...</option>
+                        <option value="easy">Easy</option>
+                        <option value="controlled">Controlled</option>
+                        <option value="restricted">Restricted</option>
+                        <option value="na">N/A</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" id="access-control-risk-access-shed-notes" class="form-control form-control-sm" placeholder="" />
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>Controlled Access Closed Site</td>
+                    <td>
+                      <select id="access-control-risk-access-controlled-ease" class="form-select form-select-sm">
+                        <option value="">Select...</option>
+                        <option value="easy">Easy</option>
+                        <option value="controlled">Controlled</option>
+                        <option value="restricted">Restricted</option>
+                        <option value="na">N/A</option>
+                      </select>
+                    </td>
+                    <td>
+                      <input type="text" id="access-control-risk-access-controlled-notes" class="form-control form-control-sm" placeholder="" />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Crime Risk Assessment Section -->
+        <div class="card mb-3 risk-assessment-card" id="access-control-risk-crime-assessment-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Crime Risk Assessment</h5>
+            <div class="row g-2">
+              <div class="col-12 col-md-6">
+                <label for="access-control-risk-area-crime-rating" class="form-label">Area Crime Rating</label>
+                <select id="access-control-risk-area-crime-rating" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="low">Low</option>
+                  <option value="nominal">Nominal</option>
+                  <option value="high">High</option>
+                  <option value="very-high">Very High</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="access-control-risk-insurance-grade" class="form-label">Insurance Grade</label>
+                <input type="text" id="access-control-risk-insurance-grade" class="form-control" placeholder="" />
+              </div>
+            </div>
+
+            <!-- Current Risk Section -->
+            <div class="mt-4">
+              <div class="table-responsive">
+                <table class="table table-bordered">
+                  <thead>
+                    <tr>
+                      <th style="width: 30%">Current Risk</th>
+                      <th style="width: 35%">Risk if Loss Value</th>
+                      <th style="width: 35%">Notes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Property</td>
+                      <td>
+                        <input type="number" id="access-control-risk-property-loss-value" class="form-control form-control-sm" placeholder="" />
+                      </td>
+                      <td>
+                        <input type="text" id="access-control-risk-property-notes" class="form-control form-control-sm" placeholder="" />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Stock</td>
+                      <td>
+                        <input type="number" id="access-control-risk-stock-loss-value" class="form-control form-control-sm" placeholder="" />
+                      </td>
+                      <td>
+                        <input type="text" id="access-control-risk-stock-notes" class="form-control form-control-sm" placeholder="" />
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Damage</td>
+                      <td>
+                        <input type="number" id="access-control-risk-damage-loss-value" class="form-control form-control-sm" placeholder="" />
+                      </td>
+                      <td>
+                        <input type="text" id="access-control-risk-damage-notes" class="form-control form-control-sm" placeholder="" />
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="mt-3 d-flex justify-content-center">
+                <div class="form-check d-flex align-items-center">
+                  <input class="form-check-input" type="checkbox" id="access-control-risk-no-disclose-crime-theft" />
+                  <label class="form-check-label" for="access-control-risk-no-disclose-crime-theft"> Client does not wish to disclose a Crime & Theft Record </label>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Reference Points for Locations of Devices Section -->
+        <div class="card mb-3 risk-assessment-card" id="access-control-risk-reference-points-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">REFERENCE POINTS FOR LOCATIONS OF DEVICES</h5>
+            <p class="mb-3" style="font-size: 0.9rem; color: #666">Where appropriate, locations will be described as being front or rear and left or right as seen by an observer standing outside and facing the front of the premises.</p>
+            <div class="row g-2 align-items-end">
+              <div class="col-12 col-md-3">
+                <label class="form-label">Drawing Supplied</label>
+                <div class="d-flex align-items-center gap-3">
+                  <div class="form-check d-flex align-items-center">
+                    <input class="form-check-input" type="radio" name="access-control-risk-drawing-supplied" id="access-control-risk-drawing-supplied-yes" value="yes" checked />
+                    <label class="form-check-label" for="access-control-risk-drawing-supplied-yes">Yes</label>
+                  </div>
+                  <div class="form-check d-flex align-items-center">
+                    <input class="form-check-input" type="radio" name="access-control-risk-drawing-supplied" id="access-control-risk-drawing-supplied-no" value="no" />
+                    <label class="form-check-label" for="access-control-risk-drawing-supplied-no">No</label>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12 col-md-4">
+                <label for="access-control-risk-drawing-number" class="form-label">Drawing Number/Title</label>
+                <input type="text" id="access-control-risk-drawing-number" class="form-control" placeholder="" />
+              </div>
+              <div class="col-12 col-md-3">
+                <label for="access-control-risk-drawing-date" class="form-label">Date</label>
+                <input type="date" id="access-control-risk-drawing-date" class="form-control" placeholder="dd/mm/yyyy" />
+              </div>
+              <div class="col-12 col-md-2">
+                <label for="access-control-risk-drawing-revision" class="form-label">Revision</label>
+                <input type="text" id="access-control-risk-drawing-revision" class="form-control" placeholder="" />
+              </div>
+            </div>
+
+            <!-- Notes As Applicable Table -->
+            <div class="mt-4">
+              <h6 class="mb-3" style="font-weight: 600">Notes As Applicable</h6>
+              <div class="table-responsive">
+                <table class="table table-bordered">
+                  <thead>
+                    <tr>
+                      <th style="width: 15%">Item</th>
+                      <th style="width: 60%">Details</th>
+                      <th style="width: 25%">Applicable</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>Note 1</td>
+                      <td>The requirements of the Equality Act 2010 and in particular the Disability Discrimination Act 2005 section 21 do not apply/apply to some areas and are detailed below.</td>
+                      <td>
+                        <div class="d-flex align-items-center gap-2">
+                          <div class="form-check d-flex align-items-center">
+                            <input class="form-check-input" type="radio" name="access-control-risk-note1-applicable" id="access-control-risk-note1-yes" value="yes" />
+                            <label class="form-check-label form-check-label-sm" for="access-control-risk-note1-yes">Yes</label>
+                          </div>
+                          <div class="form-check d-flex align-items-center">
+                            <input class="form-check-input" type="radio" name="access-control-risk-note1-applicable" id="access-control-risk-note1-no" value="no" />
+                            <label class="form-check-label form-check-label-sm" for="access-control-risk-note1-no">No</label>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Note 2</td>
+                      <td>The additional audio entry handset feature is considered to be supplementary/outside to the requirements of the Code of Practice and is not covered by any certificate.</td>
+                      <td>
+                        <div class="d-flex align-items-center gap-2">
+                          <div class="form-check d-flex align-items-center">
+                            <input class="form-check-input" type="radio" name="access-control-risk-note2-applicable" id="access-control-risk-note2-yes" value="yes" />
+                            <label class="form-check-label form-check-label-sm" for="access-control-risk-note2-yes">Yes</label>
+                          </div>
+                          <div class="form-check d-flex align-items-center">
+                            <input class="form-check-input" type="radio" name="access-control-risk-note2-applicable" id="access-control-risk-note2-no" value="no" />
+                            <label class="form-check-label form-check-label-sm" for="access-control-risk-note2-no">No</label>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Note 3</td>
+                      <td>The additional supply of a gate and/or barrier control is also considered to be supplementary/outside of the requirements of the Code of Practice and is sub-contracted. (Please refer to Supplementary Notes 3).</td>
+                      <td>
+                        <div class="d-flex align-items-center gap-2">
+                          <div class="form-check d-flex align-items-center">
+                            <input class="form-check-input" type="radio" name="access-control-risk-note3-applicable" id="access-control-risk-note3-yes" value="yes" />
+                            <label class="form-check-label form-check-label-sm" for="access-control-risk-note3-yes">Yes</label>
+                          </div>
+                          <div class="form-check d-flex align-items-center">
+                            <input class="form-check-input" type="radio" name="access-control-risk-note3-applicable" id="access-control-risk-note3-no" value="no" />
+                            <label class="form-check-label form-check-label-sm" for="access-control-risk-note3-no">No</label>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr>
+                      <td>Note 4</td>
+                      <td>Effective access control systems rely on suitable door hardware and efficient closing mechanisms. has not been contracted to provide or maintain door hardware and as such accepts no responsibility for unauthorised entry gained due to ineffective or failed door hardware.</td>
+                      <td>
+                        <div class="d-flex align-items-center gap-2">
+                          <div class="form-check d-flex align-items-center">
+                            <input class="form-check-input" type="radio" name="access-control-risk-note4-applicable" id="access-control-risk-note4-yes" value="yes" />
+                            <label class="form-check-label form-check-label-sm" for="access-control-risk-note4-yes">Yes</label>
+                          </div>
+                          <div class="form-check d-flex align-items-center">
+                            <input class="form-check-input" type="radio" name="access-control-risk-note4-applicable" id="access-control-risk-note4-no" value="no" />
+                            <label class="form-check-label form-check-label-sm" for="access-control-risk-note4-no">No</label>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Classification of Access Point Risk Section -->
+        <div class="card mb-3 risk-assessment-card" id="access-control-risk-classification-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Classification of Access Point Risk</h5>
+
+            <!-- Access Point/Door Table -->
+            <div class="mb-4">
+              <h6 class="mb-3" style="font-weight: 600">Access Point/Door</h6>
+              <div class="table-responsive">
+                <table class="table table-bordered" id="access-control-risk-access-points-table">
+                  <thead>
+                    <tr>
+                      <th style="width: 35%">Access Point/Door</th>
+                      <th style="width: 25%">Classification</th>
+                      <th style="width: 25%">Option A or B</th>
+                      <th style="width: 15%">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="access-control-risk-access-points-tbody">
+                    <!-- Access points will be added dynamically -->
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td>
+                        <input type="text" id="access-control-risk-new-access-point" class="form-control form-control-sm" />
+                      </td>
+                      <td>
+                        <select id="access-control-risk-new-classification" class="form-select form-select-sm">
+                          <option value="">Select...</option>
+                          <option value="class-i">Class I (low risk)</option>
+                          <option value="class-ii">Class II (low to medium risk)</option>
+                          <option value="class-iii">Class III (medium to high risk)</option>
+                          <option value="class-iv">Class IV (high risk)</option>
+                        </select>
+                      </td>
+                      <td>
+                        <div class="d-flex align-items-center gap-2">
+                          <div class="form-check d-flex align-items-center">
+                            <input class="form-check-input" type="radio" name="access-control-risk-new-option" id="access-control-risk-new-option-a" value="a" />
+                            <label class="form-check-label form-check-label-sm" for="access-control-risk-new-option-a">A</label>
+                          </div>
+                          <div class="form-check d-flex align-items-center">
+                            <input class="form-check-input" type="radio" name="access-control-risk-new-option" id="access-control-risk-new-option-b" value="b" />
+                            <label class="form-check-label form-check-label-sm" for="access-control-risk-new-option-b">B</label>
+                          </div>
+                          <div class="form-check d-flex align-items-center">
+                            <input class="form-check-input" type="radio" name="access-control-risk-new-option" id="access-control-risk-new-option-na" value="na" checked />
+                            <label class="form-check-label form-check-label-sm" for="access-control-risk-new-option-na">N/A</label>
+                          </div>
+                        </div>
+                      </td>
+                      <td>
+                        <button type="button" class="btn btn-sm text-white bg-orange" id="access-control-risk-add-access-point-btn">Add Access Point</button>
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+
+            <!-- Risk Class Definitions -->
+            <div class="mb-4">
+              <h6 class="mb-3" style="font-weight: 600">Risk Class Definitions</h6>
+              <div style="font-size: 0.9rem">
+                <div class="mb-3">
+                  <strong>Class I (low risk):</strong><br />
+                  At an access point to class I, access will only be granted following:<br />
+                  The input of a correct common code (or the input of a correct PIN code) of not less than 10,000 differs.<br />
+                  10,000 differs requires a 4-digit code number such as 1234.
+                </div>
+                <div class="mb-3">
+                  <strong>Class II (low to medium risk):</strong><br />
+                  At an access point to class II, access will only be granted following:<br />
+                  Option A - the input of a correct PIN code of not less than 1,000,000 differs;<br />
+                  OR Option B - the presentation of a valid unique token to a reader.<br />
+                  1,000,000 differs requires a 6-digit code number such as 123456.
+                </div>
+                <div class="mb-3">
+                  <strong>Class III (medium to high risk):</strong><br />
+                  At an access point to class III, access will only be granted following:<br />
+                  Option A - the input of a correct PIN code of not less than 10,000 differs AND the presentation of a valid unique token to a reader;<br />
+                  OR Option B - the presentation of a valid biometric to a reader.
+                </div>
+                <div class="mb-3">
+                  <strong>Class IV (high risk):</strong><br />
+                  At an access point to class IV, access will only be granted following:<br />
+                  Option A - the presentation of a valid biometric to a reader AND the presentation of a valid unique token using radio frequency identification (RFID)*;<br />
+                  OR Option B - the presentation of a valid biometric to a reader AND the presentation of a valid unique token to a reader AND the presentation of a correct PIN code of not less than 10,000 differs.
+                </div>
+                <div class="mb-0" style="font-style: italic">* RFID must not rely on recognising the Chip Serial</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Risk Assessment Outcome Section -->
+        <div class="card mb-3 risk-assessment-card" id="access-control-risk-assessment-outcome-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Risk Assessment Outcome</h5>
+            <div class="row g-2">
+              <div class="col-12 col-md-6">
+                <label for="access-control-risk-environmental-grade" class="form-label">Environmental Grade</label>
+                <select id="access-control-risk-environmental-grade" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="na">N/A</option>
+                  <option value="2-indoor-uncontrolled-temp">2 Indoor Uncontrolled Temp</option>
+                  <option value="3-outdoor-sheltered">3 Outdoor Sheltered</option>
+                  <option value="4-outdoor-exposed">4 Outdoor Exposed</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="access-control-risk-setting-unsetting-method" class="form-label">Setting/Unsetting Method</label>
+                <select id="access-control-risk-setting-unsetting-method" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="coded-entry-exit">Coded Entry/Exit</option>
+                  <option value="digital-key">Digital Key</option>
+                  <option value="app-enabled-device">App Enabled Device</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Signalling Option</label>
+                <div class="row g-2">
+                  <div class="col-12 col-md-6">
+                    <select id="access-control-risk-signalling-option-1" class="form-select">
+                      <option value="">Select...</option>
+                      <option value="arc-keyholder-only">ARC Keyholder Only</option>
+                      <option value="arc-policed-response">ARC Policed Response</option>
+                      <option value="app-speech-dialler">App/Speech Dialler</option>
+                      <option value="audible-only">Audible Only</option>
+                    </select>
+                  </div>
+                  <div class="col-12 col-md-6">
+                    <select id="access-control-risk-signalling-option-2" class="form-select">
+                      <option value="">Select...</option>
+                      <option value="digital-communicator">Digital Communicator</option>
+                      <option value="ip-gprs">IP/GPRS</option>
+                      <option value="dual-com">Dual Com</option>
+                      <option value="redcare-gsm">Redcare GSM</option>
+                      <option value="cloud">Cloud</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12">
+                <label for="access-control-risk-method-of-unsetting" class="form-label">Method of unsetting</label>
+                <select id="access-control-risk-method-of-unsetting" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="unlocking-initial-entry-door-6-4-3">Unlocking the initial entry door disables all means of confirmation (6.4.3):</option>
+                  <option value="opening-initial-entry-door-6-4-4">Opening the initial entry door disables all means of confirmation (6.4.4):</option>
+                  <option value="digital-key-6-4-5">Completion of unsetting is achieved using a digital key (6.4.5):</option>
+                  <option value="arc-6-4-6">Unsetting is carried out in conjunction with ARC (6.4.6):</option>
+                  <option value="app-web-enabled">Unsetting is carried out using an app or web enabled device</option>
+                </select>
+              </div>
+              <div class="col-12">
+                <label class="form-label">Method of Confirmation</label>
+                <div class="d-flex align-items-center gap-3">
+                  <div class="form-check d-flex align-items-center">
+                    <input class="form-check-input" type="checkbox" id="access-control-risk-confirmation-sequential" />
+                    <label class="form-check-label" for="access-control-risk-confirmation-sequential"> Sequential </label>
+                  </div>
+                  <div class="form-check d-flex align-items-center">
+                    <input class="form-check-input" type="checkbox" id="access-control-risk-confirmation-audio" />
+                    <label class="form-check-label" for="access-control-risk-confirmation-audio"> Audio </label>
+                  </div>
+                  <div class="form-check d-flex align-items-center">
+                    <input class="form-check-input" type="checkbox" id="access-control-risk-confirmation-visual" />
+                    <label class="form-check-label" for="access-control-risk-confirmation-visual"> Visual </label>
+                  </div>
+                </div>
+              </div>
+              <div class="col-12">
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                  <span>The confirmation alarm time for activation of detectors for sequentially confirmed systems will be</span>
+                  <input type="number" id="access-control-risk-confirmation-alarm-time" class="form-control" style="width: 80px" placeholder="30" />
+                  <span>minutes.</span>
+                </div>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="access-control-risk-monitoring" class="form-label">Monitoring</label>
+                <select id="access-control-risk-monitoring" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="police-monitored">Police Monitored</option>
+                  <option value="monitored-commercial-non-police">Monitored Commercial non police</option>
+                  <option value="self-monitored">Self Monitored</option>
+                  <option value="not-monitored">Not Monitored</option>
+                </select>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="access-control-risk-arc-name" class="form-label">ARC Name</label>
+                <input type="text" id="access-control-risk-arc-name" class="form-control" placeholder="" />
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="access-control-risk-alarm-response" class="form-label">Alarm Response</label>
+                <select id="access-control-risk-alarm-response" class="form-select">
+                  <option value="">Select...</option>
+                  <option value="neighbour">Neighbour</option>
+                  <option value="keyholder">Keyholder</option>
+                  <option value="police">Police</option>
+                  <option value="security-company">Security Company</option>
+                </select>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

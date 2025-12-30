@@ -26,20 +26,42 @@ export function setupMeasurementTools(fabricCanvas) {
   }
 
   // Activates distance measurement tool
-  measureBtn.addEventListener("click", () => {
-    closeSidebar();
-    cleanupTempObjects();
-    registerToolCleanup(cleanupTempObjects);
-    startTool(fabricCanvas, "measure", handleMeasureClick, handleMeasureMove);
-  });
+  if (measureBtn) {
+    measureBtn.addEventListener("click", () => {
+      closeSidebar();
+      cleanupTempObjects();
+      registerToolCleanup(cleanupTempObjects);
+      startTool(fabricCanvas, "measure", handleMeasureClick, handleMeasureMove);
+    });
+  } else {
+    document.addEventListener("htmlIncludesLoaded", () => {
+      document.getElementById("measure-btn")?.addEventListener("click", () => {
+        closeSidebar();
+        cleanupTempObjects();
+        registerToolCleanup(cleanupTempObjects);
+        startTool(fabricCanvas, "measure", handleMeasureClick, handleMeasureMove);
+      });
+    });
+  }
 
   // Activates apex measurement tool
-  apexBtn.addEventListener("click", () => {
-    closeSidebar();
-    cleanupTempObjects();
-    registerToolCleanup(cleanupTempObjects);
-    startTool(fabricCanvas, "apex", handleApexClick, handleApexMove);
-  });
+  if (apexBtn) {
+    apexBtn.addEventListener("click", () => {
+      closeSidebar();
+      cleanupTempObjects();
+      registerToolCleanup(cleanupTempObjects);
+      startTool(fabricCanvas, "apex", handleApexClick, handleApexMove);
+    });
+  } else {
+    document.addEventListener("htmlIncludesLoaded", () => {
+      document.getElementById("apex-btn")?.addEventListener("click", () => {
+        closeSidebar();
+        cleanupTempObjects();
+        registerToolCleanup(cleanupTempObjects);
+        startTool(fabricCanvas, "apex", handleApexClick, handleApexMove);
+      });
+    });
+  }
 
   // Handles distance measurement click
   function handleMeasureClick(e) {

@@ -1,0 +1,52 @@
+<!-- Custom Icon Modal -->
+<div id="custom-icon-modal" class="modal" tabindex="-1" aria-labelledby="customIconModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-secondary text-black">
+      <div class="modal-header bg-orange text-white">
+        <h5 class="modal-title bg-orange text-white" id="customIconModalLabel">Add Custom Icon</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <div class="modal-body bg-white">
+        <div class="mb-3">
+          <label class="form-label" for="custom-icon-file">Icon Image (PNG/JPG):</label>
+          <input type="file" id="custom-icon-file" class="form-control bg-grey" accept="image/png,image/jpeg" />
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="custom-icon-name">Name:</label>
+          <input type="text" id="custom-icon-name" class="form-control bg-grey" placeholder="e.g. External Siren" />
+        </div>
+        <div class="mb-3">
+          <span class="form-label">Add to Sections:</span>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="custom-icon-cctv" />
+            <label class="form-check-label" for="custom-icon-cctv">CCTV System</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="custom-icon-access" />
+            <label class="form-check-label" for="custom-icon-access">Access Control</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="custom-icon-intruder" />
+            <label class="form-check-label" for="custom-icon-intruder">Intruder Detection</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="custom-icon-fire" />
+            <label class="form-check-label" for="custom-icon-fire">Fire Evacuation</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="custom-icon-custom" checked />
+            <label class="form-check-label" for="custom-icon-custom">Custom Icons</label>
+          </div>
+        </div>
+        <div class="form-check mb-0">
+          <input class="form-check-input" type="checkbox" id="custom-icon-is-camera" />
+          <label class="form-check-label" for="custom-icon-is-camera">This is a camera (adds coverage)</label>
+        </div>
+      </div>
+      <div class="modal-footer bg-white">
+        <button type="button" class="btn text-white bg-orange" data-bs-dismiss="modal">Close</button>
+        <button type="button" id="save-custom-icon-btn" class="btn text-white bg-orange">Save</button>
+      </div>
+    </div>
+  </div>
+</div>

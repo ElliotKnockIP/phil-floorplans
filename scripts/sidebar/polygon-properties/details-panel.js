@@ -3,7 +3,7 @@ import { getHexFromFill } from "../sidebar-utils.js";
 import { updateDevicesList } from "../sidebar-utils.js";
 import { initAppearancePanel } from "./appearance-panel.js";
 
-// Stores the currently selected zone, room, or risk
+// Stores the currently selected zone, room, risk, or safety zone
 let currentPolygon = null;
 let currentTextObject = null;
 let currentZone = null;
@@ -13,8 +13,11 @@ let currentRoomText = null;
 let currentRisk = null;
 let currentRiskPolygon = null;
 let currentRiskText = null;
+let currentSafety = null;
+let currentSafetyPolygon = null;
+let currentSafetyText = null;
 
-// Sets up the details panel for zones, rooms, and risks with name, notes, height, and device lists
+// Sets up the details panel for zones, rooms, risks, and safety zones with name, notes, height, and device lists
 export function initDetailsPanel() {
   // Zone controls
   const zoneNameInput = document.getElementById("zone-label-input");
@@ -29,6 +32,14 @@ export function initDetailsPanel() {
   // Risk controls
   const riskLabelInput = document.getElementById("risk-label-input");
   const riskNotesInput = document.getElementById("risk-notes-input");
+  const riskEaseSelect = document.getElementById("risk-ease-select");
+
+  // Safety controls
+  const safetyLabelInput = document.getElementById("safety-label-input");
+  const safetyNotesInput = document.getElementById("safety-notes-input");
+  const safetyContainmentInput = document.getElementById("safety-containment-input");
+  const safetySubDetailsList = document.getElementById("safety-sub-details-list");
+  const safetyAddSubDetailBtn = document.getElementById("safety-add-sub-detail-btn");
 
   // Height sliders
   const zoneHeightInput = document.getElementById("zone-height-input");
@@ -37,9 +48,6 @@ export function initDetailsPanel() {
   const roomHeightInput = document.getElementById("room-height-input");
   const roomHeightSlider = document.getElementById("room-height-slider");
   const roomWarning = document.getElementById("room-warning");
-  const riskHeightInput = document.getElementById("risk-height-input");
-  const riskHeightSlider = document.getElementById("risk-height-slider");
-  const riskWarning = document.getElementById("risk-warning");
 
   // Handles typing in zone name input
   if (zoneNameInput) {
@@ -137,6 +145,104 @@ export function initDetailsPanel() {
     preventEventPropagation(riskNotesInput);
   }
 
+  // Handles changing risk ease of access
+  if (riskEaseSelect) {
+    riskEaseSelect.addEventListener("change", (e) => {
+      if (currentRisk && currentRiskPolygon && currentRiskText && currentRiskPolygon.canvas) {
+        const newEase = e.target.value;
+        currentRisk.riskEase = newEase;
+        currentRiskPolygon.riskEase = newEase;
+      }
+    });
+    preventEventPropagation(riskEaseSelect);
+  }
+
+  // Handles typing in safety name input
+  if (safetyLabelInput) {
+    safetyLabelInput.addEventListener("input", (e) => {
+      if (currentSafety && currentSafetyPolygon && currentSafetyText && currentSafetyPolygon.canvas) {
+        const newName = e.target.value.trim() || `Safety ${window.safetyZones.indexOf(currentSafety) + 1}`;
+        currentSafety.safetyName = newName;
+        currentSafetyPolygon.safetyName = newName;
+        if (window.updateSafetyText) window.updateSafetyText();
+      }
+    });
+    preventEventPropagation(safetyLabelInput);
+  }
+
+  // Handles typing in safety notes input
+  if (safetyNotesInput) {
+    safetyNotesInput.addEventListener("input", (e) => {
+      if (currentSafety && currentSafetyPolygon && currentSafetyText && currentSafetyPolygon.canvas) {
+        const newNotes = e.target.value.trim();
+        currentSafety.safetyNotes = newNotes;
+        currentSafetyPolygon.safetyNotes = newNotes;
+        if (window.updateSafetyText) window.updateSafetyText();
+      }
+    });
+    preventEventPropagation(safetyNotesInput);
+  }
+
+  // Handles typing in safety containment input
+  if (safetyContainmentInput) {
+    safetyContainmentInput.addEventListener("input", (e) => {
+      if (currentSafety && currentSafetyPolygon && currentSafetyPolygon.canvas) {
+        const newContainment = e.target.value.trim();
+        currentSafety.safetyContainment = newContainment;
+        currentSafetyPolygon.safetyContainment = newContainment;
+      }
+    });
+    preventEventPropagation(safetyContainmentInput);
+  }
+
+  // Function to render sub-details list (simplified - just names)
+  function renderSafetySubDetailsList() {
+    if (!safetySubDetailsList || !currentSafety) return;
+    safetySubDetailsList.innerHTML = "";
+
+    const subDetails = currentSafety.safetySubDetails || [];
+    const safetyIndex = window.safetyZones ? window.safetyZones.indexOf(currentSafety) + 1 : 1;
+
+    subDetails.forEach((detail, index) => {
+      const item = document.createElement("div");
+      item.className = "sub-detail-item d-flex align-items-center gap-2 mb-2";
+      item.innerHTML = `
+        <span class="sub-detail-number text-muted" style="min-width: 35px; font-size: 0.9em;">${safetyIndex}.${index + 1}</span>
+        <input type="text" class="form-control form-control-sm sub-detail-name" placeholder="Risk name" value="${detail.name || ""}" />
+        <button type="button" class="btn btn-sm btn-outline-danger sub-detail-remove" style="padding: 0.15rem 0.4rem; font-size: 0.8rem;">×</button>
+      `;
+
+      // Name input handler
+      const nameInput = item.querySelector(".sub-detail-name");
+      nameInput.addEventListener("input", (e) => {
+        detail.name = e.target.value;
+      });
+      preventEventPropagation(nameInput);
+
+      // Remove button handler
+      const removeBtn = item.querySelector(".sub-detail-remove");
+      removeBtn.addEventListener("click", () => {
+        subDetails.splice(index, 1);
+        renderSafetySubDetailsList();
+      });
+
+      safetySubDetailsList.appendChild(item);
+    });
+  }
+
+  // Add sub-detail button handler
+  if (safetyAddSubDetailBtn) {
+    safetyAddSubDetailBtn.addEventListener("click", () => {
+      if (!currentSafety) return;
+      if (!currentSafety.safetySubDetails) currentSafety.safetySubDetails = [];
+      currentSafety.safetySubDetails.push({ name: "", containment: "", notes: "" });
+      renderSafetySubDetailsList();
+    });
+  }
+
+  // Make renderSafetySubDetailsList available for external calls
+  window.renderSafetySubDetailsList = renderSafetySubDetailsList;
+
   // Sets up zone height slider
   if (zoneHeightSlider && zoneHeightInput) {
     createSliderInputSync(
@@ -174,25 +280,6 @@ export function initDetailsPanel() {
     preventEventPropagation(roomHeightSlider, ["click"]);
   }
 
-  // Sets up risk height slider
-  if (riskHeightSlider && riskHeightInput) {
-    createSliderInputSync(
-      riskHeightSlider,
-      riskHeightInput,
-      (height) => {
-        if (currentRisk && currentRiskText && currentRiskPolygon && currentRiskPolygon.canvas) {
-          currentRiskText.displayHeight = height;
-          currentRisk.height = height;
-          if (riskWarning) updateWarningText(riskWarning, height);
-          if (window.updateRiskText) window.updateRiskText();
-        }
-      },
-      { min: 1, max: 10, step: 0.01, precision: 2, format: (value) => value.toFixed(2) + "m" }
-    );
-    preventEventPropagation(riskHeightInput, ["click"]);
-    preventEventPropagation(riskHeightSlider, ["click"]);
-  }
-
   // Updates the list of devices inside a zone
   function updateZoneDevicesList(zone, fabricCanvas) {
     const zoneDevicesList = document.getElementById("zone-devices-list");
@@ -221,6 +308,7 @@ export function initDetailsPanel() {
     getCurrentZone: () => ({ currentPolygon, currentTextObject, currentZone }),
     getCurrentRoom: () => ({ currentRoom, currentRoomPolygon, currentRoomText }),
     getCurrentRisk: () => ({ currentRisk, currentRiskPolygon, currentRiskText }),
+    getCurrentSafety: () => ({ currentSafety, currentSafetyPolygon, currentSafetyText }),
     setCurrentZone: (polygon, textObject, zone) => {
       currentPolygon = polygon;
       currentTextObject = textObject;
@@ -235,6 +323,11 @@ export function initDetailsPanel() {
       currentRisk = risk;
       currentRiskPolygon = polygon;
       currentRiskText = text;
+    },
+    setCurrentSafety: (safety, polygon, text) => {
+      currentSafety = safety;
+      currentSafetyPolygon = polygon;
+      currentSafetyText = text;
     },
     updateDetailsPanel: (deviceType, textObject, polygon, fourthParam) => {
       if (deviceType === "zone-polygon") {
@@ -293,17 +386,17 @@ export function initDetailsPanel() {
 
         if (riskLabelInput && currentRisk) riskLabelInput.value = currentRisk.riskName || "";
         if (riskNotesInput && currentRisk) riskNotesInput.value = currentRisk.riskNotes || "";
-        // Update height slider
-        if (riskHeightInput && riskHeightSlider && textObject) {
-          let heightValue = textObject?.displayHeight !== undefined ? textObject.displayHeight : polygon.height || 2.4;
-          if (isNaN(heightValue) || heightValue <= 0 || heightValue > 10) heightValue = 2.4;
-          riskHeightInput.textContent = heightValue.toFixed(2) + "m";
-          riskHeightSlider.value = heightValue;
-          if (textObject) textObject.displayHeight = heightValue;
-          updateSliderTrack(riskHeightSlider, heightValue, riskHeightSlider.min || 1, riskHeightSlider.max || 10);
-          if (riskWarning) updateWarningText(riskWarning, heightValue);
-        }
+        if (riskEaseSelect && currentRisk) riskEaseSelect.value = currentRisk.riskEase || "";
         if (currentRisk && polygon && polygon.canvas) updateRiskDevicesList(currentRisk, polygon.canvas);
+      } else if (deviceType === "safety-polygon") {
+        currentSafetyPolygon = polygon;
+        currentSafetyText = textObject;
+        currentSafety = fourthParam; // safety object
+
+        if (safetyLabelInput && currentSafety) safetyLabelInput.value = currentSafety.safetyName || "";
+        if (safetyNotesInput && currentSafety) safetyNotesInput.value = currentSafety.safetyNotes || "";
+        if (safetyContainmentInput && currentSafety) safetyContainmentInput.value = currentSafety.safetyContainment || "";
+        renderSafetySubDetailsList();
       }
     },
     clearDetailsPanel: () => {
@@ -316,6 +409,9 @@ export function initDetailsPanel() {
       currentRisk = null;
       currentRiskPolygon = null;
       currentRiskText = null;
+      currentSafety = null;
+      currentSafetyPolygon = null;
+      currentSafetyText = null;
     },
   };
 }
@@ -326,7 +422,7 @@ const initPolygonPropertiesCoordinator = () => {
   const appearancePanelInstance = initAppearancePanel(detailsPanelInstance);
 
   wrapGlobalFunction("showDeviceProperties", (deviceType, textObject, polygon, fourthParam) => {
-    if (deviceType === "zone-polygon" || deviceType === "room-polygon" || deviceType === "risk-polygon") {
+    if (deviceType === "zone-polygon" || deviceType === "room-polygon" || deviceType === "risk-polygon" || deviceType === "safety-polygon") {
       detailsPanelInstance.updateDetailsPanel(deviceType, textObject, polygon, fourthParam);
 
       if (deviceType === "zone-polygon") {
@@ -335,9 +431,12 @@ const initPolygonPropertiesCoordinator = () => {
       } else if (deviceType === "room-polygon") {
         const { currentRoom, currentRoomPolygon, currentRoomText } = detailsPanelInstance.getCurrentRoom();
         appearancePanelInstance.updateAppearancePanel("room", currentRoomPolygon, currentRoomText, currentRoom);
-      } else {
+      } else if (deviceType === "risk-polygon") {
         const { currentRisk, currentRiskPolygon, currentRiskText } = detailsPanelInstance.getCurrentRisk();
         appearancePanelInstance.updateAppearancePanel("risk", currentRiskPolygon, currentRiskText, currentRisk);
+      } else if (deviceType === "safety-polygon") {
+        const { currentSafety, currentSafetyPolygon, currentSafetyText } = detailsPanelInstance.getCurrentSafety();
+        appearancePanelInstance.updateAppearancePanel("safety", currentSafetyPolygon, currentSafetyText, currentSafety);
       }
     }
   });
@@ -355,6 +454,11 @@ const initPolygonPropertiesCoordinator = () => {
   // Helper function for showing risk properties
   window.showRiskProperties = function (riskPolygon, riskText, risk) {
     window.showDeviceProperties("risk-polygon", riskText, riskPolygon, risk);
+  };
+
+  // Helper function for showing safety properties
+  window.showSafetyProperties = function (safetyPolygon, safetyText, safety) {
+    window.showDeviceProperties("safety-polygon", safetyText, safetyPolygon, safety);
   };
 };
 

@@ -2,7 +2,7 @@
 // CAMERA DORI CALCULATIONS
 // ============================================================================
 
-import { layers } from "../../canvas/canvas-layers.js";
+import { layers } from "../../canvas/interactions/LayerControls.js";
 import { angleDiff } from "./camera-calculations.js";
 
 // ============================================================================
@@ -79,16 +79,33 @@ export function createDoriZones(cameraIcon, fabricCanvas, commonProps) {
 
     // Calculate final opacity
     const opacitySlider = document.getElementById("camera-opacity-slider");
-    let opacity = cameraIcon.coverageConfig.opacity ?? (opacitySlider ? parseFloat(opacitySlider.value) : 0.3);
+    let opacity =
+      cameraIcon.coverageConfig.opacity ?? (opacitySlider ? parseFloat(opacitySlider.value) : 0.3);
     if (isNaN(opacity) || opacity < 0) opacity = 0.3;
     const finalOpacity = opacity * layers.devices.opacity;
 
     // Light pastel colors
     const zones = [
-      { name: "detection", dist: distances.detection, color: `rgba(186, 225, 255, ${finalOpacity})` }, // Blue
-      { name: "observation", dist: distances.observation, color: `rgba(186, 255, 201, ${finalOpacity})` }, // Green
-      { name: "recognition", dist: distances.recognition, color: `rgba(255, 255, 186, ${finalOpacity})` }, // Yellow
-      { name: "identification", dist: distances.identification, color: `rgba(255, 179, 186, ${finalOpacity})` }, // Red
+      {
+        name: "detection",
+        dist: distances.detection,
+        color: `rgba(186, 225, 255, ${finalOpacity})`,
+      }, // Blue
+      {
+        name: "observation",
+        dist: distances.observation,
+        color: `rgba(186, 255, 201, ${finalOpacity})`,
+      }, // Green
+      {
+        name: "recognition",
+        dist: distances.recognition,
+        color: `rgba(255, 255, 186, ${finalOpacity})`,
+      }, // Yellow
+      {
+        name: "identification",
+        dist: distances.identification,
+        color: `rgba(255, 179, 186, ${finalOpacity})`,
+      }, // Red
     ];
 
     // Sort by distance descending (draw largest first)
@@ -104,7 +121,13 @@ export function createDoriZones(cameraIcon, fabricCanvas, commonProps) {
       // Skip if zone is entirely within deadzone
       if (radiusPixels <= currentMinRange) return;
 
-      const points = cameraIcon.createCoveragePoints(cameraIcon.coverageConfig.startAngle, cameraIcon.coverageConfig.endAngle, center.x, center.y, radiusPixels);
+      const points = cameraIcon.createCoveragePoints(
+        cameraIcon.coverageConfig.startAngle,
+        cameraIcon.coverageConfig.endAngle,
+        center.x,
+        center.y,
+        radiusPixels
+      );
 
       const poly = new fabric.Polygon(points, {
         ...commonProps,
@@ -121,4 +144,3 @@ export function createDoriZones(cameraIcon, fabricCanvas, commonProps) {
   }
   return doriZones;
 }
-

@@ -1,4 +1,10 @@
-import { closeSidebar, startTool, stopCurrentTool, registerToolCleanup, setupColorPicker } from "./drawing-utils.js";
+import {
+  closeSidebar,
+  startTool,
+  stopCurrentTool,
+  registerToolCleanup,
+  setupColorPicker,
+} from "./drawing-utils.js";
 
 if (!window.activeTitleBlocks) window.activeTitleBlocks = [];
 
@@ -15,8 +21,11 @@ export function setupTitleBlockTool(fabricCanvas) {
   };
 
   const getActiveTitleBlocks = () => window.activeTitleBlocks || [];
-  const addToActiveTitleBlocks = (block) => (window.activeTitleBlocks = window.activeTitleBlocks || []).push(block);
-  const removeFromActiveTitleBlocks = (block) => window.activeTitleBlocks && (window.activeTitleBlocks = window.activeTitleBlocks.filter((b) => b !== block));
+  const addToActiveTitleBlocks = (block) =>
+    (window.activeTitleBlocks = window.activeTitleBlocks || []).push(block);
+  const removeFromActiveTitleBlocks = (block) =>
+    window.activeTitleBlocks &&
+    (window.activeTitleBlocks = window.activeTitleBlocks.filter((b) => b !== block));
   const getValue = (id) => document.getElementById(id)?.value || "";
 
   const getClientDetails = () => {
@@ -91,13 +100,15 @@ export function setupTitleBlockTool(fabricCanvas) {
     const getLogoContainer = (obj) => {
       // If containerBounds exists, use them directly (they're already correct)
       // Otherwise fall back to object position
-      const x = obj.containerBounds?.left ?? (obj.left - config.cellPadding);
-      const y = obj.containerBounds?.top ?? (obj.top - config.cellPadding);
+      const x = obj.containerBounds?.left ?? obj.left - config.cellPadding;
+      const y = obj.containerBounds?.top ?? obj.top - config.cellPadding;
       return { x, y };
     };
 
     if (details.logoSrc) {
-      const obj = placeholder || (existingLogo?._originalElement?.src !== details.logoSrc ? existingLogo : null);
+      const obj =
+        placeholder ||
+        (existingLogo?._originalElement?.src !== details.logoSrc ? existingLogo : null);
       if (obj) {
         const { x, y } = getLogoContainer(obj);
         group.remove(obj);
@@ -130,7 +141,8 @@ export function setupTitleBlockTool(fabricCanvas) {
     });
   };
 
-  const createRect = (left, top, width, height, fill = "white") => new fabric.Rect({ left, top, width, height, fill, stroke: config.borderColor, strokeWidth: 1 });
+  const createRect = (left, top, width, height, fill = "white") =>
+    new fabric.Rect({ left, top, width, height, fill, stroke: config.borderColor, strokeWidth: 1 });
 
   const createText = (text, left, top, width, options = {}) =>
     new fabric.Textbox(text, {
@@ -223,8 +235,18 @@ export function setupTitleBlockTool(fabricCanvas) {
         );
         items.push(createRect(col.x, y + headerH, colW, contentH));
 
-        const textOpts = s.isLogo ? { isClientLogo: true } : { textAlign: "center", editable: !!s.editable, [s.field]: true };
-        items.push(createText(s.content, col.x + config.cellPadding, y + headerH + config.cellPadding, colW - 2 * config.cellPadding, textOpts));
+        const textOpts = s.isLogo
+          ? { isClientLogo: true }
+          : { textAlign: "center", editable: !!s.editable, [s.field]: true };
+        items.push(
+          createText(
+            s.content,
+            col.x + config.cellPadding,
+            y + headerH + config.cellPadding,
+            colW - 2 * config.cellPadding,
+            textOpts
+          )
+        );
         y += s.height;
       });
     });
@@ -264,7 +286,14 @@ export function setupTitleBlockTool(fabricCanvas) {
         const placeholder = group.getObjects().find((obj) => obj.isClientLogo);
         if (placeholder) {
           group.remove(placeholder);
-          createLogo(group, details.logoSrc, placeholder.left - config.cellPadding, placeholder.top - config.cellPadding, colW, logoH);
+          createLogo(
+            group,
+            details.logoSrc,
+            placeholder.left - config.cellPadding,
+            placeholder.top - config.cellPadding,
+            colW,
+            logoH
+          );
         }
       }, 100);
     }
@@ -277,9 +306,11 @@ export function setupTitleBlockTool(fabricCanvas) {
       const rect = obj.getBoundingRect();
 
       if (rect.left < bounds.left) obj.set("left", obj.left + (bounds.left - rect.left));
-      if (rect.left + rect.width > bounds.right) obj.set("left", obj.left - (rect.left + rect.width - bounds.right));
+      if (rect.left + rect.width > bounds.right)
+        obj.set("left", obj.left - (rect.left + rect.width - bounds.right));
       if (rect.top < bounds.top) obj.set("top", obj.top + (bounds.top - rect.top));
-      if (rect.top + rect.height > bounds.bottom) obj.set("top", obj.top - (rect.top + rect.height - bounds.bottom));
+      if (rect.top + rect.height > bounds.bottom)
+        obj.set("top", obj.top - (rect.top + rect.height - bounds.bottom));
     }
   });
 
@@ -295,7 +326,15 @@ export function setupTitleBlockTool(fabricCanvas) {
   };
 
   const setupListeners = () => {
-    ["client-date-input", "client-name-test-input", "address-input", "report-title-input", "rev-one-input", "rev-two-input", "rev-three-input"].forEach((id) => {
+    [
+      "client-date-input",
+      "client-name-test-input",
+      "address-input",
+      "report-title-input",
+      "rev-one-input",
+      "rev-two-input",
+      "rev-three-input",
+    ].forEach((id) => {
       const input = document.getElementById(id);
       if (input) {
         input.addEventListener("input", updateAllTitleBlocks);
@@ -354,7 +393,8 @@ export function setupTitleBlockTool(fabricCanvas) {
     });
   }
 
-  const removalHandler = (e) => e.target?.deviceType === "title-block" && removeFromActiveTitleBlocks(e.target);
+  const removalHandler = (e) =>
+    e.target?.deviceType === "title-block" && removeFromActiveTitleBlocks(e.target);
   fabricCanvas.off("object:removed", removalHandler);
   fabricCanvas.on("object:removed", removalHandler);
 

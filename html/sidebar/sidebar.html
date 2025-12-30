@@ -1,0 +1,63 @@
+<!-- Main Sidebar Navigation Buttons -->
+<div id="sidebar">
+  <button class="sidebar-btn" data-menu="project-options-submenu">
+    <img src="./images/icons/project-options.svg" alt="Project Options Icon" />
+    <span>Project Options</span>
+  </button>
+  <button class="sidebar-btn" data-menu="add-devices-submenu">
+    <img src="./images/icons/add-devices.svg" alt="Add Devices Icon" />
+    <span>Add Devices</span>
+  </button>
+  <button class="sidebar-btn" data-menu="drawing-tools-submenu">
+    <img src="./images/icons/drawing-tools.svg" alt="Drawing Tools Icon" />
+    <span>Drawing Tools</span>
+  </button>
+  <button class="sidebar-btn" data-menu="layer-controls-submenu">
+    <img src="./images/icons/layers.svg" alt="Layer Icon" />
+    <span>Layer Controls</span>
+  </button>
+  <button class="sidebar-btn" data-menu="client-details-submenu">
+    <img src="./images/icons/client-details.svg" alt="Client Icon" />
+    <span>Client Details</span>
+  </button>
+  <button class="sidebar-btn" data-menu="risk-assessment-submenu">
+    <img src="./images/icons/risk-assessment.svg" alt="Risk Assessment Icon" />
+    <span>Risk Assessment</span>
+  </button>
+  <button class="sidebar-btn" data-menu="health-safety-submenu">
+    <img src="./images/icons/health-safety.svg" alt="Health Safety Icon" />
+    <span>Health Safety</span>
+  </button>
+  <button class="sidebar-btn" data-menu="settings-submenu">
+    <img src="./images/icons/settings.svg" alt="Settings Icon" />
+    <span>Settings</span>
+  </button>
+  <div id="undo-redo-btns">
+    <button id="undo-btn" disabled>
+      <img src="./images/icons/undo-btn.svg" alt="Undo" />
+    </button>
+    <button id="redo-btn" disabled>
+      <img src="./images/icons/redo.svg" />
+    </button>
+  </div>
+</div>
+
+<!-- Sub Sidebar -->
+<div id="sub-sidebar" class="sub-sidebar hidden">
+  <div class="offcanvas-header bg-secondary text-white">
+    <h5 class="offcanvas-title header-title" id="sub-sidebar-title">Menu</h5>
+    <button type="button" class="btn-close btn-close-white" aria-label="Close" id="close-sub-sidebar"></button>
+  </div>
+
+  <div class="sub-sidebar-content">
+    <!-- Submenu content will be loaded here -->
+    <div id="project-options-submenu" class="submenu" data-include="./html/sidebar/submenus/project-options.html"></div>
+    <div id="layer-controls-submenu" class="submenu" data-include="./html/sidebar/submenus/layer-controls.html"></div>
+    <div id="add-devices-submenu" class="submenu" data-include="./html/sidebar/submenus/add-devices.html"></div>
+    <div id="drawing-tools-submenu" class="submenu" data-include="./html/sidebar/submenus/drawing-tools.html"></div>
+    <div id="client-details-submenu" class="submenu" data-include="./html/sidebar/submenus/client-details.html"></div>
+    <div id="risk-assessment-submenu" class="submenu" data-include="./html/sidebar/submenus/risk-assessment.html"></div>
+    <div id="health-safety-submenu" class="submenu" data-include="./html/sidebar/submenus/health-safety.html"></div>
+    <div id="settings-submenu" class="submenu" data-include="./html/sidebar/submenus/settings.html"></div>
+  </div>
+</div>

@@ -4,19 +4,85 @@ import { closeSidebar, startTool, stopCurrentTool, setupDeletion, applyStandardS
 export function setupShapeTools(fabricCanvas) {
   const circleBtn = document.getElementById("add-circle-btn");
   const squareBtn = document.getElementById("add-square-btn");
+  const accessPointBtn = document.getElementById("add-access-point-btn");
+  const hotspotBtn = document.getElementById("create-hotspot-btn");
 
-  setupDeletion(fabricCanvas, (obj) => obj.type === "circle" || obj.type === "rect");
+  setupDeletion(fabricCanvas, (obj) => obj.type === "circle" || obj.type === "rect" || obj.isAccessPoint === true || obj.isHotspot === true);
 
   // Activates circle tool
-  circleBtn.addEventListener("click", () => {
-    closeSidebar();
-    startTool(fabricCanvas, "circle", handleCircleClick);
-  });
+  if (circleBtn) {
+    circleBtn.addEventListener("click", () => {
+      closeSidebar();
+      startTool(fabricCanvas, "circle", handleCircleClick);
+    });
+  } else {
+    document.addEventListener("htmlIncludesLoaded", () => {
+      document.getElementById("add-circle-btn")?.addEventListener("click", () => {
+        closeSidebar();
+        startTool(fabricCanvas, "circle", handleCircleClick);
+      });
+    });
+  }
 
   // Activates square tool
-  squareBtn.addEventListener("click", () => {
-    closeSidebar();
-    startTool(fabricCanvas, "square", handleSquareClick);
+  if (squareBtn) {
+    squareBtn.addEventListener("click", () => {
+      closeSidebar();
+      startTool(fabricCanvas, "square", handleSquareClick);
+    });
+  } else {
+    document.addEventListener("htmlIncludesLoaded", () => {
+      document.getElementById("add-square-btn")?.addEventListener("click", () => {
+        closeSidebar();
+        startTool(fabricCanvas, "square", handleSquareClick);
+      });
+    });
+  }
+
+  if (accessPointBtn) {
+    accessPointBtn.addEventListener("click", () => {
+      closeSidebar();
+      startTool(fabricCanvas, "access-point", handleAccessPointClick);
+    });
+  }
+
+  if (hotspotBtn) {
+    hotspotBtn.addEventListener("click", () => {
+      closeSidebar();
+      startTool(fabricCanvas, "hotspot", handleHotspotClick);
+    });
+  }
+
+  // Auto-open popover when selecting an access point or hotspot
+  const openAccessPointPopover = (target) => {
+    if (target && target.isAccessPoint && typeof window.showAccessPointPopover === "function") {
+      window.showAccessPointPopover(target);
+    }
+  };
+
+  const openHotspotPopover = (target) => {
+    if (target && target.isHotspot && typeof window.showHotspotPopover === "function") {
+      window.showHotspotPopover(target);
+    }
+  };
+
+  fabricCanvas.on("selection:created", (e) => {
+    const target = e.selected?.[0];
+    openAccessPointPopover(target);
+    openHotspotPopover(target);
+  });
+  fabricCanvas.on("selection:updated", (e) => {
+    const target = e.selected?.[0];
+    openAccessPointPopover(target);
+    openHotspotPopover(target);
+  });
+  fabricCanvas.on("selection:cleared", () => {
+    if (typeof window.hideAccessPointPopover === "function") {
+      window.hideAccessPointPopover();
+    }
+    if (typeof window.hideHotspotPopover === "function") {
+      window.hideHotspotPopover();
+    }
   });
 
   // Places circle on canvas
@@ -63,6 +129,127 @@ export function setupShapeTools(fabricCanvas) {
     applyStandardStyling(square);
     fabricCanvas.add(square);
     fabricCanvas.setActiveObject(square);
+    stopCurrentTool();
+  }
+
+  // Places an access point marker (circle with number)
+  function handleAccessPointClick(e) {
+    e.e.preventDefault();
+    e.e.stopPropagation();
+
+    const pointer = fabricCanvas.getPointer(e.e);
+    const labelNumber = window.accessPointCounter ?? 1;
+    window.accessPointCounter = labelNumber + 1;
+    const label = String(labelNumber);
+    const defaultName = `Access Point ${label}`;
+
+    const circle = new fabric.Circle({
+      radius: 16,
+      originX: "center",
+      originY: "center",
+      fill: "#fff200",
+      stroke: "#002b45",
+      strokeWidth: 4,
+      strokeUniform: true,
+    });
+
+    const text = new fabric.IText(label, {
+      fontSize: 16,
+      fontFamily: "Arial",
+      fontWeight: "700",
+      fill: "#002b45",
+      originX: "center",
+      originY: "center",
+      selectable: false,
+      evented: false,
+    });
+
+    const group = new fabric.Group([circle, text], {
+      left: pointer.x,
+      top: pointer.y,
+      originX: "center",
+      originY: "center",
+      lockUniScaling: true,
+      isAccessPoint: true,
+      groupType: "accessPoint",
+      accessPointLabel: label,
+      accessPointName: defaultName,
+      accessPointCondition: "",
+      accessPointNotes: "",
+      accessPointColor: circle.fill,
+      subTargetCheck: false,
+    });
+
+    applyStandardStyling(group);
+    fabricCanvas.add(group);
+    fabricCanvas.setActiveObject(group);
+    fabricCanvas.requestRenderAll();
+
+    if (typeof window.showAccessPointPopover === "function") {
+      window.showAccessPointPopover(group);
+    }
+
+    stopCurrentTool();
+  }
+
+  // Places a hotspot marker (circle with number) for safety
+  function handleHotspotClick(e) {
+    e.e.preventDefault();
+    e.e.stopPropagation();
+
+    const pointer = fabricCanvas.getPointer(e.e);
+    const labelNumber = window.hotspotCounter ?? 1;
+    window.hotspotCounter = labelNumber + 1;
+    const label = String(labelNumber);
+    const defaultName = `Hotspot ${label}`;
+
+    const circle = new fabric.Circle({
+      radius: 16,
+      originX: "center",
+      originY: "center",
+      fill: "#ff6b35",
+      stroke: "#8b0000",
+      strokeWidth: 4,
+      strokeUniform: true,
+    });
+
+    const text = new fabric.IText(label, {
+      fontSize: 16,
+      fontFamily: "Arial",
+      fontWeight: "700",
+      fill: "#ffffff",
+      originX: "center",
+      originY: "center",
+      selectable: false,
+      evented: false,
+    });
+
+    const group = new fabric.Group([circle, text], {
+      left: pointer.x,
+      top: pointer.y,
+      originX: "center",
+      originY: "center",
+      lockUniScaling: true,
+      isHotspot: true,
+      groupType: "hotspot",
+      hotspotLabel: label,
+      hotspotName: defaultName,
+      hotspotSeverity: "",
+      hotspotNotes: "",
+      hotspotColor: circle.fill,
+      hotspotStroke: circle.stroke,
+      subTargetCheck: false,
+    });
+
+    applyStandardStyling(group);
+    fabricCanvas.add(group);
+    fabricCanvas.setActiveObject(group);
+    fabricCanvas.requestRenderAll();
+
+    if (typeof window.showHotspotPopover === "function") {
+      window.showHotspotPopover(group);
+    }
+
     stopCurrentTool();
   }
 }

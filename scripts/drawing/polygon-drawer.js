@@ -15,10 +15,18 @@ class PolygonDrawer {
     this.keyHandler = null;
 
     // Initialize arrays and event listeners
-    const arrayName = type === "zone" ? "zones" : type === "room" ? "rooms" : "risks";
-    const btnId = type === "zone" ? "create-zone-btn" : type === "room" ? "create-room-btn" : "create-risk-btn";
+    const arrayName = type === "zone" ? "zones" : type === "room" ? "rooms" : type === "risk" ? "risks" : "safetyZones";
+    const btnId = type === "zone" ? "create-zone-btn" : type === "room" ? "create-room-btn" : type === "risk" ? "create-risk-btn" : "create-safety-btn";
     window[arrayName] = window[arrayName] || [];
-    document.getElementById(btnId)?.addEventListener("click", () => this.activate());
+
+    const btn = document.getElementById(btnId);
+    if (btn) {
+      btn.addEventListener("click", () => this.activate());
+    } else {
+      document.addEventListener("htmlIncludesLoaded", () => {
+        document.getElementById(btnId)?.addEventListener("click", () => this.activate());
+      });
+    }
 
     // Clear edit handles if selection is fully cleared (clicking empty space)
     if (!fabricCanvas.polygonEditSelectionHandlerAttached) {
@@ -47,7 +55,7 @@ class PolygonDrawer {
 
   // Get array name based on type
   getArrayName() {
-    return this.type === "zone" ? "zones" : this.type === "room" ? "rooms" : "risks";
+    return this.type === "zone" ? "zones" : this.type === "room" ? "rooms" : this.type === "risk" ? "risks" : "safetyZones";
   }
 
   // Get color based on type and count
@@ -57,10 +65,12 @@ class PolygonDrawer {
       zone: [0, 120, 240, 60, 180, 300, 30, 150, 270, 90],
       room: [210, 30, 120, 270, 60, 330, 90, 180, 240, 300],
       risk: [170, 280, 320, 200, 45, 260, 340, 80, 300, 160], // Starts with teal (#00897b), then varied
+      safety: [35, 45, 55, 25, 15, 65, 75, 30, 40, 50], // Darker yellow/orange hues for safety zones
     };
     const hue = hueArrays[this.type][count % 10];
     if (this.type === "zone") return `hsla(${hue}, 70%, 60%, 1)`;
     if (this.type === "room") return `hsl(${hue}, 70%, 50%)`;
+    if (this.type === "safety") return `hsl(${hue}, 90%, 45%)`; // Safety: darker yellow-based colors
     return `hsl(${hue}, 100%, 27%)`; // Risk: starts teal, then varied colors
   }
 
@@ -314,7 +324,6 @@ class PolygonDrawer {
     const typeName = this.type.charAt(0).toUpperCase() + this.type.slice(1);
     const name = `${typeName} ${count + 1}`;
     const color = this.getDrawingColor();
-    const height = 2.4;
 
     // Determine fill style based on type
     let fillStyle;
@@ -322,13 +331,16 @@ class PolygonDrawer {
       fillStyle = color.replace("1)", "0.2)");
     } else if (this.type === "room") {
       fillStyle = "transparent";
+    } else if (this.type === "safety") {
+      // Safety: yellow tinted fill
+      fillStyle = this.hexToRgba(color, 0.3);
     } else {
       // Risk: more prominent fill to clearly distinguish from zones/rooms
       fillStyle = this.hexToRgba(color, 0.35);
     }
 
     // Create polygon object
-    const polygon = new fabric.Polygon(this.points, {
+    const polygonProps = {
       fill: fillStyle,
       stroke: color,
       strokeWidth: 2,
@@ -340,13 +352,19 @@ class PolygonDrawer {
       class: `${this.type}-polygon`,
       [`${this.type}Name`]: name,
       [`${this.type}Notes`]: "",
-      area,
-      height,
-      volume: area * height,
-    });
+    };
+
+    if (this.type !== "risk") {
+      const height = 2.4;
+      polygonProps.area = area;
+      polygonProps.height = height;
+      polygonProps.volume = area * height;
+    }
+
+    const polygon = new fabric.Polygon(this.points, polygonProps);
 
     // Create text object
-    const text = new fabric.IText(name, {
+    const textProps = {
       class: `${this.type}-text`,
       left: center.x,
       top: center.y,
@@ -360,7 +378,6 @@ class PolygonDrawer {
       editable: false,
       hasControls: false,
       hasBorders: true,
-      displayHeight: height,
       borderColor: "#f8794b",
       borderScaleFactor: 2,
       cornerSize: 8,
@@ -371,15 +388,29 @@ class PolygonDrawer {
       padding: 5,
       offsetX: 0,
       offsetY: 0,
-    });
+    };
+
+    if (this.type !== "risk") {
+      textProps.displayHeight = 2.4;
+    }
+
+    const text = new fabric.IText(name, textProps);
 
     // Set up event handlers
     this.addEventHandlers(polygon, text);
 
     // Add to appropriate array and canvas
-    const item = this.type === "zone" 
-      ? { polygon, text } 
-      : { polygon, text, [`${this.type}Name`]: name, [`${this.type}Notes`]: "", devices: [], [`${this.type}Color`]: color, area, height, volume: area * height };
+    let item;
+    if (this.type === "zone") {
+      item = { polygon, text };
+    } else if (this.type === "room") {
+      const height = 2.4;
+      item = { polygon, text, roomName: name, roomNotes: "", devices: [], roomColor: color, area, height, volume: area * height };
+    } else if (this.type === "safety") {
+      item = { polygon, text, safetyName: name, safetyNotes: "", safetySubDetails: [], safetyContainment: "", devices: [], safetyColor: color };
+    } else {
+      item = { polygon, text, riskName: name, riskNotes: "", devices: [], riskColor: color };
+    }
     window[arrayName].push(item);
 
     // Handle undo system
@@ -446,6 +477,9 @@ class PolygonDrawer {
       } else if (this.type === "room") {
         const room = window.rooms.find((r) => r.polygon === polygon);
         window.showRoomProperties?.(polygon, text, room);
+      } else if (this.type === "safety") {
+        const safety = window.safetyZones.find((s) => s.polygon === polygon);
+        window.showSafetyProperties?.(polygon, text, safety);
       } else {
         // Risk type
         const risk = window.risks.find((r) => r.polygon === polygon);
@@ -546,9 +580,14 @@ export function setupRiskTool(fabricCanvas) {
   setupDeletion(fabricCanvas, "risk");
 }
 
-// Unified deletion handler for zones, rooms, and risks
+export function setupSafetyTool(fabricCanvas) {
+  new PolygonDrawer(fabricCanvas, "safety");
+  setupDeletion(fabricCanvas, "safety");
+}
+
+// Unified deletion handler for zones, rooms, risks, and safety zones
 function setupDeletion(fabricCanvas, type) {
-  const arrayName = type === "zone" ? "zones" : type === "room" ? "rooms" : "risks";
+  const arrayName = type === "zone" ? "zones" : type === "room" ? "rooms" : type === "risk" ? "risks" : "safetyZones";
   const className = `${type}-polygon`;
   const textClass = `${type}-text`;
 

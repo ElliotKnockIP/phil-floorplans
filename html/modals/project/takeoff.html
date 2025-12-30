@@ -1,0 +1,58 @@
+<!-- Takeoff Modal -->
+<div class="modal fade custom-modal" id="takeoff-modal" tabindex="-1" aria-labelledby="takeoffModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-xl">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-header-content">
+          <div class="modal-header-left">
+            <h1 class="modal-title fs-5" id="takeoffModalLabel">Device Takeoff List</h1>
+          </div>
+          <div class="modal-header-right nav-buttons">
+            <button id="export-takeoff-csv" class="modal-header-btn">
+              <div class="icon-label">
+                <img src="images/icons/download-black.svg" alt="Download Icon" />
+                <span>Export CSV</span>
+              </div>
+            </button>
+            <button id="print-takeoff" class="modal-header-btn">
+              <div class="icon-label">
+                <img src="images/icons/print-black.svg" alt="Print Icon" />
+                <span>Print List</span>
+              </div>
+            </button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-body">
+        <!-- Survey Information Section -->
+        <div class="card mb-3" id="survey-information-card">
+          <div class="card-body">
+            <h5 class="card-title mb-3">Survey Information</h5>
+            <div class="row g-3">
+              <div class="col-12 col-md-6">
+                <label for="takeoff-grading" class="form-label">Grading</label>
+                <textarea id="takeoff-grading" class="form-control survey-textarea" rows="1" placeholder="Enter grading..."></textarea>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="takeoff-monitoring" class="form-label">Monitoring</label>
+                <textarea id="takeoff-monitoring" class="form-control survey-textarea" rows="1" placeholder="Enter monitoring..."></textarea>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="takeoff-general-description" class="form-label">General Description</label>
+                <textarea id="takeoff-general-description" class="form-control survey-textarea" rows="1" placeholder="Enter general description..."></textarea>
+              </div>
+              <div class="col-12 col-md-6">
+                <label for="takeoff-equipment-required" class="form-label">Equipment Required</label>
+                <textarea id="takeoff-equipment-required" class="form-control survey-textarea" rows="1" placeholder="Enter equipment required..."></textarea>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="takeoff-summary-cards"></div>
+        <div id="takeoff-table-container"></div>
+      </div>
+    </div>
+  </div>
+</div>

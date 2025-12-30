@@ -1,0 +1,30 @@
+<!-- Screenshot Modal -->
+<div class="modal custom-modal" id="cropScreenshotModal" tabindex="-1" aria-labelledby="cropScreenshotModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div class="modal-header-content">
+          <div class="modal-header-left">
+            <h1 class="modal-title fs-4" id="screenshotModalLabel">Capture Screenshot</h1>
+          </div>
+          <div class="modal-header-right nav-buttons">
+            <button id="crop-confirm-screenshot-btn" class="modal-header-btn">
+              <div class="icon-label">
+                <span>Confirm</span>
+                <img src="./images/icons/finish-black.svg" alt="Confirm Icon" />
+              </div>
+            </button>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+        </div>
+      </div>
+      <div class="modal-body">
+        <div class="crop-container">
+          <div id="crop-screenshot-result-container">
+            <img id="crop-screenshot-preview" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

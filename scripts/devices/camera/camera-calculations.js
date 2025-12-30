@@ -2,7 +2,7 @@
 // CAMERA CALCULATIONS
 // ============================================================================
 
-import { layers } from "../../canvas/canvas-layers.js";
+import { layers } from "../../canvas/interactions/LayerControls.js";
 import { DEFAULT_PIXELS_PER_METER } from "../../sidebar/sidebar-utils.js";
 
 // ============================================================================
@@ -27,14 +27,24 @@ export const lineIntersect = (p1, p2, p3, p4) => {
   if (Math.abs(denom) < 1e-10) return null;
   const uA = ((p4.x - p3.x) * (p1.y - p3.y) - (p4.y - p3.y) * (p1.x - p3.x)) / denom;
   const uB = ((p2.x - p1.x) * (p1.y - p3.y) - (p2.y - p1.y) * (p1.x - p3.x)) / denom;
-  return uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1 ? { x: p1.x + uA * (p2.x - p1.x), y: p1.y + uA * (p2.y - p1.y) } : null;
+  return uA >= 0 && uA <= 1 && uB >= 0 && uB <= 1
+    ? { x: p1.x + uA * (p2.x - p1.x), y: p1.y + uA * (p2.y - p1.y) }
+    : null;
 };
 
 // Helper for degrees to radians to avoid fabric dependency in pure math file
 const toRad = (deg) => deg * (Math.PI / 180);
 
 // Creates coverage area points with wall collision detection
-export function createCoveragePoints(walls, camera, startAngle, endAngle, centerX, centerY, overrideRadius) {
+export function createCoveragePoints(
+  walls,
+  camera,
+  startAngle,
+  endAngle,
+  centerX,
+  centerY,
+  overrideRadius
+) {
   const span = angleDiff(startAngle, endAngle);
   const isFullCircle = span >= 359.9;
   const points = [];
@@ -46,9 +56,9 @@ export function createCoveragePoints(walls, camera, startAngle, endAngle, center
   const projectionMode = camera.coverageConfig.projectionMode || "circular";
   const midAngle = startAngle + span / 2;
 
-  // Determine number of rays for smoothness
-  // Full circle needs more rays (180), partial arcs use fewer but at least 20
-  const numRays = Math.max(isFullCircle ? 180 : Math.ceil(span / 2), 20);
+  // Determine number of rays for smoothness (optimized for performance)
+  // Full circle uses fewer rays for better performance, partial arcs maintain quality
+  const numRays = Math.max(isFullCircle ? 90 : Math.ceil(span / 3), 16);
   const step = (isFullCircle ? 360 : span) / numRays;
 
   const rayDistances = [];
@@ -63,7 +73,12 @@ export function createCoveragePoints(walls, camera, startAngle, endAngle, center
     // --- Rectangular Projection Logic ---
     // If mode is rectangular, stretch the radius for rays further from the center
     // to create a flat edge instead of a curved arc.
-    if (!isFullCircle && projectionMode === "rectangular" && span < 170 && Math.abs(maxRadius) > 0.01) {
+    if (
+      !isFullCircle &&
+      projectionMode === "rectangular" &&
+      span < 170 &&
+      Math.abs(maxRadius) > 0.01
+    ) {
       const diffRad = toRad(angle - midAngle);
 
       // Only apply correction within reasonable angular bounds (< 80 degrees from center)
@@ -88,7 +103,12 @@ export function createCoveragePoints(walls, camera, startAngle, endAngle, center
 
     // Check for wall intersections from Center to RayEnd
     for (const wall of walls) {
-      const intersection = lineIntersect(center, rayEnd, { x: wall.x1, y: wall.y1 }, { x: wall.x2, y: wall.y2 });
+      const intersection = lineIntersect(
+        center,
+        rayEnd,
+        { x: wall.x1, y: wall.y1 },
+        { x: wall.x2, y: wall.y2 }
+      );
 
       if (intersection) {
         const dist = distance(center, intersection);
@@ -164,7 +184,14 @@ export function calculateCameraPhysics(activeObject) {
   const pixelsPerMeter = fabricCanvas?.pixelsPerMeter || DEFAULT_PIXELS_PER_METER;
 
   // Use sideFOV if available (calculated by spec panel), otherwise fallback to Plan Angle
-  const horizontalFov = activeObject.coverageConfig.sideFOV || (activeObject.angleDiff ? activeObject.angleDiff(activeObject.coverageConfig.startAngle, activeObject.coverageConfig.endAngle) : 60);
+  const horizontalFov =
+    activeObject.coverageConfig.sideFOV ||
+    (activeObject.angleDiff
+      ? activeObject.angleDiff(
+          activeObject.coverageConfig.startAngle,
+          activeObject.coverageConfig.endAngle
+        )
+      : 60);
   const fov = horizontalFov;
   const halfFov = fov / 2;
 
@@ -215,7 +242,14 @@ export function applyCameraPhysics(activeObject) {
   // for the coverage area (to prevent second wedge), but diagram still shows actual value
   const height = activeObject.coverageConfig.cameraHeight || 3;
   const tilt = activeObject.coverageConfig.cameraTilt ?? 25;
-  const horizontalFov = activeObject.coverageConfig.sideFOV || (activeObject.angleDiff ? activeObject.angleDiff(activeObject.coverageConfig.startAngle, activeObject.coverageConfig.endAngle) : 60);
+  const horizontalFov =
+    activeObject.coverageConfig.sideFOV ||
+    (activeObject.angleDiff
+      ? activeObject.angleDiff(
+          activeObject.coverageConfig.startAngle,
+          activeObject.coverageConfig.endAngle
+        )
+      : 60);
   const halfFov = horizontalFov / 2;
   const bottomRayAngleDeg = tilt + halfFov;
 
@@ -333,7 +367,10 @@ export const updateCameraFromSpecs = (camera) => {
   // Store the calculated plan angle for warning comparison
   camera.coverageConfig.calculatedAngle = planAngle;
 
-  const midAngle = (camera.coverageConfig.startAngle + camera.angleDiff(camera.coverageConfig.startAngle, camera.coverageConfig.endAngle) / 2) % 360;
+  const midAngle =
+    (camera.coverageConfig.startAngle +
+      camera.angleDiff(camera.coverageConfig.startAngle, camera.coverageConfig.endAngle) / 2) %
+    360;
 
   camera.coverageConfig.startAngle = (midAngle - planAngle / 2 + 360) % 360;
   camera.coverageConfig.endAngle = (midAngle + planAngle / 2) % 360;
