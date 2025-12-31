@@ -25,7 +25,7 @@ export class CameraCore {
     config.visible = config.visible ?? true;
     config.edgeStyle = config.edgeStyle || "solid";
     config.cameraHeight = config.cameraHeight || 3;
-    config.cameraTilt = config.cameraTilt ?? 25;
+    config.cameraTilt = config.cameraTilt ?? 45;
     config.cameraFov = config.cameraFov || 60;
     config.projectionMode = config.projectionMode || "circular";
     config.lockDistanceOnRotate = config.lockDistanceOnRotate ?? false;

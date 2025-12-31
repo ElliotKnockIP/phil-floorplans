@@ -216,7 +216,7 @@ export class CameraCoveragePanel {
     }
 
     if (this.tiltSlider) {
-      const tilt = config.cameraTilt ?? 25;
+      const tilt = config.cameraTilt ?? 45;
       this.tiltSlider.value = tilt;
       if (this.tiltInput) this.tiltInput.value = tilt;
       updateSliderTrack(this.tiltSlider, tilt, 0, 90);
@@ -244,8 +244,8 @@ export class CameraCoveragePanel {
     if (activeObject.createOrUpdateCoverageArea) activeObject.createOrUpdateCoverageArea();
 
     const height = activeObject.coverageConfig.cameraHeight || 3;
-    const tilt = activeObject.coverageConfig.cameraTilt ?? 25;
-    const fov = activeObject.coverageConfig.sideFOV || 60;
+    const tilt = activeObject.coverageConfig.cameraTilt ?? 45;
+    const fov = activeObject.coverageConfig.sideFOV || activeObject.coverageConfig.cameraFov || 60;
 
     drawSideView(this.sideViewCanvas, height, tilt, clampedRadiusMeters, minRangeMeters, fov);
   }

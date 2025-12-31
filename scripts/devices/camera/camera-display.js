@@ -54,7 +54,7 @@ export const updateIconPosition = (icon, camera, center, angle, radius, iconScal
     }
   }
 
-  let iconAngle = angle + 90;
+  let iconAngle = fabric.util.radiansToDegrees(angle) + 90;
   if (iconType === "left") iconAngle = startAngle + 90;
   else if (iconType === "right") {
     const span = angleDiff(startAngle, endAngle);

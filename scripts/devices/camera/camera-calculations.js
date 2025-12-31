@@ -138,14 +138,12 @@ export function calculateCameraPhysics(activeObject) {
   if (!activeObject || !activeObject.coverageConfig) return null;
 
   const height = activeObject.coverageConfig.cameraHeight || 3;
-  const tilt = activeObject.coverageConfig.cameraTilt ?? 25;
+  const tilt = activeObject.coverageConfig.cameraTilt ?? 45;
   const fabricCanvas = activeObject.canvas;
   const pixelsPerMeter = fabricCanvas?.pixelsPerMeter || DEFAULT_PIXELS_PER_METER;
 
   const config = activeObject.coverageConfig;
-  const currentSpan = activeObject.angleDiff ? activeObject.angleDiff(config.startAngle, config.endAngle) : 60;
-  const horizontalFov = config.sideFOV || currentSpan;
-  const fov = horizontalFov;
+  const fov = config.sideFOV || config.cameraFov || 60;
   const halfFov = fov / 2;
 
   // Calculate the maximum ground distance visible at the top of the FOV
@@ -184,11 +182,10 @@ export function applyCameraPhysics(activeObject) {
   const { minRangeMeters, maxDistMeters, pixelsPerMeter } = physics;
 
   const height = activeObject.coverageConfig.cameraHeight || 3;
-  const tilt = activeObject.coverageConfig.cameraTilt ?? 25;
+  const tilt = activeObject.coverageConfig.cameraTilt ?? 45;
   const config = activeObject.coverageConfig;
-  const currentSpan = activeObject.angleDiff ? activeObject.angleDiff(config.startAngle, config.endAngle) : 60;
-  const horizontalFov = config.sideFOV || currentSpan;
-  const halfFov = horizontalFov / 2;
+  const fov = config.sideFOV || config.cameraFov || 60;
+  const halfFov = fov / 2;
   const bottomRayAngleDeg = tilt + halfFov;
 
   // Clamp dead zone to 0 if the camera is looking straight down
