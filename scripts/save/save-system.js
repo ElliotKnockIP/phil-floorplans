@@ -3,7 +3,9 @@ import { CameraDeviceSerializer } from "./device-save.js";
 import { DrawingObjectSerializer } from "./drawing-serializer.js";
 import { serializeTopologyState, loadTopologyState } from "./network-save.js";
 
+// Main system for managing project saving and loading operations
 class SaveSystem {
+  // Initialize with canvas and create sub-serializers
   constructor(fabricCanvas) {
     this.fabricCanvas = fabricCanvas;
     this.cameraSerializer = new CameraDeviceSerializer(fabricCanvas);
@@ -35,10 +37,12 @@ class SaveSystem {
     return ProjectUI.serializeAccessControlRiskAssessment();
   }
 
+  // Serializes network topology data
   serializeTopologyData() {
     return serializeTopologyState(window.topologyManager, window.topologyBuilderAPI);
   }
 
+  // Triggers a file download for the given data
   downloadFile(data, filename) {
     SerializationUtils.downloadFile(data, filename);
   }
@@ -131,22 +135,27 @@ class SaveSystem {
     }
   }
 
+  // Loads client details into the sidebar form
   async loadClientDetailsToSidebar(clientDetails) {
     return ProjectUI.loadClientDetailsToSidebar(clientDetails);
   }
 
+  // Loads screenshots into the sidebar gallery
   async loadScreenshotsToSidebar(screenshots) {
     return ProjectUI.loadScreenshotsToSidebar(screenshots);
   }
 
+  // Loads intruder risk assessment into the sidebar form
   async loadRiskAssessmentToSidebar(riskAssessment) {
     return ProjectUI.loadRiskAssessmentToSidebar(riskAssessment);
   }
 
+  // Loads CCTV risk assessment into the sidebar form
   async loadCctvRiskAssessmentToSidebar(cctvRiskAssessment) {
     return ProjectUI.loadCctvRiskAssessmentToSidebar(cctvRiskAssessment);
   }
 
+  // Loads access control risk assessment into the sidebar form
   async loadAccessControlRiskAssessmentToSidebar(accessControlRiskAssessment) {
     return ProjectUI.loadAccessControlRiskAssessmentToSidebar(accessControlRiskAssessment);
   }
@@ -200,10 +209,16 @@ class SaveSystem {
           if (projectData.screenshots) await this.loadScreenshotsToSidebar(projectData.screenshots);
           // Background first
           if (projectData.canvas?.objects) {
-            const backgroundObjects = projectData.canvas.objects.filter((obj) => obj.type === "image" && (obj.isBackground || (!obj.selectable && !obj.evented)));
+            const backgroundObjects = projectData.canvas.objects.filter((obj) => {
+              const isImage = obj.type === "image";
+              const isBg = obj.isBackground;
+              const isStatic = !obj.selectable && !obj.evented;
+              return isImage && (isBg || isStatic);
+            });
             if (backgroundObjects.length > 0) {
               await new Promise((resolveCanvas) => {
-                this.fabricCanvas.loadFromJSON({ version: projectData.canvas.version, objects: backgroundObjects }, () => {
+                const canvasData = { version: projectData.canvas.version, objects: backgroundObjects };
+                this.fabricCanvas.loadFromJSON(canvasData, () => {
                   this.fabricCanvas.getObjects().forEach((obj) => {
                     if (obj.isBackground) obj.set({ selectable: false, evented: false, hoverCursor: "default" });
                   });
@@ -252,7 +267,9 @@ class SaveSystem {
               }, 50);
             } else {
               const fallbackToggle = typeof document !== "undefined" ? document.getElementById("global-icon-text-toggle") : null;
-              if (fallbackToggle && projectData.settings.globalIconTextVisible !== undefined) fallbackToggle.checked = !!projectData.settings.globalIconTextVisible;
+              if (fallbackToggle && projectData.settings.globalIconTextVisible !== undefined) {
+                fallbackToggle.checked = !!projectData.settings.globalIconTextVisible;
+              }
             }
           }
 
@@ -293,6 +310,7 @@ class SaveSystem {
     });
   }
 
+  // Connects save and load buttons to their respective functions
   setupButtonIntegration() {
     const checkButtons = setInterval(() => {
       const saveButton = document.getElementById("save-project-btn");
@@ -319,6 +337,7 @@ class SaveSystem {
     setTimeout(() => clearInterval(checkButtons), 10000);
   }
 
+  // Configures the load button and its hidden file input
   setupLoadButton(loadButton) {
     const existingFileInput = document.getElementById("load-project-input");
     if (existingFileInput) {

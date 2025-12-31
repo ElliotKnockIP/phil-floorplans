@@ -1,5 +1,4 @@
-// Background Manager - Handles all background-related operations
-// This module orchestrates the background selection, cropping, and scaling process
+// Background Manager handles background selection, cropping, and scaling
 
 import { ImageCropper } from "./ImageCropper.js";
 import { BackgroundSelector } from "./BackgroundSelector.js";
@@ -11,10 +10,10 @@ export class BackgroundManager {
     this.currentSource = null;
     this.isFileUpload = false;
     this.modalOptions = { backdrop: "static", keyboard: false, focus: true };
-    this.replaceMode = false; // Flag to indicate if replacing existing background
-    this.changeScaleMode = false; // Flag to indicate if changing scale of existing background
+    this.replaceMode = false; // For replacing existing background
+    this.changeScaleMode = false; // For changing scale of existing background
 
-    // Helper to keep Bootstrap backdrops from stacking and over-darkening
+    // Keep Bootstrap backdrops from stacking and over-darkening
     this.normalizeBackdrops = function () {
       const backdrops = Array.from(document.querySelectorAll(".modal-backdrop"));
       if (backdrops.length > 1) backdrops.slice(0, -1).forEach((bd) => bd.remove());
@@ -22,7 +21,7 @@ export class BackgroundManager {
     };
 
     // Initialize components
-    this.cropper = new ImageCropper(fabricCanvas, this);
+    this.cropper = new ImageCropper(this);
     this.sources = new BackgroundSelector(fabricCanvas, this);
     this.scaler = new ScaleCalculator(fabricCanvas, this);
 
@@ -33,13 +32,7 @@ export class BackgroundManager {
 
   // Ensure all background modals use a static backdrop and ignore ESC
   configureBackgroundModals() {
-    const modalIds = [
-      "customModal",
-      "mapModal",
-      "cropModal",
-      "customBackgroundModal",
-      "scaleModal",
-    ];
+    const modalIds = ["customModal", "mapModal", "cropModal", "customBackgroundModal", "scaleModal"];
 
     modalIds.forEach((id) => {
       const modal = document.getElementById(id);
@@ -54,7 +47,7 @@ export class BackgroundManager {
     modal.setAttribute("data-bs-keyboard", "false");
   }
 
-  // Guarantee at least one backdrop exists and body stays locked
+  // Ensure at least one backdrop exists and body stays locked
   ensureBackdrop() {
     const backdrops = Array.from(document.querySelectorAll(".modal-backdrop"));
     if (backdrops.length === 0) {
@@ -65,12 +58,12 @@ export class BackgroundManager {
     document.body.classList.add("modal-open");
   }
 
-  // Get default modal options for consistent behavior
+  // Get default modal options
   getModalOptions() {
     return { ...this.modalOptions };
   }
 
-  // Get or create a Bootstrap modal instance with consistent options
+  // Get or create a Bootstrap modal instance
   getModalInstance(modal) {
     if (!modal) return null;
     this.configureModalElement(modal);
@@ -89,7 +82,7 @@ export class BackgroundManager {
   showModal(modal) {
     const instance = this.getModalInstance(modal);
     instance?.show();
-    // After Bootstrap injects/removes backdrops, ensure we keep exactly one
+    // Ensure exactly one backdrop exists after Bootstrap updates
     setTimeout(() => {
       this.ensureBackdrop();
       this.normalizeBackdrops();
@@ -97,7 +90,7 @@ export class BackgroundManager {
     return instance;
   }
 
-  // Initialize the background selection modal
+  // Initialize background components
   initialize() {
     this.sources.initialize();
     this.cropper.initialize();
@@ -127,9 +120,8 @@ export class BackgroundManager {
     this.applyBackground(scaledImageData);
   }
 
-  // Apply the final background to canvas
+  // Apply final background to canvas
   applyBackground(imageData) {
-    // Implementation depends on the mode
     if (this.changeScaleMode) {
       this.updateBackgroundScale(imageData);
     } else if (this.replaceMode) {
@@ -141,19 +133,18 @@ export class BackgroundManager {
     this.closeAllModals();
   }
 
-  // Update background scale for change scale mode (background stays, scale changes)
-  updateBackgroundScale(imageData) {
-    // The scale has already been applied in scale-calculator, just clear the mode
+  // Update background scale
+  updateBackgroundScale() {
+    // Scale is applied in scale-calculator, just clear the mode
     this.changeScaleMode = false;
   }
 
   // Replace existing background
   replaceExistingBackground(imageData) {
-    // Find existing background
     const existingBg = this.findExistingBackground();
 
     if (existingBg) {
-      // Match the scale and position of existing background
+      // Match scale and position of existing background
       const targetScaleX = (existingBg.width * existingBg.scaleX) / imageData.width;
       const targetScaleY = (existingBg.height * existingBg.scaleY) / imageData.height;
 
@@ -161,9 +152,7 @@ export class BackgroundManager {
 
       // Remove from layers array
       if (window.layers && window.layers.background && window.layers.background.objects) {
-        window.layers.background.objects = window.layers.background.objects.filter(
-          (obj) => obj !== existingBg
-        );
+        window.layers.background.objects = window.layers.background.objects.filter((obj) => obj !== existingBg);
       }
 
       fabric.Image.fromURL(
@@ -188,16 +177,15 @@ export class BackgroundManager {
         { crossOrigin: "anonymous" }
       );
     } else {
-      // No existing background found, add as new background
+      // No existing background found, add as new
       this.addNewBackground(imageData);
     }
-    // Clear the flag only after replacement is handled
     this.replaceMode = false;
   }
 
   // Add new background
   addNewBackground(imageData) {
-    // Clear all existing objects and reset canvas
+    // Clear objects and reset canvas
     this.clearCanvasForNewBackground();
 
     const canvasWidth = this.fabricCanvas.getWidth();
@@ -274,11 +262,11 @@ export class BackgroundManager {
 
   // Find existing background image
   findExistingBackground() {
-    return this.fabricCanvas
-      .getObjects()
-      .find(
-        (obj) => obj.type === "image" && (obj.isBackground || (!obj.selectable && !obj.evented))
-      );
+    return this.fabricCanvas.getObjects().find((obj) => {
+      const isImage = obj.type === "image";
+      const isBg = obj.isBackground || (!obj.selectable && !obj.evented);
+      return isImage && isBg;
+    });
   }
 
   // Update canvas layers
@@ -288,15 +276,9 @@ export class BackgroundManager {
     }
   }
 
-  // Close all background-related modals
+  // Close all background modals
   closeAllModals() {
-    const modalIds = [
-      "customModal",
-      "mapModal",
-      "cropModal",
-      "customBackgroundModal",
-      "scaleModal",
-    ];
+    const modalIds = ["customModal", "mapModal", "cropModal", "customBackgroundModal", "scaleModal"];
 
     modalIds.forEach((id) => {
       const modal = document.getElementById(id);
@@ -305,7 +287,7 @@ export class BackgroundManager {
       }
     });
 
-    // Clean up any stacked backdrops
+    // Clean up stacked backdrops
     this.normalizeBackdrops();
 
     // Reset UI state
@@ -334,15 +316,9 @@ export class BackgroundManager {
     );
   }
 
-  // Check if currently in background creation process
+  // Check if in background creation process
   isInBackgroundProcess() {
-    const modalIds = [
-      "customModal",
-      "mapModal",
-      "cropModal",
-      "customBackgroundModal",
-      "scaleModal",
-    ];
+    const modalIds = ["customModal", "mapModal", "cropModal", "customBackgroundModal", "scaleModal"];
     return modalIds.some((id) => document.getElementById(id)?.classList.contains("show"));
   }
 
@@ -351,9 +327,7 @@ export class BackgroundManager {
     const visibleModalId = this.getVisibleModal();
     if (!visibleModalId) return;
 
-    const steps = document
-      .getElementById(visibleModalId)
-      ?.querySelectorAll(".modal-header-center .step");
+    const steps = document.getElementById(visibleModalId)?.querySelectorAll(".modal-header-center .step");
     steps?.forEach((step, index) => {
       step.classList.remove("active", "finish");
       if (index + 1 === activeStep) {
@@ -366,13 +340,7 @@ export class BackgroundManager {
 
   // Get currently visible modal
   getVisibleModal() {
-    const modalIds = [
-      "customModal",
-      "mapModal",
-      "cropModal",
-      "customBackgroundModal",
-      "scaleModal",
-    ];
+    const modalIds = ["customModal", "mapModal", "cropModal", "customBackgroundModal", "scaleModal"];
     return modalIds.find((id) => document.getElementById(id)?.classList.contains("show"));
   }
 
@@ -433,17 +401,7 @@ export class BackgroundManager {
     canvas.height = height;
 
     try {
-      ctx.drawImage(
-        backgroundImage._element,
-        0,
-        0,
-        backgroundImage.width,
-        backgroundImage.height,
-        0,
-        0,
-        width,
-        height
-      );
+      ctx.drawImage(backgroundImage._element, 0, 0, backgroundImage.width, backgroundImage.height, 0, 0, width, height);
     } catch (error) {
       console.warn("Failed to create background snapshot:", error);
     }

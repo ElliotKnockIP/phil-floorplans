@@ -21,40 +21,42 @@ export class CanvasOperations {
     this.init();
   }
 
+  // Initialize event listeners and sub-modules
   init() {
-    // Add event listeners
+    // Setup mouse interaction events
     this.canvas.on("mouse:down", this.handleMouseDown.bind(this));
     this.canvas.on("mouse:move", this.handleMouseMove.bind(this));
     this.canvas.on("mouse:up", this.handleMouseUp.bind(this));
     this.canvas.on("mouse:wheel", this.handleMouseWheel.bind(this));
 
-    // Initialize modal when Bootstrap is ready
+    // Initialize confirmation modal for clearing canvas
     this.initModalWhenReady();
 
-    // Set up clear button events - will work with or without modal
+    // Handle clear canvas button click
     if (this.elements.clearButton) {
       this.elements.clearButton.addEventListener("click", () => {
         if (this.clearWarningModal) {
           this.elements.subSidebar.classList.add("hidden");
           this.clearWarningModal.show();
         } else {
-          // Fallback: clear canvas directly without confirmation
+          // Clear directly if modal is not available
           this.clearCanvas();
         }
       });
     }
 
-    // Initialize cropping and download
-    this.canvasCrop = initCanvasCrop(this.canvas, this.elements.subSidebar, document.querySelector(".canvas-container"));
+    // Initialize screenshot cropping and background download
+    const canvasContainer = document.querySelector(".canvas-container");
+    this.canvasCrop = initCanvasCrop(this.canvas, this.elements.subSidebar, canvasContainer);
     this.elements.downloadButton.addEventListener("click", () => this.canvasCrop.startCropForDownload());
 
-    // Initialize device interactions
+    // Setup device drag-and-drop and keyboard shortcuts
     this.setupDeviceDrop();
     this.setupKeyboardShortcuts();
   }
 
+  // Wait for Bootstrap to be available before initializing the modal
   initModalWhenReady() {
-    // Check if Bootstrap and modal element are available
     if (typeof bootstrap !== "undefined" && bootstrap.Modal && this.elements.clearWarningPopup) {
       try {
         this.clearWarningModal = bootstrap.Modal.getOrCreateInstance(this.elements.clearWarningPopup, {
@@ -62,28 +64,29 @@ export class CanvasOperations {
           keyboard: false,
         });
 
-        // Set up modal button events now that modal is available
         this.setupModalEvents();
       } catch (error) {
         console.error("Error initializing clear warning modal:", error);
         this.clearWarningModal = null;
       }
     } else {
-      // Bootstrap not ready yet, try again later
+      // Retry initialization after a short delay
       setTimeout(() => this.initModalWhenReady(), 100);
     }
   }
 
+  // Setup event listeners for the clear warning modal buttons
   setupModalEvents() {
     if (!this.clearWarningModal) return;
 
-    // Set up modal button events
+    // Close modal on cancel or close button click
     [this.elements.cancelClearWarning, this.elements.closeClearWarning].forEach((btn) => {
       if (btn) {
         btn.addEventListener("click", () => this.clearWarningModal.hide());
       }
     });
 
+    // Confirm clearing the canvas
     if (this.elements.confirmClearWarning) {
       this.elements.confirmClearWarning.addEventListener("click", () => {
         this.clearWarningModal.hide();
@@ -92,7 +95,7 @@ export class CanvasOperations {
     }
   }
 
-  // Handles mouse down events
+  // Start panning when clicking on empty canvas space
   handleMouseDown(opt) {
     this.canvas.selection = false;
     const evt = opt.e;
@@ -105,7 +108,7 @@ export class CanvasOperations {
     }
   }
 
-  // Handles mouse move events
+  // Update viewport position during panning
   handleMouseMove(opt) {
     if (!this.isPanning) return;
 
@@ -125,7 +128,7 @@ export class CanvasOperations {
     evt.stopPropagation();
   }
 
-  // Handles mouse up events
+  // Stop panning and restore selection
   handleMouseUp(opt) {
     if (this.isPanning) {
       this.isPanning = false;
@@ -137,7 +140,7 @@ export class CanvasOperations {
     }
   }
 
-  // Handles mouse wheel events for zooming
+  // Handle zooming with mouse wheel
   handleMouseWheel(opt) {
     opt.e.preventDefault();
     opt.e.stopPropagation();
@@ -148,6 +151,7 @@ export class CanvasOperations {
     const minZoom = 0.25;
     const maxZoom = 10;
 
+    // Calculate new zoom level within bounds
     zoom = delta > 0 ? Math.max(minZoom, zoom - zoomFactor) : Math.min(maxZoom, zoom + zoomFactor);
 
     const pointer = this.canvas.getPointer(opt.e, true);
@@ -158,12 +162,12 @@ export class CanvasOperations {
     if (window.updateZoomDisplay) window.updateZoomDisplay();
   }
 
-  // Clears the entire canvas
+  // Remove all objects and reset canvas state
   clearCanvas() {
     this.elements.subSidebar.classList.add("hidden");
     if (window.hideDeviceProperties) window.hideDeviceProperties();
 
-    // Remove all objects and their related elements
+    // Clean up all objects and their associated UI elements
     this.canvas.getObjects().forEach((obj) => {
       if (obj.type === "group" && obj.deviceType) {
         ["textObject", "coverageArea", "leftResizeIcon", "rightResizeIcon", "rotateResizeIcon"].forEach((prop) => {
@@ -178,14 +182,14 @@ export class CanvasOperations {
 
     this.canvas.clear();
 
-    // Reset global state
+    // Reset counters and global state
     window.cameraCounter = 1;
     window.deviceCounter = 1;
     window.zones = [];
 
     if (window.resetCanvasState) window.resetCanvasState();
 
-    // Reset canvas properties
+    // Reset canvas view properties
     this.canvas.pixelsPerMeter = 17.5;
     this.canvas.setZoom(1);
     this.canvas.setViewportTransform([1, 0, 0, 1, 0, 0]);
@@ -193,7 +197,7 @@ export class CanvasOperations {
     if (window.updateZoomDisplay) window.updateZoomDisplay();
   }
 
-  // Sets up drag and drop for devices on the canvas
+  // Setup drag and drop functionality for adding devices to the canvas
   setupDeviceDrop() {
     window.cameraCounter = window.cameraCounter || 1;
     window.deviceCounter = window.deviceCounter || 1;
@@ -211,7 +215,9 @@ export class CanvasOperations {
     canvasContainer.addEventListener("drop", (e) => {
       e.preventDefault();
 
-      const customPayload = typeof window.__getCustomDropPayload === "function" ? window.__getCustomDropPayload(e.dataTransfer) : null;
+      // Get drop payload and calculate canvas coordinates
+      const getPayload = window.__getCustomDropPayload;
+      const customPayload = typeof getPayload === "function" ? getPayload(e.dataTransfer) : null;
       const imgSrc = customPayload?.dataUrl || e.dataTransfer.getData("text/plain");
       const rect = canvasElement.getBoundingClientRect();
 
@@ -223,23 +229,31 @@ export class CanvasOperations {
       const canvasX = (clientX - vpt[4]) / zoom;
       const canvasY = (clientY - vpt[5]) / zoom;
 
+      let deviceType;
+      if (customPayload) {
+        deviceType = customPayload.isCamera ? "custom-camera-icon.png" : "custom-device-icon.png";
+      }
+
       const deviceOptions = {
         isCamera: customPayload?.isCamera,
-        deviceType: customPayload ? (customPayload.isCamera ? "custom-camera-icon.png" : "custom-device-icon.png") : undefined,
+        deviceType,
       };
 
+      // Create the device at the dropped location
       DeviceFactory.createDevice(this.canvas, imgSrc, canvasX, canvasY, deviceOptions);
     });
   }
 
-  // Handles keyboard deletion of devices
+  // Setup keyboard shortcuts for canvas operations
   setupKeyboardShortcuts() {
     document.addEventListener("keydown", (e) => {
       const activeElement = document.activeElement;
       const isInputFocused = activeElement && (activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA" || activeElement.tagName === "SELECT" || activeElement.isContentEditable);
 
+      // Ignore shortcuts if an input field is focused
       if (isInputFocused) return;
 
+      // Delete selected object on Delete or Backspace key
       if ((e.key === "Delete" || e.key === "Backspace") && this.canvas.getActiveObject()) {
         const activeObj = this.canvas.getActiveObject();
         if (activeObj.type === "group") {

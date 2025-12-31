@@ -64,8 +64,7 @@ export function enablePolygonEditing(fabricCanvas, polygon) {
   fabricCanvas.requestRenderAll();
 }
 
-// Disables edit mode for a polygon by removing all control points.
-
+// Disables edit mode for a polygon by removing all control points
 export function disablePolygonEditing(fabricCanvas, polygon) {
   // Exit early if polygon doesn't have edit controls
   if (!polygon || !polygon.editControlPoints) return;
@@ -95,7 +94,7 @@ export function disablePolygonEditing(fabricCanvas, polygon) {
   fabricCanvas.requestRenderAll();
 }
 
-// Updates the positions of all control points to match the current polygon transformation.
+// Updates the positions of all control points to match the current polygon transformation
 function updateControls(polygon) {
   if (!polygon || !polygon.editControlPoints) return;
 
@@ -119,7 +118,7 @@ function updateControls(polygon) {
   raiseControls(polygon);
 }
 
-// Handles the movement of a control point and updates the polygon shape accordingly.
+// Handles the movement of a control point and updates the polygon shape accordingly
 function handleControlMove(fabricCanvas, polygon, movedIndex, movedCircle) {
   // Get all control circles
   const controlPoints = polygon.editControlPoints;
@@ -210,7 +209,7 @@ function updatePolygonTextContent(polygon, fabricCanvas) {
 
   const textObject = polygon.associatedText;
   const currentText = textObject.text || "";
-  
+
   // If text is hidden or empty, nothing to update
   if (textObject._isHidden || !currentText.trim()) return;
 
@@ -218,12 +217,13 @@ function updatePolygonTextContent(polygon, fabricCanvas) {
   const pixelsPerMeter = fabricCanvas.pixelsPerMeter || 17.5;
   let areaInPixels = 0;
   if (polygon.points && polygon.points.length >= 3) {
-    areaInPixels = Math.abs(
-      polygon.points.reduce((sum, point, i) => {
-        const nextPoint = polygon.points[(i + 1) % polygon.points.length];
-        return sum + (point.x * nextPoint.y - nextPoint.x * point.y);
-      }, 0)
-    ) / 2;
+    areaInPixels =
+      Math.abs(
+        polygon.points.reduce((sum, point, i) => {
+          const nextPoint = polygon.points[(i + 1) % polygon.points.length];
+          return sum + (point.x * nextPoint.y - nextPoint.x * point.y);
+        }, 0)
+      ) / 2;
   }
   const area = areaInPixels / (pixelsPerMeter * pixelsPerMeter);
   const height = textObject.displayHeight || polygon.height || 2.4;
@@ -245,7 +245,7 @@ function updatePolygonTextContent(polygon, fabricCanvas) {
   textObject.setCoords();
 }
 
-//Brings all control points to the front of the canvas z-order to ensure they are always clickable.
+// Brings all control points to the front of the canvas z-order to ensure they are always clickable
 function raiseControls(polygon) {
   if (!polygon || !polygon.editControlPoints) return;
 

@@ -7,7 +7,11 @@ export function setupShapeTools(fabricCanvas) {
   const accessPointBtn = document.getElementById("add-access-point-btn");
   const hotspotBtn = document.getElementById("create-hotspot-btn");
 
-  setupDeletion(fabricCanvas, (obj) => obj.type === "circle" || obj.type === "rect" || obj.isAccessPoint === true || obj.isHotspot === true);
+  setupDeletion(fabricCanvas, (obj) => {
+    const isShape = obj.type === "circle" || obj.type === "rect";
+    const isSpecial = obj.isAccessPoint === true || obj.isHotspot === true;
+    return isShape || isSpecial;
+  });
 
   // Activates circle tool
   if (circleBtn) {
@@ -53,29 +57,35 @@ export function setupShapeTools(fabricCanvas) {
     });
   }
 
-  // Auto-open popover when selecting an access point or hotspot
+  // Shows popover for access points
   const openAccessPointPopover = (target) => {
     if (target && target.isAccessPoint && typeof window.showAccessPointPopover === "function") {
       window.showAccessPointPopover(target);
     }
   };
 
+  // Shows popover for hotspots
   const openHotspotPopover = (target) => {
     if (target && target.isHotspot && typeof window.showHotspotPopover === "function") {
       window.showHotspotPopover(target);
     }
   };
 
+  // Handles selection events to show popovers
   fabricCanvas.on("selection:created", (e) => {
     const target = e.selected?.[0];
     openAccessPointPopover(target);
     openHotspotPopover(target);
   });
+
+  // Updates popover when selection changes
   fabricCanvas.on("selection:updated", (e) => {
     const target = e.selected?.[0];
     openAccessPointPopover(target);
     openHotspotPopover(target);
   });
+
+  // Hides popovers when selection is cleared
   fabricCanvas.on("selection:cleared", () => {
     if (typeof window.hideAccessPointPopover === "function") {
       window.hideAccessPointPopover();

@@ -1,12 +1,11 @@
-// Map Source Handler - Handles Google Maps integration
-// Manages map display, capture, and satellite image generation
+// Map Source Handler handles Google Maps integration
 
 export class MapSourceHandler {
   constructor(manager, googleMapsApiKey) {
     this.manager = manager;
     this.googleMapsApiKey = googleMapsApiKey;
 
-    // Map related
+    // Map related elements and state
     this.map = null;
     this.mapElements = {
       mapModal: document.getElementById("mapModal"),
@@ -22,7 +21,7 @@ export class MapSourceHandler {
     this.captureShape = "square";
   }
 
-  // Setup map-related event handlers
+  // Setup event handlers for map interactions
   setupMapHandlers() {
     if (this.mapElements.mapBackBtn) {
       this.mapElements.mapBackBtn.addEventListener("click", () => this.handleMapBack());
@@ -62,7 +61,7 @@ export class MapSourceHandler {
     }
   }
 
-  // Show map modal
+  // Show map modal and initialize map if needed
   showMapModal() {
     this.manager.normalizeBackdrops();
     this.manager.showModal(this.mapElements.mapModal);
@@ -71,7 +70,7 @@ export class MapSourceHandler {
     if (!this.map) this.initializeMap();
   }
 
-  // Initialize Google Map
+  // Initialize Google Map with autocomplete
   async initializeMap() {
     try {
       const mapContainer = document.getElementById("map");
@@ -94,7 +93,7 @@ export class MapSourceHandler {
 
       this.updateCaptureFrameShape();
 
-      // Add CSS for autocomplete
+      // Add CSS for autocomplete and capture frame
       const style = document.createElement("style");
       style.textContent = `
                 gmp-place-autocomplete {
@@ -135,10 +134,7 @@ export class MapSourceHandler {
           boxSizing: "border-box",
         });
 
-        this.mapElements.addressInput.parentNode.replaceChild(
-          placeAutocomplete,
-          this.mapElements.addressInput
-        );
+        this.mapElements.addressInput.parentNode.replaceChild(placeAutocomplete, this.mapElements.addressInput);
 
         placeAutocomplete.addEventListener("gmp-select", async (event) => {
           try {
@@ -165,7 +161,7 @@ export class MapSourceHandler {
     }
   }
 
-  // Update capture frame shape
+  // Update capture frame shape based on selection
   updateCaptureFrameShape() {
     const frame = this.mapElements.captureOverlay?.querySelector(".capture-frame");
     if (!frame) return;
@@ -174,7 +170,7 @@ export class MapSourceHandler {
     frame.classList.add(this.captureShape === "rect" ? "rect" : "square");
   }
 
-  // Set capture shape
+  // Set capture shape and update UI
   setCaptureShape(shape) {
     this.captureShape = shape;
     this.updateCaptureFrameShape();
@@ -187,7 +183,7 @@ export class MapSourceHandler {
     }
   }
 
-  // Handle map back button
+  // Handle back button and return to main selection
   handleMapBack() {
     bootstrap.Modal.getInstance(this.mapElements.mapModal)?.hide();
 
@@ -196,14 +192,14 @@ export class MapSourceHandler {
     this.manager.updateStepIndicators(1);
   }
 
-  // Handle map next button - capture map image
+  // Handle map next button and capture static map image
   async handleMapNext() {
     if (!this.map) {
       alert("Map not initialized. Please try again.");
       return;
     }
 
-    // Show loading state
+    // Show loading state on button
     if (this.mapElements.mapNextBtn) {
       this.mapElements.mapNextBtn.disabled = true;
       this.mapElements.mapNextBtn.innerHTML = `
@@ -249,7 +245,9 @@ export class MapSourceHandler {
       }
 
       const apiKey = this.googleMapsApiKey;
-      const staticMapUrl = `https://maps.googleapis.com/maps/api/staticmap?center=${center.lat()},${center.lng()}&zoom=${zoom}&size=${width}x${height}&scale=2&maptype=${mapType}&key=${apiKey}&format=jpg&quality=95`;
+      const baseUrl = "https://maps.googleapis.com/maps/api/staticmap";
+      const params = [`center=${center.lat()},${center.lng()}`, `zoom=${zoom}`, `size=${width}x${height}`, "scale=2", `maptype=${mapType}`, `key=${apiKey}`, "format=jpg", "quality=95"];
+      const staticMapUrl = `${baseUrl}?${params.join("&")}`;
 
       // Preload image to ensure it's available
       await this.preloadImage(staticMapUrl);

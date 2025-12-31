@@ -2,6 +2,7 @@ import { distance, midpoint, pathMidpoint, positionOnPath, ratioOnPath } from ".
 
 // Handles rendering of connections, labels, and split points on canvas.
 export class ConnectionRenderer {
+  // Initialize renderer with canvas and style definitions
   constructor(canvas, styles) {
     this.canvas = canvas;
     this.styles = styles;
@@ -48,37 +49,28 @@ export class ConnectionRenderer {
 
   // Clear all visual elements for a connection
   clear(connectionId) {
-    const toRemove = this.canvas
-      .getObjects()
-      .filter(
-        (obj) =>
-          obj.connectionId === connectionId &&
-          (obj.isConnectionSegment ||
-            obj.isNetworkSplitPoint ||
-            obj.isSegmentDistanceLabel ||
-            obj.isConnectionCustomLabel ||
-            obj.isChannelLabel)
-      );
+    const toRemove = this.canvas.getObjects().filter((obj) => {
+      return obj.connectionId === connectionId && (obj.isConnectionSegment || obj.isNetworkSplitPoint || obj.isSegmentDistanceLabel || obj.isConnectionCustomLabel || obj.isChannelLabel);
+    });
     toRemove.forEach((obj) => this.canvas.remove(obj));
   }
 
-  // Save label styles before re-rendering
+  // Save label styles before re-rendering to maintain user customizations
   saveLabelStyles(connectionId) {
     const styles = new Map();
-    const labels = this.canvas
-      .getObjects()
-      .filter(
-        (obj) =>
-          obj.connectionId === connectionId &&
-          (obj.isSegmentDistanceLabel || obj.isConnectionCustomLabel || obj.isChannelLabel)
-      );
+    const labels = this.canvas.getObjects().filter((obj) => {
+      return obj.connectionId === connectionId && (obj.isSegmentDistanceLabel || obj.isConnectionCustomLabel || obj.isChannelLabel);
+    });
 
     labels.forEach((label) => {
-      const key = label.isSegmentDistanceLabel
-        ? `distance_${label.segmentIndex}`
-        : label.isConnectionCustomLabel
-        ? `custom_${label.customTextId || "main"}`
-        : "channel";
+      // Generate unique key based on label type and index
+      let key = "channel";
+      if (label.isSegmentDistanceLabel) {
+        key = `distance_${label.segmentIndex}`;
+      } else if (label.isConnectionCustomLabel) {
+        key = `custom_${label.customTextId || "main"}`;
+      }
+
       styles.set(key, {
         fill: label.fill,
         backgroundColor: label.backgroundColor,
@@ -219,17 +211,20 @@ export class ConnectionRenderer {
 
       let isEditing = false;
 
+      // Update path ratio when label is moved
       label.on("moving", () => {
         if (isEditing || label.isEditing) return;
         label.setCoords();
         textData.pathRatio = ratioOnPath(path, { x: label.left, y: label.top });
       });
 
+      // Disable interactions while editing text
       label.on("editing:entered", () => {
         isEditing = true;
         label.set({ selectable: false, evented: false, hoverCursor: "text" });
       });
 
+      // Restore interactions and save text after editing
       label.on("editing:exited", () => {
         isEditing = false;
         label.set({ selectable: true, evented: true, hoverCursor: "text", moveCursor: "move" });
@@ -237,6 +232,7 @@ export class ConnectionRenderer {
         this.canvas.requestRenderAll();
       });
 
+      // Enter editing mode on double-click
       label.on("mousedown", (e) => {
         if (e.e?.detail === 2) {
           e.e.preventDefault();
@@ -251,14 +247,9 @@ export class ConnectionRenderer {
 
   // Render channel number label for panel connections
   renderChannelLabel(connection, getDeviceCenter) {
-    const panelDevice =
-      connection.properties.panelDeviceId === connection.device1Id
-        ? connection.device1
-        : connection.device2;
-    const otherDevice =
-      connection.properties.panelDeviceId === connection.device1Id
-        ? connection.device2
-        : connection.device1;
+    const isDevice1Panel = connection.properties.panelDeviceId === connection.device1Id;
+    const panelDevice = isDevice1Panel ? connection.device1 : connection.device2;
+    const otherDevice = isDevice1Panel ? connection.device2 : connection.device1;
 
     const panelCenter = getDeviceCenter(panelDevice);
     const otherCenter = getDeviceCenter(otherDevice);
@@ -319,14 +310,14 @@ export class ConnectionRenderer {
 
   // Apply highlight style to segments
   highlightConnection(connectionId) {
-    const segments = this.canvas
-      .getObjects()
-      .filter((obj) => obj.isConnectionSegment && obj.connectionId === connectionId);
+    const segments = this.canvas.getObjects().filter((obj) => {
+      return obj.isConnectionSegment && obj.connectionId === connectionId;
+    });
     segments.forEach((seg) => seg.set({ ...this.styles.lineHighlight }));
 
-    const splits = this.canvas
-      .getObjects()
-      .filter((obj) => obj.isNetworkSplitPoint && obj.connectionId === connectionId);
+    const splits = this.canvas.getObjects().filter((obj) => {
+      return obj.isNetworkSplitPoint && obj.connectionId === connectionId;
+    });
     splits.forEach((sp) => sp.set({ visible: true, ...this.styles.split }));
 
     this.canvas.requestRenderAll();
@@ -359,7 +350,7 @@ export class ConnectionRenderer {
 
   // Render a simplified connection (straight line, no split points) for topology map view
   renderSimplified(options) {
-    const { id, p1, p2, distanceText, label, customLabels, isMultiple, offset = 0 } = options;
+    const { id, p1, p2, distanceText, label, customLabels, isMultiple, offset = 0, channel, panelDeviceId, device1Id, device2Id } = options;
 
     // Draw line segment
     const line = new fabric.Line([p1.x + offset, p1.y, p2.x + offset, p2.y], {
@@ -375,6 +366,32 @@ export class ConnectionRenderer {
     // Only render labels for single connections or first of multiple
     if (!isMultiple || offset === 0) {
       this.renderSimplifiedLabel(id, p1, p2, distanceText, label, customLabels);
+    }
+
+    // Render channel label if present
+    if (channel && panelDeviceId) {
+      const panelPos = panelDeviceId === device1Id ? p1 : p2;
+      const otherPos = panelDeviceId === device1Id ? p2 : p1;
+
+      const angle = Math.atan2(otherPos.y - panelPos.y, otherPos.x - panelPos.x);
+      const labelOffset = 30;
+
+      const channelLabel = new fabric.Text(`${channel}`, {
+        left: panelPos.x + Math.cos(angle) * labelOffset,
+        top: panelPos.y + Math.sin(angle) * labelOffset,
+        fontSize: 15,
+        fill: "#000000",
+        fontFamily: "Poppins, sans-serif",
+        backgroundColor: "rgba(255, 255, 255, 0.8)",
+        fontWeight: "bold",
+        originX: "center",
+        originY: "center",
+        selectable: false,
+        evented: false,
+        isTopoLabel: true,
+        connectionId: id,
+      });
+      this.canvas.add(channelLabel);
     }
 
     return line;

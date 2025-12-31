@@ -3,19 +3,17 @@
 const OFFSET_MARGIN = 10;
 const CUSTOM_OFFSET_THRESHOLD = 1;
 
-// Get default label offset for a device group
+// Calculate the default position offset for a device label
 export function getDefaultLabelOffset(group) {
   if (!group) {
     return { x: 0, y: OFFSET_MARGIN + 20 };
   }
-  const scaleFactor =
-    typeof group.scaleFactor === "number" && !Number.isNaN(group.scaleFactor)
-      ? group.scaleFactor
-      : 1;
+  // Use group scale factor or default to 1
+  const scaleFactor = typeof group.scaleFactor === "number" && !Number.isNaN(group.scaleFactor) ? group.scaleFactor : 1;
   return { x: 0, y: 20 * scaleFactor + OFFSET_MARGIN };
 }
 
-// Set drag state for a text label
+// Configure whether a text label can be dragged by the user
 export function setLabelDragState(text, enabled) {
   if (!text) return;
 
@@ -31,6 +29,7 @@ export function setLabelDragState(text, enabled) {
   text.hoverCursor = enabled ? "move" : "default";
   text.moveCursor = enabled ? "move" : "default";
 
+  // Deselect the label if it was active when disabling drag
   if (!enabled && text.canvas && typeof text.canvas.getActiveObject === "function") {
     const active = text.canvas.getActiveObject();
     if (active === text && typeof text.canvas.discardActiveObject === "function") {
@@ -39,17 +38,16 @@ export function setLabelDragState(text, enabled) {
   }
 }
 
-// Apply label position relative to its parent group
+// Position the label relative to its parent device group
 export function applyLabelPosition(group) {
   if (!group || !group.textObject) return;
   const text = group.textObject;
   const canvas = group.canvas || text.canvas;
-  const center =
-    typeof group.getCenterPoint === "function"
-      ? group.getCenterPoint()
-      : { x: group.left || 0, y: group.top || 0 };
+  // Get center point of the group or use its top/left
+  const center = typeof group.getCenterPoint === "function" ? group.getCenterPoint() : { x: group.left || 0, y: group.top || 0 };
   const defaultOffset = getDefaultLabelOffset(group);
 
+  // Initialize or maintain label offset
   if (!group.labelOffset) {
     group.labelOffset = { ...defaultOffset };
     group.hasCustomLabelOffset = false;
@@ -64,12 +62,13 @@ export function applyLabelPosition(group) {
   text.set({ left, top });
   if (typeof text.setCoords === "function") text.setCoords();
 
+  // Ensure label stays on top of other objects
   if (!text._isHidden && canvas && typeof text.bringToFront === "function") {
     text.bringToFront();
   }
 }
 
-// Attach label behavior to a device group
+// Link a label to a device group and set up event listeners
 export function attachLabelBehavior(group, text, fabricCanvas = null) {
   if (!group || !text) return;
   const canvas = fabricCanvas || group.canvas || text.canvas;
@@ -80,7 +79,7 @@ export function attachLabelBehavior(group, text, fabricCanvas = null) {
   applyLabelPosition(group);
   setLabelDragState(text, !!window.globalLabelDragEnabled);
 
-  // Update position when group moves
+  // Update label position when the device group is moved
   const updatePosition = () => {
     applyLabelPosition(group);
     if (typeof group.bringToFront === "function") group.bringToFront();
@@ -94,7 +93,7 @@ export function attachLabelBehavior(group, text, fabricCanvas = null) {
   group._labelMoveHandler = updatePosition;
   group.on("moving", group._labelMoveHandler);
 
-  // Handle text changes
+  // Reset to default offset if text content changes and no custom offset exists
   if (text._labelChangedHandler) {
     text.off("changed", text._labelChangedHandler);
   }
@@ -108,7 +107,7 @@ export function attachLabelBehavior(group, text, fabricCanvas = null) {
   };
   text.on("changed", text._labelChangedHandler);
 
-  // Handle text moving
+  // Track custom label positioning when the label is dragged
   if (text._labelMovingHandler) {
     text.off("moving", text._labelMovingHandler);
   }
@@ -119,26 +118,26 @@ export function attachLabelBehavior(group, text, fabricCanvas = null) {
       return;
     }
 
-    const center =
-      typeof group.getCenterPoint === "function"
-        ? group.getCenterPoint()
-        : { x: group.left || 0, y: group.top || 0 };
+    const center = typeof group.getCenterPoint === "function" ? group.getCenterPoint() : { x: group.left || 0, y: group.top || 0 };
+
     group.labelOffset = {
       x: (text.left || 0) - center.x,
       y: (text.top || 0) - center.y,
     };
 
+    // Check if the new position is far enough from default to be considered custom
     const defaultOffset = getDefaultLabelOffset(group);
-    group.hasCustomLabelOffset =
-      Math.abs(group.labelOffset.x || 0) > CUSTOM_OFFSET_THRESHOLD ||
-      Math.abs((group.labelOffset.y || 0) - defaultOffset.y) > CUSTOM_OFFSET_THRESHOLD;
+    const diffX = Math.abs(group.labelOffset.x || 0);
+    const diffY = Math.abs((group.labelOffset.y || 0) - defaultOffset.y);
+
+    group.hasCustomLabelOffset = diffX > CUSTOM_OFFSET_THRESHOLD || diffY > CUSTOM_OFFSET_THRESHOLD;
 
     if (typeof text.setCoords === "function") text.setCoords();
     if (canvas && typeof canvas.requestRenderAll === "function") canvas.requestRenderAll();
   };
   text.on("moving", text._labelMovingHandler);
 
-  // Handle mouse up on text
+  // Refresh canvas when label drag ends
   if (typeof text.on === "function" && !text._labelMouseUpHandler) {
     text._labelMouseUpHandler = () => {
       if (canvas && typeof canvas.renderAll === "function") canvas.renderAll();
@@ -146,7 +145,7 @@ export function attachLabelBehavior(group, text, fabricCanvas = null) {
     text.on("mouseup", text._labelMouseUpHandler);
   }
 
-  // Add update function to group
+  // Expose position update method on the group
   if (!group.updateLabelPosition) {
     group.updateLabelPosition = () => applyLabelPosition(group);
   }
@@ -154,17 +153,18 @@ export function attachLabelBehavior(group, text, fabricCanvas = null) {
   updatePosition();
 }
 
-// Set group label drag state
+// Enable or disable dragging for a specific group's label
 export function setGroupLabelDragState(group, enabled) {
   if (!group || !group.textObject) return;
   setLabelDragState(group.textObject, enabled);
 }
 
-// Get next available device number for labeling
+// Find the next sequential number for a new device label
 export function getNextAvailableDeviceNumber(fabricCanvas, isCamera) {
   const prefix = isCamera ? "Camera " : "Device ";
   const usedNumbers = new Set();
 
+  // Scan all objects on canvas to find existing device numbers
   fabricCanvas.getObjects().forEach((obj) => {
     let text = "";
     if (obj.textObject && obj.textObject.text) {
@@ -182,6 +182,7 @@ export function getNextAvailableDeviceNumber(fabricCanvas, isCamera) {
     }
   });
 
+  // Find the first gap in the sequence
   let next = 1;
   while (usedNumbers.has(next)) {
     next++;

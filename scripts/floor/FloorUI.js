@@ -2,6 +2,7 @@
 import { NotificationSystem } from "../save/utils-save.js";
 
 export class FloorUI {
+  // Initialize floor UI with floor manager reference
   constructor(floorManager) {
     this.floorManager = floorManager;
   }
@@ -62,6 +63,7 @@ export class FloorUI {
     if (!quickJumpContainer) return;
     quickJumpContainer.innerHTML = "";
     const existingFloors = Array.from(this.floorManager.floors.keys()).sort((a, b) => a - b);
+    // Show at least 5 buttons even if fewer floors exist
     const maxFloor = Math.max(...existingFloors, 5);
     for (let floor = 1; floor <= maxFloor; floor++) {
       const button = document.createElement("button");
@@ -69,6 +71,7 @@ export class FloorUI {
       const hasData = this.floorManager.floors.has(floor);
       button.textContent = floor.toString();
       button.className = "btn btn-sm";
+      // Style and enable button if floor exists but is not current
       if (hasData && !isCurrent) {
         button.classList.add("floor-available");
         this.styleFloorButton(button, "available");
@@ -81,6 +84,7 @@ export class FloorUI {
         button.classList.add("current-floor");
         this.styleFloorButton(button, "current");
       } else {
+        // Disable button if floor does not exist
         button.classList.add("floor-unavailable");
         this.styleFloorButton(button, "unavailable");
         button.disabled = true;
@@ -92,22 +96,20 @@ export class FloorUI {
 
   // Styles the floor buttons based on their state
   styleFloorButton(button, type) {
-    const baseStyle = "width: 35px; height: 30px; font-size: 0.8rem; border-radius: 0.25rem;";
-    const styles = {
-      available: `${baseStyle} background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.3); color: white; cursor: pointer;`,
-      current: `${baseStyle} background: var(--orange-ip2); border: 1px solid var(--orange-ip2); color: white; cursor: default; opacity: 1;`,
-      unavailable: `${baseStyle} background: transparent; border: 1px solid rgba(255,255,255,0.2); color: rgba(255,255,255,0.4); cursor: not-allowed; opacity: 0.5; pointer-events: none;`,
-    };
-    button.style.cssText = styles[type];
+    button.classList.add("floor-btn-base");
+    if (type === "available") {
+      button.classList.add("floor-btn-available");
+    } else if (type === "current") {
+      button.classList.add("floor-btn-current");
+    } else if (type === "unavailable") {
+      button.classList.add("floor-btn-unavailable");
+    }
   }
 
   // Creates a new floor and switches to it
   addNewFloor() {
     let newFloorNumber = 1;
-    while (
-      this.floorManager.floors.has(newFloorNumber) &&
-      newFloorNumber <= this.floorManager.maxFloors
-    ) {
+    while (this.floorManager.floors.has(newFloorNumber) && newFloorNumber <= this.floorManager.maxFloors) {
       newFloorNumber++;
     }
     if (newFloorNumber > this.floorManager.maxFloors) {
@@ -126,14 +128,13 @@ export class FloorUI {
     }
     const currentFloorData = this.floorManager.floors.get(this.floorManager.currentFloor);
     const floorName = currentFloorData?.name || `Floor ${this.floorManager.currentFloor}`;
-    if (!confirm(`Are you sure you want to delete ${floorName}? This action cannot be undone.`))
-      return;
+    if (!confirm(`Are you sure you want to delete ${floorName}? This action cannot be undone.`)) return;
     const floorToDelete = this.floorManager.currentFloor;
     const availableFloors = Array.from(this.floorManager.floors.keys()).sort((a, b) => a - b);
     const lowerFloors = availableFloors.filter((f) => f < floorToDelete);
     const higherFloors = availableFloors.filter((f) => f > floorToDelete);
-    const targetFloor =
-      lowerFloors.length > 0 ? Math.max(...lowerFloors) : Math.min(...higherFloors);
+    // Find the nearest floor to switch to after deletion
+    const targetFloor = lowerFloors.length > 0 ? Math.max(...lowerFloors) : Math.min(...higherFloors);
     this.floorManager.isLoading = true;
     this.floorManager.switchToFloor(targetFloor).then(() => {
       this.floorManager.floors.delete(floorToDelete);

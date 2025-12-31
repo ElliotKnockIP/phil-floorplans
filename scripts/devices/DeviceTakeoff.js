@@ -1,7 +1,8 @@
-// Device takeoff list generator
+// Generates and manages the device takeoff list for project reports
 import { DEVICE_TYPES_BY_CATEGORY, getDeviceCategory } from "./categories/device-types.js";
 
 export class DeviceTakeoffGenerator {
+  // Initialize the generator with canvas and floor manager references
   constructor(fabricCanvas, floorManager) {
     this.fabricCanvas = fabricCanvas;
     this.floorManager = floorManager;
@@ -14,10 +15,10 @@ export class DeviceTakeoffGenerator {
     };
   }
 
-  // Use shared device category map
+  // Reference to the shared device category mapping
   static DEVICE_CATEGORY_MAP = DEVICE_TYPES_BY_CATEGORY;
 
-  // Verbose labels for takeoff reports (intentionally different from topology labels)
+  // Human-readable labels for device categories in reports
   static CATEGORY_LABELS = {
     cctv: "CCTV",
     access: "Access Control",
@@ -27,38 +28,42 @@ export class DeviceTakeoffGenerator {
     custom: "Custom",
   };
 
-  // Gets category for device type (delegates to shared device-types module)
+  // Determine which system category a device belongs to
   static getCategoryForDevice(deviceType, isCameraLike = false) {
     if (isCameraLike) return "cctv";
-    // Use shared lookup via device-types module
+    // Look up the device type in the category map
     for (const [cat, list] of Object.entries(DeviceTakeoffGenerator.DEVICE_CATEGORY_MAP)) {
       if (list.includes(deviceType)) return cat;
     }
     return "custom";
   }
 
-  // Checks if point is inside polygon using ray casting
+  // Check if a coordinate point falls within a polygon's boundaries
   isPointInPolygon(point, polygon) {
     const vertices = polygon.points;
     let inside = false;
+    // Ray casting algorithm for point-in-polygon detection
     for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
-      if (vertices[i].y > point.y !== vertices[j].y > point.y && point.x < ((vertices[j].x - vertices[i].x) * (point.y - vertices[i].y)) / (vertices[j].y - vertices[i].y) + vertices[i].x) {
+      const intersect = vertices[i].y > point.y !== vertices[j].y > point.y && point.x < ((vertices[j].x - vertices[i].x) * (point.y - vertices[i].y)) / (vertices[j].y - vertices[i].y) + vertices[i].x;
+      if (intersect) {
         inside = !inside;
       }
     }
     return inside;
   }
 
-  // Gets zone and room info for device position
+  // Identify which zone and room a device is located in based on its coordinates
   getLocationInfo(deviceCenter) {
     let zoneInfo = "",
       roomInfo = "";
 
+    // Check if device is inside any defined zone
     if (window.zones?.length > 0) {
       const deviceInZone = window.zones.find((zone) => zone.polygon && this.isPointInPolygon(deviceCenter, zone.polygon));
       if (deviceInZone) zoneInfo = deviceInZone.polygon.zoneName || "Zone";
     }
 
+    // Check if device is inside any defined room
     if (window.rooms?.length > 0) {
       const deviceInRoom = window.rooms.find((room) => room.polygon && this.isPointInPolygon(deviceCenter, room.polygon));
       if (deviceInRoom) roomInfo = deviceInRoom.polygon.roomName || deviceInRoom.roomName || "Room";
@@ -67,12 +72,15 @@ export class DeviceTakeoffGenerator {
     return { zoneInfo, roomInfo };
   }
 
-  // Extracts device data from canvas or floor data
+  // Pull device data from either the active canvas or a saved floor data object
   extractDeviceData(source, floorNumber, floorName) {
-    return source === "canvas" ? this.extractFromCanvas(floorNumber, floorName) : this.extractFromFloorData(source, floorNumber);
+    if (source === "canvas") {
+      return this.extractFromCanvas(floorNumber, floorName);
+    }
+    return this.extractFromFloorData(source, floorNumber);
   }
 
-  // Extracts devices from current canvas
+  // Collect all device information from the current active canvas
   extractFromCanvas(floorNumber, floorName) {
     return this.fabricCanvas
       .getObjects()
@@ -80,13 +88,17 @@ export class DeviceTakeoffGenerator {
       .map((obj) => this.createDeviceInfo(obj, floorNumber, floorName));
   }
 
-  // Extracts devices from saved floor data
+  // Collect device information from a serialized floor data object
   extractFromFloorData(floorData, floorNumber) {
     if (!floorData?.cameras?.cameraDevices) return [];
-    return floorData.cameras.cameraDevices.filter((deviceData) => deviceData?.deviceType).map((deviceData) => this.createDeviceInfoFromData(deviceData, floorNumber, floorData.name));
+    return floorData.cameras.cameraDevices
+      .filter((deviceData) => deviceData?.deviceType)
+      .map((deviceData) => {
+        return this.createDeviceInfoFromData(deviceData, floorNumber, floorData.name);
+      });
   }
 
-  // Creates device info from canvas object
+  // Convert a canvas group object into a standardized device info object
   createDeviceInfo(obj, floorNumber, floorName) {
     const deviceCenter = obj.getCenterPoint();
     const locationInfo = this.getLocationInfo(deviceCenter);
@@ -109,9 +121,10 @@ export class DeviceTakeoffGenerator {
     };
   }
 
-  // Creates device info from saved data
+  // Convert serialized device data into a standardized device info object
   createDeviceInfoFromData(deviceData, floorNumber, floorName) {
-    const category = DeviceTakeoffGenerator.getCategoryForDevice(deviceData.deviceType, !!deviceData.coverageConfig || !!deviceData.isCamera);
+    const isCamera = !!deviceData.coverageConfig || !!deviceData.isCamera;
+    const category = DeviceTakeoffGenerator.getCategoryForDevice(deviceData.deviceType, isCamera);
 
     return {
       name: deviceData.textLabel?.text || "Unnamed Device",
@@ -133,7 +146,7 @@ export class DeviceTakeoffGenerator {
     };
   }
 
-  // Extracts devices from all floors
+  // Iterate through all floors to collect device data from each
   extractAllFloorsDeviceData() {
     if (!this.floorManager) {
       console.warn("No floor manager available");
@@ -142,28 +155,36 @@ export class DeviceTakeoffGenerator {
 
     const currentFloor = this.floorManager.getCurrentFloor();
     const allFloors = this.floorManager.getFloorList();
+    // Save current state to ensure data is up to date before extraction
     this.floorManager.saveCurrentFloorState();
 
     const allDevices = [];
     allFloors.forEach((floorNumber) => {
-      const devices = floorNumber === currentFloor ? this.extractDeviceData("canvas", floorNumber, this.getFloorName(floorNumber)) : this.extractDeviceData(this.floorManager.floors.get(floorNumber), floorNumber);
+      let devices;
+      if (floorNumber === currentFloor) {
+        devices = this.extractDeviceData("canvas", floorNumber, this.getFloorName(floorNumber));
+      } else {
+        devices = this.extractDeviceData(this.floorManager.floors.get(floorNumber), floorNumber);
+      }
       allDevices.push(...devices);
     });
     return allDevices;
   }
 
-  // Gets floor name by number
+  // Retrieve the name of a floor based on its index
   getFloorName(floorNumber) {
     const floorData = this.floorManager.floors.get(floorNumber);
     return floorData?.name || `Floor ${floorNumber}`;
   }
 
-  // Groups devices by floor and consolidates duplicates
+  // Group identical devices together and count quantities per floor
   consolidateDevicesByFloor(devices) {
     const globalConsolidationMap = new Map();
 
     devices.forEach((device) => {
-      const key = `${device.name}|${device.location}|${device.fittingPosition}|${device.partNumber}|${device.stockNumber}|${device.zoneInfo}|${device.roomInfo}`;
+      // Create a unique key based on device properties to identify duplicates
+      const keyParts = [device.name, device.location, device.fittingPosition, device.partNumber, device.stockNumber, device.zoneInfo, device.roomInfo];
+      const key = keyParts.join("|");
 
       if (globalConsolidationMap.has(key)) {
         const existing = globalConsolidationMap.get(key);
@@ -182,6 +203,7 @@ export class DeviceTakeoffGenerator {
       }
     });
 
+    // Organize consolidated devices back into floor-based groups
     const floorGroups = {};
     Array.from(globalConsolidationMap.values()).forEach((device) => {
       const primaryFloor = device.floors[0];
@@ -195,6 +217,7 @@ export class DeviceTakeoffGenerator {
         };
       }
 
+      // Mark devices that appear on multiple floors
       if (device.floors.length > 1) {
         device.multiFloor = true;
         device.allFloorNames = device.floorNames.join(", ");
@@ -203,6 +226,7 @@ export class DeviceTakeoffGenerator {
       floorGroups[primaryFloor].devices.push(device);
     });
 
+    // Sort devices alphabetically within each floor group
     Object.values(floorGroups).forEach((group) => {
       group.devices.sort((a, b) => a.name.localeCompare(b.name));
     });
@@ -210,7 +234,7 @@ export class DeviceTakeoffGenerator {
     return Object.values(floorGroups).sort((a, b) => a.floorNumber - b.floorNumber);
   }
 
-  // Sets filter options
+  // Update the active filters for the takeoff list
   setFilters(filters) {
     this.filters = {
       floors: Array.isArray(filters?.floors) ? filters.floors : [],
@@ -220,12 +244,12 @@ export class DeviceTakeoffGenerator {
     };
   }
 
-  // Gets current filter settings
+  // Retrieve the current filter configuration
   getFilters() {
     return { ...this.filters };
   }
 
-  // Sets survey information
+  // Update the survey metadata for the project
   setSurveyInfo(info) {
     this.surveyInfo = {
       grading: info?.grading || "",
@@ -235,12 +259,12 @@ export class DeviceTakeoffGenerator {
     };
   }
 
-  // Gets survey information
+  // Retrieve the current survey metadata
   getSurveyInfo() {
     return { ...this.surveyInfo };
   }
 
-  // Captures survey info from form inputs
+  // Read survey information from the UI form inputs
   captureSurveyInfo() {
     const getValue = (id) => document.getElementById(id)?.value || "";
     this.setSurveyInfo({
@@ -251,7 +275,7 @@ export class DeviceTakeoffGenerator {
     });
   }
 
-  // Gets available filter options from all devices
+  // Scan all devices to find unique values for filter dropdowns
   getFilterOptions() {
     const devices = this.extractAllFloorsDeviceData();
     const floors = new Set();
@@ -276,7 +300,7 @@ export class DeviceTakeoffGenerator {
     };
   }
 
-  // Applies filters to device list
+  // Filter the device list based on current user selections
   applyFilters(devices) {
     const f = this.filters || {};
     const floors = f.floors || [];
@@ -301,14 +325,14 @@ export class DeviceTakeoffGenerator {
     });
   }
 
-  // Generates complete takeoff data
+  // Generate the final consolidated and filtered device list
   generateTakeoffData() {
     const devices = this.extractAllFloorsDeviceData();
     const filtered = this.applyFilters(devices);
     return this.consolidateDevicesByFloor(filtered);
   }
 
-  // Generates HTML table for takeoff list
+  // Create the HTML structure for the takeoff table
   generateTakeoffTable() {
     const takeoffData = this.generateTakeoffData();
     if (takeoffData.length === 0) {
@@ -318,19 +342,19 @@ export class DeviceTakeoffGenerator {
     const rows = this.generateTableRows(takeoffData);
     return `
       <div class="table-responsive">
-        <table class="table table-hover" style="margin: 0;">
+        <table class="table table-hover takeoff-table" style="margin: 0;">
           <thead class="table-dark">
             <tr>
-              <th scope="col" style="width: 60px;">#</th>
-              <th scope="col" style="width: 10%;">Floor</th>
+              <th scope="col" class="col-counter">#</th>
+              <th scope="col" class="col-floor">Floor</th>
               <th scope="col">Device Name</th>
-              <th scope="col" style="width: 12%;">Location</th>
-              <th scope="col" style="width: 12%;">Mounted</th>
-              <th scope="col" style="width: 12%;">Zone</th>
-              <th scope="col" style="width: 12%;">Room</th>
-              <th scope="col" style="width: 12%;">Part No.</th>
-              <th scope="col" style="width: 12%;">Stock No.</th>
-              <th scope="col" style="width: 60px;">Qty</th>
+              <th scope="col" class="col-location">Location</th>
+              <th scope="col" class="col-mounted">Mounted</th>
+              <th scope="col" class="col-zone">Zone</th>
+              <th scope="col" class="col-room">Room</th>
+              <th scope="col" class="col-part">Part No.</th>
+              <th scope="col" class="col-stock">Stock No.</th>
+              <th scope="col" class="col-qty">Qty</th>
             </tr>
           </thead>
           <tbody>${rows}</tbody>
@@ -339,7 +363,7 @@ export class DeviceTakeoffGenerator {
     `;
   }
 
-  // Generates table rows HTML
+  // Generate individual table rows for each device in the takeoff list
   generateTableRows(takeoffData) {
     let deviceCounter = 1;
     let rows = "";
@@ -355,9 +379,9 @@ export class DeviceTakeoffGenerator {
 
         rows += `
           <tr class="${rowClass} takeoff-row">
-            <td style="font-weight: bold; color: var(--orange-ip2);">${deviceCounter++}</td>
+            <td class="takeoff-counter">${deviceCounter++}</td>
             <td>
-              <span class="badge floor-badge" style="background-color: var(--orange-ip2); color: white; font-size: 11px;">
+              <span class="badge floor-badge takeoff-floor-badge">
                 ${floorNames}
               </span>
             </td>
@@ -369,7 +393,7 @@ export class DeviceTakeoffGenerator {
             <td>${this.escapeHtml(device.partNumber)}</td>
             <td>${this.escapeHtml(device.stockNumber)}</td>
             <td>
-              <span class="badge qty-badge" style="background-color: var(--orange-ip2); color: white; font-size: 12px; padding: 4px 8px;">
+              <span class="badge qty-badge takeoff-qty-badge">
                 ${device.quantity}
               </span>
             </td>
@@ -381,7 +405,7 @@ export class DeviceTakeoffGenerator {
     return rows;
   }
 
-  // Generates CSV data
+  // Format the takeoff data as a CSV string
   generateCSV() {
     const takeoffData = this.generateTakeoffData();
     if (takeoffData.length === 0) return "";
@@ -389,12 +413,19 @@ export class DeviceTakeoffGenerator {
     const surveyInfo = this.getSurveyInfo();
     let csv = "";
 
+    // Add survey metadata to the top of the CSV
     if (surveyInfo.grading || surveyInfo.monitoring || surveyInfo.generalDescription || surveyInfo.equipmentRequired) {
       csv += "Survey Information\n";
       if (surveyInfo.grading) csv += `Grading,${surveyInfo.grading}\n`;
       if (surveyInfo.monitoring) csv += `Monitoring,${surveyInfo.monitoring}\n`;
-      if (surveyInfo.generalDescription) csv += `General Description,"${surveyInfo.generalDescription.replace(/"/g, '""')}"\n`;
-      if (surveyInfo.equipmentRequired) csv += `Equipment Required,"${surveyInfo.equipmentRequired.replace(/"/g, '""')}"\n`;
+      if (surveyInfo.generalDescription) {
+        const desc = surveyInfo.generalDescription.replace(/"/g, '""');
+        csv += `General Description,"${desc}"\n`;
+      }
+      if (surveyInfo.equipmentRequired) {
+        const equip = surveyInfo.equipmentRequired.replace(/"/g, '""');
+        csv += `Equipment Required,"${equip}"\n`;
+      }
       csv += "\n";
     }
 
@@ -406,14 +437,17 @@ export class DeviceTakeoffGenerator {
         const floorNames = device.multiFloor ? device.allFloorNames : floorGroup.floorName;
         const zoneInfo = device.zoneInfo || "";
         const roomInfo = device.roomInfo || "";
-        csv += `${deviceCounter++},"${floorNames}","${device.name}","${device.location}","${device.fittingPosition}","${zoneInfo}","${roomInfo}","${device.partNumber}","${device.stockNumber}",${device.quantity}\n`;
+
+        const row = [deviceCounter++, `"${floorNames}"`, `"${device.name}"`, `"${device.location}"`, `"${device.fittingPosition}"`, `"${zoneInfo}"`, `"${roomInfo}"`, `"${device.partNumber}"`, `"${device.stockNumber}"`, device.quantity];
+
+        csv += row.join(",") + "\n";
       });
     });
 
     return csv;
   }
 
-  // Exports takeoff data to CSV file
+  // Trigger a browser download of the takeoff data in CSV format
   exportToCSV(filename = "device-takeoff-list.csv") {
     const csv = this.generateCSV();
     if (!csv) {
@@ -439,13 +473,13 @@ export class DeviceTakeoffGenerator {
     }
   }
 
-  // Escapes HTML characters
+  // Sanitize text for safe HTML insertion
   escapeHtml(text) {
     const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
     return String(text).replace(/[&<>"']/g, (m) => map[m]);
   }
 
-  // Gets takeoff summary statistics
+  // Calculate summary statistics for the current takeoff list
   getTakeoffSummary() {
     const takeoffData = this.generateTakeoffData();
     const actualFloorCount = this.floorManager ? this.floorManager.getFloorCount() : 1;
@@ -474,7 +508,7 @@ export class DeviceTakeoffGenerator {
   }
 }
 
-// Initializes takeoff feature
+// Initialize the takeoff feature and bind it to the UI
 export function initTakeoffFeature(fabricCanvas, floorManager = null) {
   if (!floorManager && window.floorManager) {
     floorManager = window.floorManager;
@@ -488,6 +522,7 @@ export function initTakeoffFeature(fabricCanvas, floorManager = null) {
       showTakeoffModal(takeoffGenerator);
     });
   } else {
+    // Wait for HTML includes to load if button isn't immediately available
     document.addEventListener("htmlIncludesLoaded", () => {
       const btn = document.getElementById("generate-takeoff-btn");
       if (btn) {
@@ -502,7 +537,7 @@ export function initTakeoffFeature(fabricCanvas, floorManager = null) {
   return takeoffGenerator;
 }
 
-// Shows takeoff modal with data
+// Populate and display the takeoff modal
 function showTakeoffModal(takeoffGenerator) {
   const modalEl = document.getElementById("takeoff-modal");
   if (!modalEl) {
@@ -520,7 +555,7 @@ function showTakeoffModal(takeoffGenerator) {
     tableContainer.innerHTML = takeoffGenerator.generateTakeoffTable();
   }
 
-  // Restore survey info
+  // Restore previously entered survey info into the form
   const surveyInfo = takeoffGenerator.getSurveyInfo();
   const inputs = {
     "takeoff-grading": surveyInfo.grading,
@@ -541,7 +576,7 @@ function showTakeoffModal(takeoffGenerator) {
   modal.show();
 }
 
-// Creates filters panel HTML
+// Generate the HTML for the filter selection panel
 function createFiltersPanel(takeoffGenerator) {
   const options = takeoffGenerator.getFilterOptions();
   const active = takeoffGenerator.getFilters();
@@ -600,18 +635,18 @@ function createFiltersPanel(takeoffGenerator) {
   `;
 }
 
-// Escapes HTML characters for safe display
+// Sanitize text for safe HTML display
 function escapeHtml(text) {
   const map = { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" };
   return String(text ?? "").replace(/[&<>"']/g, (m) => map[m]);
 }
 
-// Escapes attributes for safe HTML attributes
+// Sanitize text for safe use in HTML attributes
 function escapeAttr(text) {
   return escapeHtml(text).replace(/"/g, "&quot;");
 }
 
-// Sets up modal event listeners for export and print
+// Bind export and print buttons within the takeoff modal
 function setupModalEventListeners(takeoffGenerator, { rebind = false } = {}) {
   const exportBtn = document.getElementById("export-takeoff-csv");
   const printBtn = document.getElementById("print-takeoff");
@@ -619,6 +654,7 @@ function setupModalEventListeners(takeoffGenerator, { rebind = false } = {}) {
 
   if (!exportBtn || !printBtn || !modalEl) return;
 
+  // Re-bind listeners by cloning nodes to avoid duplicate event handlers
   if (rebind) {
     const newExportBtn = exportBtn.cloneNode(true);
     exportBtn.parentNode.replaceChild(newExportBtn, exportBtn);
@@ -630,7 +666,8 @@ function setupModalEventListeners(takeoffGenerator, { rebind = false } = {}) {
     takeoffGenerator.captureSurveyInfo();
 
     const csv = takeoffGenerator.generateCSV();
-    if (!csv || csv.trim() === "" || csv.trim() === "#,Floor,Device Name,Location,Mounted,Zone,Room,Part No.,Stock No.,Qty") {
+    const header = "#,Floor,Device Name,Location,Mounted,Zone,Room,Part No.,Stock No.,Qty";
+    if (!csv || csv.trim() === "" || csv.trim() === header) {
       alert("No devices found to export");
       return;
     }
@@ -653,7 +690,7 @@ function setupModalEventListeners(takeoffGenerator, { rebind = false } = {}) {
   });
 }
 
-// Binds filter change events to update table
+// Bind change events for filter dropdowns to refresh the table
 function bindFilterEvents(takeoffGenerator) {
   const tableContainer = document.getElementById("takeoff-table-container");
   const getSelected = (sel) => {
@@ -683,7 +720,7 @@ function bindFilterEvents(takeoffGenerator) {
   });
 }
 
-// Handles printing the takeoff list
+// Prepare the project data and trigger the browser print dialog
 function printTakeoffList(takeoffGenerator) {
   const printContainer = document.getElementById("print-container");
   if (!printContainer) {
@@ -697,6 +734,7 @@ function printTakeoffList(takeoffGenerator) {
     if (el) el.textContent = text;
   };
 
+  // Update project details in the print layout
   updateElement("print-client-name", getValue("client-name-test-input", "Client Name"));
   updateElement("print-address", getValue("address-input", "Address"));
   updateElement("print-date", getValue("client-date-input") || new Date().toLocaleDateString());
@@ -705,12 +743,13 @@ function printTakeoffList(takeoffGenerator) {
   setupClientLogo(printContainer, takeoffGenerator);
 }
 
-// Adds survey information to print layout
+// Insert survey metadata into the print layout
 function addSurveyInfoToPrint(takeoffGenerator, printContainer) {
   const surveyInfo = takeoffGenerator.getSurveyInfo();
 
   let surveySection = printContainer.querySelector(".survey-info-print-section");
 
+  // Create survey section if it doesn't exist
   if (!surveySection) {
     surveySection = document.createElement("div");
     surveySection.className = "survey-info-print-section";
@@ -724,8 +763,8 @@ function addSurveyInfoToPrint(takeoffGenerator, printContainer) {
   }
 
   let surveyHTML = '<div style="padding: 10px 30px; margin: 10px 0; page-break-inside: avoid;">';
-  surveyHTML += '<h3 style="margin-bottom: 10px; color: #333; border-bottom: 2px solid #f8794b; padding-bottom: 5px;">Survey Information</h3>';
-  surveyHTML += '<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">';
+  surveyHTML += '<h3 class="survey-info-header">Survey Information</h3>';
+  surveyHTML += '<div class="survey-info-grid">';
 
   const fields = [
     { key: "grading", label: "Grading:" },
@@ -735,9 +774,10 @@ function addSurveyInfoToPrint(takeoffGenerator, printContainer) {
   ];
 
   fields.forEach((field) => {
+    const value = surveyInfo[field.key] ? escapeHtml(surveyInfo[field.key]) : "&nbsp;";
     surveyHTML += "<div>";
-    surveyHTML += `<strong style="display: block; margin-bottom: 5px;">${field.label}</strong>`;
-    surveyHTML += `<div style="padding: 8px; background: #f5f5f5; border: 1px solid #ddd; border-radius: 4px; min-height: 40px;">${surveyInfo[field.key] ? escapeHtml(surveyInfo[field.key]) : "&nbsp;"}</div>`;
+    surveyHTML += `<strong class="survey-info-label">${field.label}</strong>`;
+    surveyHTML += `<div class="survey-info-value">${value}</div>`;
     surveyHTML += "</div>";
   });
 
@@ -745,11 +785,12 @@ function addSurveyInfoToPrint(takeoffGenerator, printContainer) {
   surveySection.innerHTML = surveyHTML;
 }
 
-// Sets up client logo for printing
+// Load and display the client logo in the print layout
 function setupClientLogo(printContainer, takeoffGenerator) {
   const printLogo = document.getElementById("print-logo");
   const clientLogoInput = document.getElementById("client-logo-upload");
 
+  // Handle newly uploaded logo file
   if (clientLogoInput?.files?.[0]) {
     const reader = new FileReader();
     reader.onload = (e) => {
@@ -761,6 +802,7 @@ function setupClientLogo(printContainer, takeoffGenerator) {
     };
     reader.readAsDataURL(clientLogoInput.files[0]);
   } else {
+    // Use existing logo preview if available
     const logoPreview = document.getElementById("client-logo-preview");
     const logoImg = logoPreview?.querySelector("img");
 
@@ -777,7 +819,7 @@ function setupClientLogo(printContainer, takeoffGenerator) {
   }
 }
 
-// Proceeds with the print process
+// Finalize the print layout and open the print dialog
 function proceedWithPrint(takeoffGenerator) {
   closeAllModalsAndBackdrops();
 
@@ -789,7 +831,8 @@ function proceedWithPrint(takeoffGenerator) {
 
     const reportTitleElement = document.getElementById("print-report-title");
     if (reportTitleElement) {
-      const filters = window.takeoffGenerator && window.takeoffGenerator.getFilters ? window.takeoffGenerator.getFilters() : null;
+      const gen = window.takeoffGenerator;
+      const filters = gen && gen.getFilters ? gen.getFilters() : null;
       const hasFilters = filters && (filters.floors?.length || filters.deviceTypes?.length || filters.zones?.length || filters.rooms?.length);
       reportTitleElement.textContent = hasFilters ? "Device Takeoff List - Filtered" : "Device Takeoff List - All Floors";
     }
@@ -797,6 +840,7 @@ function proceedWithPrint(takeoffGenerator) {
     const printContainer = document.getElementById("print-container");
     printContainer.style.display = "block";
 
+    // Delay print to allow layout to stabilize
     setTimeout(() => {
       window.print();
       setupPrintCleanup(canvasSection, reportTitleElement);
@@ -804,7 +848,7 @@ function proceedWithPrint(takeoffGenerator) {
   }
 }
 
-// Closes all modals and cleans up UI for printing
+// Hide all active modals and clean up the UI for a clean print
 function closeAllModalsAndBackdrops() {
   const layerState = window.layers ? { ...window.layers } : null;
 
@@ -821,6 +865,7 @@ function closeAllModalsAndBackdrops() {
     style: { overflow: "", paddingRight: "" },
   });
 
+  // Restore canvas object layering after modal closure
   setTimeout(() => {
     if (window.refreshLayers) {
       window.refreshLayers();
@@ -828,7 +873,9 @@ function closeAllModalsAndBackdrops() {
 
     const fabricCanvas = window.floorManager?.fabricCanvas;
     if (fabricCanvas) {
-      const cameraDevices = fabricCanvas.getObjects().filter((obj) => obj.type === "group" && obj.deviceType && obj.coverageArea);
+      const cameraDevices = fabricCanvas.getObjects().filter((obj) => {
+        return obj.type === "group" && obj.deviceType && obj.coverageArea;
+      });
 
       cameraDevices.forEach((device) => {
         if (device.coverageArea && device.coverageConfig?.visible) {
@@ -860,7 +907,7 @@ function closeAllModalsAndBackdrops() {
   }, 100);
 }
 
-// Sets up print table with proper styling
+// Clone and style the takeoff table for the print layout
 function setupPrintTable() {
   const tableContent = document.querySelector("#takeoff-modal .table-responsive")?.cloneNode(true);
   if (!tableContent) return null;
@@ -875,23 +922,13 @@ function setupPrintTable() {
   return tableContent;
 }
 
-// Applies print-specific styles to table
+// Apply specific CSS styles to the table for high-quality printing
 function applyPrintTableStyles(table) {
-  const fullWidthStyles = `
-    width: 100% !important; max-width: 100% !important; min-width: 100% !important;
-    margin: 0 !important; padding: 0 !important; box-sizing: border-box !important;
-    border-collapse: collapse !important; table-layout: fixed !important;
-  `;
-
-  table.style.cssText = fullWidthStyles;
+  table.classList.add("print-table");
 
   const cells = table.querySelectorAll("th, td");
   cells.forEach((cell) => {
-    cell.style.cssText = `
-      padding: 8px !important; border: 1px solid #ddd !important; text-align: center !important;
-      word-wrap: break-word !important; color: #333 !important; background-color: transparent !important;
-      vertical-align: middle !important;
-    `;
+    cell.classList.add("print-table-cell");
   });
 
   const columnWidths = ["40px", "10%", "auto", "10%", "10%", "10%", "10%", "10%", "10%", "40px"];
@@ -900,11 +937,11 @@ function applyPrintTableStyles(table) {
     const rowCells = row.querySelectorAll("th, td");
     rowCells.forEach((cell, index) => {
       if (columnWidths[index]) {
-        cell.style.cssText += `width: ${columnWidths[index]} !important;`;
+        cell.style.width = columnWidths[index];
         if (index === 0 || index === 9) {
-          cell.style.cssText += "max-width: 40px !important;";
+          cell.style.maxWidth = "40px";
         }
-        cell.style.cssText += "white-space: normal !important; word-wrap: break-word !important; vertical-align: top !important;";
+        cell.classList.add("print-table-cell-wrap");
       }
     });
   });
@@ -932,7 +969,7 @@ function applyPrintTableStyles(table) {
   });
 }
 
-// Sets up canvas section for printing
+// Inject the styled table into the print container
 function setupCanvasSection(canvasSection, tableContent) {
   canvasSection.innerHTML = "";
   canvasSection.style.cssText = `
@@ -942,7 +979,7 @@ function setupCanvasSection(canvasSection, tableContent) {
   canvasSection.appendChild(tableContent);
 }
 
-// Sets up cleanup after printing
+// Clean up the print layout after the print dialog is closed
 function setupPrintCleanup(canvasSection, reportTitleElement) {
   const cleanup = () => {
     const printContainer = document.getElementById("print-container");

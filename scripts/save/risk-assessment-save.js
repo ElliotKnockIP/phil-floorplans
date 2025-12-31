@@ -40,7 +40,7 @@ const setRadioValue = (name, value) => {
   }
 };
 
-// ========== Intruder Risk Assessment ==========
+// Intruder Risk Assessment
 
 // Saves Intruder risk assessment data from form fields
 export const serializeRiskAssessment = () => {
@@ -196,7 +196,7 @@ export const loadRiskAssessmentToSidebar = async (riskAssessment) => {
   }
 };
 
-// ========== CCTV Risk Assessment ==========
+// CCTV Risk Assessment
 
 // Saves CCTV risk assessment data from form fields
 export const serializeCctvRiskAssessment = () => {
@@ -302,10 +302,7 @@ export const loadCctvRiskAssessmentToSidebar = async (cctvRiskAssessment) => {
     setRadioValue("cctv-risk-monitoring-required", cctvRiskAssessment.monitoringRequired);
     setValue("cctv-risk-recording-equipment", cctvRiskAssessment.recordingEquipment);
     setValue("cctv-risk-approximate-storage", cctvRiskAssessment.approximateStorage);
-    setRadioValue(
-      "cctv-risk-network-connection-installed",
-      cctvRiskAssessment.networkConnectionInstalled
-    );
+    setRadioValue("cctv-risk-network-connection-installed", cctvRiskAssessment.networkConnectionInstalled);
     setValue("cctv-risk-network-connection-type", cctvRiskAssessment.networkConnectionType);
     setRadioValue("cctv-risk-network-router-installed", cctvRiskAssessment.networkRouterInstalled);
     setValue("cctv-risk-network-router-type", cctvRiskAssessment.networkRouterType);
@@ -321,7 +318,7 @@ export const loadCctvRiskAssessmentToSidebar = async (cctvRiskAssessment) => {
   }
 };
 
-// ========== Access Control Risk Assessment ==========
+// Access Control Risk Assessment
 
 // Saves Access Control risk assessment data from form fields
 export const serializeAccessControlRiskAssessment = () => {
@@ -354,12 +351,12 @@ export const serializeAccessControlRiskAssessment = () => {
             "N/A": "na",
           };
 
+          const classification = classificationMap[classificationText] || classificationText.toLowerCase().replace(/\s+/g, "-");
+
           accessPoints.push({
             id: row.id,
             name: name,
-            classification:
-              classificationMap[classificationText] ||
-              classificationText.toLowerCase().replace(/\s+/g, "-"),
+            classification: classification,
             option: optionMap[optionText] || optionText.toLowerCase(),
           });
         }
@@ -447,90 +444,45 @@ export const loadAccessControlRiskAssessmentToSidebar = async (accessControlRisk
 
     // Access
     setValue("access-control-risk-access-front-ease", accessControlRiskAssessment.accessFrontEase);
-    setValue(
-      "access-control-risk-access-front-notes",
-      accessControlRiskAssessment.accessFrontNotes
-    );
+    setValue("access-control-risk-access-front-notes", accessControlRiskAssessment.accessFrontNotes);
     setValue("access-control-risk-access-side1-ease", accessControlRiskAssessment.accessSide1Ease);
-    setValue(
-      "access-control-risk-access-side1-notes",
-      accessControlRiskAssessment.accessSide1Notes
-    );
+    setValue("access-control-risk-access-side1-notes", accessControlRiskAssessment.accessSide1Notes);
     setValue("access-control-risk-access-side2-ease", accessControlRiskAssessment.accessSide2Ease);
-    setValue(
-      "access-control-risk-access-side2-notes",
-      accessControlRiskAssessment.accessSide2Notes
-    );
+    setValue("access-control-risk-access-side2-notes", accessControlRiskAssessment.accessSide2Notes);
     setValue("access-control-risk-access-rear-ease", accessControlRiskAssessment.accessRearEase);
     setValue("access-control-risk-access-rear-notes", accessControlRiskAssessment.accessRearNotes);
     setValue("access-control-risk-access-roof-ease", accessControlRiskAssessment.accessRoofEase);
     setValue("access-control-risk-access-roof-notes", accessControlRiskAssessment.accessRoofNotes);
-    setValue(
-      "access-control-risk-access-garage-ease",
-      accessControlRiskAssessment.accessGarageEase
-    );
-    setValue(
-      "access-control-risk-access-garage-notes",
-      accessControlRiskAssessment.accessGarageNotes
-    );
+    setValue("access-control-risk-access-garage-ease", accessControlRiskAssessment.accessGarageEase);
+    setValue("access-control-risk-access-garage-notes", accessControlRiskAssessment.accessGarageNotes);
     setValue("access-control-risk-access-shed-ease", accessControlRiskAssessment.accessShedEase);
     setValue("access-control-risk-access-shed-notes", accessControlRiskAssessment.accessShedNotes);
-    setValue(
-      "access-control-risk-access-controlled-ease",
-      accessControlRiskAssessment.accessControlledEase
-    );
-    setValue(
-      "access-control-risk-access-controlled-notes",
-      accessControlRiskAssessment.accessControlledNotes
-    );
+    setValue("access-control-risk-access-controlled-ease", accessControlRiskAssessment.accessControlledEase);
+    setValue("access-control-risk-access-controlled-notes", accessControlRiskAssessment.accessControlledNotes);
 
     // Crime Risk Assessment
     setValue("access-control-risk-area-crime-rating", accessControlRiskAssessment.areaCrimeRating);
     setValue("access-control-risk-insurance-grade", accessControlRiskAssessment.insuranceGrade);
-    setValue(
-      "access-control-risk-property-loss-value",
-      accessControlRiskAssessment.propertyLossValue
-    );
+    setValue("access-control-risk-property-loss-value", accessControlRiskAssessment.propertyLossValue);
     setValue("access-control-risk-property-notes", accessControlRiskAssessment.propertyNotes);
     setValue("access-control-risk-stock-loss-value", accessControlRiskAssessment.stockLossValue);
     setValue("access-control-risk-stock-notes", accessControlRiskAssessment.stockNotes);
     setValue("access-control-risk-damage-loss-value", accessControlRiskAssessment.damageLossValue);
     setValue("access-control-risk-damage-notes", accessControlRiskAssessment.damageNotes);
-    setValue(
-      "access-control-risk-no-disclose-crime-theft",
-      accessControlRiskAssessment.noDiscloseCrimeTheft
-    );
+    setValue("access-control-risk-no-disclose-crime-theft", accessControlRiskAssessment.noDiscloseCrimeTheft);
 
     // Reference Points
-    setRadioValue(
-      "access-control-risk-drawing-supplied",
-      accessControlRiskAssessment.drawingSupplied
-    );
+    setRadioValue("access-control-risk-drawing-supplied", accessControlRiskAssessment.drawingSupplied);
     setValue("access-control-risk-drawing-number", accessControlRiskAssessment.drawingNumber);
     setValue("access-control-risk-drawing-date", accessControlRiskAssessment.drawingDate);
     setValue("access-control-risk-drawing-revision", accessControlRiskAssessment.drawingRevision);
-    setRadioValue(
-      "access-control-risk-note1-applicable",
-      accessControlRiskAssessment.note1Applicable
-    );
-    setRadioValue(
-      "access-control-risk-note2-applicable",
-      accessControlRiskAssessment.note2Applicable
-    );
-    setRadioValue(
-      "access-control-risk-note3-applicable",
-      accessControlRiskAssessment.note3Applicable
-    );
-    setRadioValue(
-      "access-control-risk-note4-applicable",
-      accessControlRiskAssessment.note4Applicable
-    );
+    setRadioValue("access-control-risk-note1-applicable", accessControlRiskAssessment.note1Applicable);
+    setRadioValue("access-control-risk-note2-applicable", accessControlRiskAssessment.note2Applicable);
+    setRadioValue("access-control-risk-note3-applicable", accessControlRiskAssessment.note3Applicable);
+    setRadioValue("access-control-risk-note4-applicable", accessControlRiskAssessment.note4Applicable);
 
     // Access Points - restore from saved data
-    if (
-      accessControlRiskAssessment.accessPoints &&
-      Array.isArray(accessControlRiskAssessment.accessPoints)
-    ) {
+    if (accessControlRiskAssessment.accessPoints && Array.isArray(accessControlRiskAssessment.accessPoints)) {
       const tbody = document.getElementById("access-control-risk-access-points-tbody");
       if (tbody) {
         tbody.innerHTML = "";
@@ -560,9 +512,8 @@ export const loadAccessControlRiskAssessmentToSidebar = async (accessControlRisk
             <td>${classificationLabels[ap.classification] || ap.classification}</td>
             <td>${optionLabels[ap.option] || ap.option.toUpperCase()}</td>
             <td>
-              <button type="button" class="btn btn-sm text-white" style="background-color: #007bff; padding: 0.25rem 0.5rem;" onclick="removeAccessControlAccessPoint('${
-                ap.id
-              }')">X</button>
+              <button type="button" class="btn btn-sm text-white btn-remove-ap" 
+                onclick="removeAccessControlAccessPoint('${ap.id}')">X</button>
             </td>
           `;
 
@@ -572,42 +523,15 @@ export const loadAccessControlRiskAssessmentToSidebar = async (accessControlRisk
     }
 
     // Risk Assessment Outcome
-    setValue(
-      "access-control-risk-environmental-grade",
-      accessControlRiskAssessment.environmentalGrade
-    );
-    setValue(
-      "access-control-risk-setting-unsetting-method",
-      accessControlRiskAssessment.settingUnsettingMethod
-    );
-    setValue(
-      "access-control-risk-signalling-option-1",
-      accessControlRiskAssessment.signallingOption1
-    );
-    setValue(
-      "access-control-risk-signalling-option-2",
-      accessControlRiskAssessment.signallingOption2
-    );
-    setValue(
-      "access-control-risk-method-of-unsetting",
-      accessControlRiskAssessment.methodOfUnsetting
-    );
-    setValue(
-      "access-control-risk-confirmation-sequential",
-      accessControlRiskAssessment.confirmationSequential
-    );
-    setValue(
-      "access-control-risk-confirmation-audio",
-      accessControlRiskAssessment.confirmationAudio
-    );
-    setValue(
-      "access-control-risk-confirmation-visual",
-      accessControlRiskAssessment.confirmationVisual
-    );
-    setValue(
-      "access-control-risk-confirmation-alarm-time",
-      accessControlRiskAssessment.confirmationAlarmTime
-    );
+    setValue("access-control-risk-environmental-grade", accessControlRiskAssessment.environmentalGrade);
+    setValue("access-control-risk-setting-unsetting-method", accessControlRiskAssessment.settingUnsettingMethod);
+    setValue("access-control-risk-signalling-option-1", accessControlRiskAssessment.signallingOption1);
+    setValue("access-control-risk-signalling-option-2", accessControlRiskAssessment.signallingOption2);
+    setValue("access-control-risk-method-of-unsetting", accessControlRiskAssessment.methodOfUnsetting);
+    setValue("access-control-risk-confirmation-sequential", accessControlRiskAssessment.confirmationSequential);
+    setValue("access-control-risk-confirmation-audio", accessControlRiskAssessment.confirmationAudio);
+    setValue("access-control-risk-confirmation-visual", accessControlRiskAssessment.confirmationVisual);
+    setValue("access-control-risk-confirmation-alarm-time", accessControlRiskAssessment.confirmationAlarmTime);
     setValue("access-control-risk-monitoring", accessControlRiskAssessment.monitoring);
     setValue("access-control-risk-arc-name", accessControlRiskAssessment.arcName);
     setValue("access-control-risk-alarm-response", accessControlRiskAssessment.alarmResponse);

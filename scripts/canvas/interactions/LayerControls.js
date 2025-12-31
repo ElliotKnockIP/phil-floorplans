@@ -27,7 +27,11 @@ const DEVICE_CATEGORIES = {
   custom: ["custom-device-icon.png", "text-device"],
 };
 
-// Layers that depend on devices layer
+// Drawing types for categorization
+const DRAWING_TYPES = ["line", "rect", "circle", "group", "path", "arrow", "textbox"];
+const EXCLUDED_TEXT_CLASSES = ["zone-text", "room-text", "risk-text", "safety-text"];
+
+// Layers that depend on the main devices layer visibility
 const SYSTEM_LAYERS = ["cctv", "intruder", "fire", "access", "networks", "networkLinks", "custom"];
 
 export class LayerControls {
@@ -40,6 +44,7 @@ export class LayerControls {
     this.init();
   }
 
+  // Initialize the layer system
   init() {
     if (this.isInitialized) {
       this.reinitializeCanvasLayers();
@@ -53,7 +58,7 @@ export class LayerControls {
     this.isInitialized = true;
   }
 
-  // Rebuilds layer lists and reattaches listeners
+  // Rebuild layer lists and reattach listeners
   reinitializeCanvasLayers() {
     Object.keys(layers).forEach((layerName) => (layers[layerName].objects = []));
     this.removeCanvasEventListeners();
@@ -64,7 +69,7 @@ export class LayerControls {
     this.updateLayerOpacity();
   }
 
-  // Sets up the layer system
+  // Setup core layer system components
   setupLayerSystem() {
     this.categorizeAllObjects();
     this.setupLayerControls();
@@ -78,7 +83,7 @@ export class LayerControls {
     this.updateLayerOpacity();
   }
 
-  // Puts each object into the right layer
+  // Categorize all existing canvas objects into layers
   categorizeAllObjects() {
     if (!this.canvas) return;
 
@@ -91,7 +96,7 @@ export class LayerControls {
     });
   }
 
-  // Removes event listeners
+  // Remove all canvas event listeners managed by this class
   removeCanvasEventListeners() {
     if (!this.canvas) return;
 
@@ -104,10 +109,11 @@ export class LayerControls {
     }
   }
 
-  // Sets up event listeners to keep layers in sync
+  // Setup event listeners to keep layers in sync with canvas changes
   setupCanvasEventListeners() {
     if (!this.canvas) return;
 
+    // Handle new objects being added to the canvas
     const onObjectAdded = (e) => {
       this.categorizeObject(e.target);
       this.updateLayerVisibility();
@@ -127,6 +133,7 @@ export class LayerControls {
       }
     };
 
+    // Handle objects being removed from the canvas
     const onObjectRemoved = (e) => {
       const obj = e.target;
       Object.keys(layers).forEach((layerName) => {
@@ -147,12 +154,12 @@ export class LayerControls {
       }
     };
 
+    // Update visibility and opacity when selection changes
     const onSelectionChanged = () => {
       this.updateLayerVisibility();
       this.updateLayerOpacity();
     };
 
-    // Add event listeners
     const events = ["object:added", "object:removed", "selection:created", "selection:updated", "selection:cleared"];
     const handlers = [onObjectAdded, onObjectRemoved, onSelectionChanged, onSelectionChanged, onSelectionChanged];
 
@@ -161,7 +168,7 @@ export class LayerControls {
       this.eventListeners.set(event, handlers[i]);
     });
 
-    // DOM listener for external refresh requests
+    // Listen for external requests to refresh layer items
     const onItemsChanged = () => {
       this.renderLayerItems("zones");
       this.renderLayerItems("rooms");
@@ -172,7 +179,7 @@ export class LayerControls {
     this.domItemsChangedHandler = onItemsChanged;
   }
 
-  // Get toggle and slider DOM elements for a layer
+  // Retrieve toggle and slider elements for a specific layer
   getLayerElements(layerName) {
     const toggle = document.getElementById(`${layerName}-layer-toggle`);
     const slider = document.getElementById(`${layerName}-layer-opacity-slider`);
@@ -182,46 +189,81 @@ export class LayerControls {
     return { toggle, slider };
   }
 
-  // Update range input track gradient to reflect current value
+  // Update the visual track of a range slider
   updateSliderTrack(slider, value, min = 0, max = 100) {
     if (!slider) return;
     const percentage = ((value - min) / (max - min)) * 100;
-    slider.style.background = `linear-gradient(to right, var(--orange-ip2, #f8794b) ${percentage}%, #ffffff ${percentage}%)`;
+    const color = "var(--orange-ip2, #f8794b)";
+    slider.style.background = `linear-gradient(to right, ${color} ${percentage}%, #ffffff ${percentage}%)`;
   }
 
-  // Guess a device category based on a device's type/filename
+  // Determine the category for a device based on its type
   findDeviceCategory(deviceType) {
-    return Object.keys(DEVICE_CATEGORIES).find((cat) => DEVICE_CATEGORIES[cat].includes(deviceType)) || "devices";
+    const category = Object.keys(DEVICE_CATEGORIES).find((cat) => DEVICE_CATEGORIES[cat].includes(deviceType));
+    return category || "devices";
   }
 
-  // Assign a single canvas object into the appropriate layer buckets
+  // Check if an object is a drawing object
+  isDrawingObject(obj) {
+    const isDrawingType = DRAWING_TYPES.includes(obj.type);
+    const isValidText = obj.type === "i-text" && !EXCLUDED_TEXT_CLASSES.includes(obj.class);
+    return isDrawingType || isValidText;
+  }
+
+  // Check if an object is network-related
+  isNetworkObject(obj) {
+    return obj.isNetworkConnection || obj.isConnectionSegment || obj.isNetworkSplitPoint || obj.isSegmentDistanceLabel || obj.isConnectionCustomLabel || obj.isConnectionLine || obj.isChannelLabel;
+  }
+
+  // Find the parent device for a resize icon
+  findParentDeviceForIcon(obj) {
+    if (obj.type !== "image") return null;
+    return this.canvas?.getObjects().find((d) => {
+      return d.type === "group" && d.deviceType && (d.leftResizeIcon === obj || d.rightResizeIcon === obj || d.rotateResizeIcon === obj);
+    });
+  }
+
+  // Find the parent device for a text label
+  findParentDeviceForText(obj) {
+    return this.canvas?.getObjects().find((device) => {
+      return device.type === "group" && device.deviceType && device.textObject === obj;
+    });
+  }
+
+  // Check if an object is a resize icon
+  isResizeIcon(obj) {
+    return this.canvas?.getObjects().some((o) => {
+      return o.type === "group" && o.deviceType && [o.leftResizeIcon, o.rightResizeIcon, o.rotateResizeIcon].includes(obj);
+    });
+  }
+
+  // Assign a canvas object to its corresponding layer
   categorizeObject(obj) {
     if (!obj) return;
 
-    // Background images
+    // Handle background images
     if (obj.isBackground || (obj.type === "image" && obj.selectable === false && obj.evented === false)) {
       layers.background.objects.push(obj);
       return;
     }
 
-    // Network connections
-    if (obj.isNetworkConnection || obj.isConnectionSegment || obj.isNetworkSplitPoint || obj.isSegmentDistanceLabel || obj.isConnectionCustomLabel || obj.isConnectionLine || obj.isChannelLabel) {
+    // Handle network-related objects
+    if (this.isNetworkObject(obj)) {
       layers.networkLinks.objects.push(obj);
       return;
     }
 
-    // Title blocks
+    // Handle title blocks
     if (obj.deviceType === "title-block") {
       layers.drawings.objects.push(obj);
       return;
     }
 
-    // Device groups
+    // Handle device groups and their associated components
     if (obj.type === "group" && obj.deviceType) {
       const category = obj.coverageConfig ? "cctv" : obj.deviceType === "text-device" ? "textDevices" : this.findDeviceCategory(obj.deviceType);
       layers[category].objects.push(obj);
 
-      // Add related objects
       ["coverageArea", "leftResizeIcon", "rightResizeIcon", "rotateResizeIcon"].forEach((prop) => {
         if (obj[prop]) layers[category].objects.push(obj[prop]);
       });
@@ -230,9 +272,9 @@ export class LayerControls {
       return;
     }
 
-    // Device text labels
+    // Handle device text labels
     if (obj.type === "text" && obj.isDeviceLabel) {
-      const parentDevice = this.canvas?.getObjects().find((device) => device.type === "group" && device.deviceType && device.textObject === obj);
+      const parentDevice = this.findParentDeviceForText(obj);
 
       if (parentDevice) {
         const category = parentDevice.coverageConfig ? "cctv" : this.findDeviceCategory(parentDevice.deviceType);
@@ -243,7 +285,7 @@ export class LayerControls {
       return;
     }
 
-    // Other object types
+    // Handle polygons and other drawing shapes
     if ((obj.type === "polygon" && obj.class === "zone-polygon") || (obj.type === "i-text" && obj.class === "zone-text")) {
       layers.zones.objects.push(obj);
     } else if ((obj.type === "polygon" && obj.class === "room-polygon") || (obj.type === "i-text" && obj.class === "room-text")) {
@@ -252,17 +294,17 @@ export class LayerControls {
       layers.risks.objects.push(obj);
     } else if ((obj.type === "polygon" && obj.class === "safety-polygon") || (obj.type === "i-text" && obj.class === "safety-text")) {
       layers.safetyZones.objects.push(obj);
-    } else if (["line", "rect", "circle", "group", "path", "arrow", "textbox"].includes(obj.type) || (obj.type === "i-text" && obj.class !== "zone-text" && obj.class !== "room-text" && obj.class !== "risk-text" && obj.class !== "safety-text")) {
+    } else if (this.isDrawingObject(obj)) {
       layers.drawings.objects.push(obj);
     } else if (obj.type === "image") {
-      const isResizeIcon = this.canvas?.getObjects().some((o) => o.type === "group" && o.deviceType && [o.leftResizeIcon, o.rightResizeIcon, o.rotateResizeIcon].includes(obj));
+      const isResizeIcon = this.isResizeIcon(obj);
       if (!isResizeIcon) {
         layers.drawings.objects.push(obj);
       }
     }
   }
 
-  // Apply visibility flags from layers and per-item overrides to canvas objects
+  // Update visibility of all objects based on layer settings
   updateLayerVisibility() {
     if (!this.canvas) return;
 
@@ -272,8 +314,8 @@ export class LayerControls {
       layers[layerName].objects.forEach((obj) => {
         if (!obj?.set) return;
 
-        // Keep camera resize icons hidden unless their parent camera is selected
-        const parentDeviceForIcon = obj.type === "image" ? this.canvas?.getObjects().find((d) => d.type === "group" && d.deviceType && (d.leftResizeIcon === obj || d.rightResizeIcon === obj || d.rotateResizeIcon === obj)) : null;
+        // Handle visibility for camera resize icons
+        const parentDeviceForIcon = this.findParentDeviceForIcon(obj);
 
         let isVisible = layers[layerName].visible && layers[layerName].opacity > 0;
         if (SYSTEM_LAYERS.includes(layerName)) {
@@ -288,7 +330,7 @@ export class LayerControls {
           return;
         }
 
-        // Background images
+        // Handle background visibility and layering
         if (layerName === "background" && obj.type === "image") {
           this.canvas.sendToBack(obj);
           obj.set({ visible: isVisible, selectable: false, evented: false });
@@ -296,12 +338,12 @@ export class LayerControls {
           obj.set({ visible: isVisible });
         }
 
-        // Coverage areas
+        // Handle coverage area visibility
         if (obj.coverageArea?.set) {
           obj.coverageArea.set({ visible: isVisible && obj.coverageConfig?.visible });
         }
 
-        // CCTV resize icons
+        // Handle CCTV resize icon visibility
         if (layerName === "cctv" && activeObject === obj) {
           ["leftResizeIcon", "rightResizeIcon", "rotateResizeIcon"].forEach((iconType) => {
             if (obj[iconType]) {
@@ -314,7 +356,7 @@ export class LayerControls {
     this.canvas.requestRenderAll();
   }
 
-  // Color and opacity utilities
+  // Helper to set alpha channel on various color formats
   setColorAlpha(colorStr, alpha) {
     if (!colorStr) return colorStr;
 
@@ -333,7 +375,7 @@ export class LayerControls {
     return colorStr;
   }
 
-  // Combine base color with a multiplier to compute effective color opacity
+  // Update color opacity while preserving base opacity
   updateColorOpacity(colorStr, newOpacity, isZone = false) {
     const rgbaMatch = colorStr?.match(/rgba\((\d+),\s*(\d+),\s*(\d+),\s*([\d.]+)\)/);
     const hslaMatch = colorStr?.match(/hsla\((\d+),\s*(\d+)%,\s*(\d+)%,\s*([\d.]+)\)/);
@@ -349,7 +391,7 @@ export class LayerControls {
     return colorStr;
   }
 
-  // Compute and apply effective opacity for each object based on layer and per-item settings
+  // Update opacity of all objects based on layer and individual settings
   updateLayerOpacity() {
     if (!this.canvas) return;
 
@@ -361,11 +403,12 @@ export class LayerControls {
       layers[layerName].objects.forEach((obj) => {
         if (!obj?.set) return;
 
-        const parentDeviceForIcon = obj.type === "image" ? this.canvas?.getObjects().find((d) => d.type === "group" && d.deviceType && (d.leftResizeIcon === obj || d.rightResizeIcon === obj || d.rotateResizeIcon === obj)) : null;
+        const parentDeviceForIcon = this.findParentDeviceForIcon(obj);
 
         const objectOpacityFactor = typeof obj._individualOpacity === "number" ? obj._individualOpacity : 1;
         const objectEffectiveOpacity = effectiveOpacity * objectOpacityFactor;
 
+        // Handle opacity for camera resize icons
         if (parentDeviceForIcon) {
           const isCameraSelected = activeObject === parentDeviceForIcon;
           const visible = layers[layerName].visible && layers.devices.visible && objectEffectiveOpacity > 0 && parentDeviceForIcon.coverageConfig?.visible && isCameraSelected;
@@ -376,6 +419,7 @@ export class LayerControls {
           return;
         }
 
+        // Apply opacity to polygons with specific fill/stroke rules
         if (layerName === "zones" && obj.type === "polygon") {
           obj.set({
             fill: this.setColorAlpha(obj.fill, 0.2 * objectEffectiveOpacity),
@@ -400,9 +444,10 @@ export class LayerControls {
             obj.set({ opacity: objectEffectiveOpacity });
           }
         } else {
+          // Default opacity application
           obj.set({ opacity: objectEffectiveOpacity });
 
-          // Coverage areas
+          // Handle coverage area opacity
           if (SYSTEM_LAYERS.includes(layerName) && obj.coverageArea?.set) {
             const fill = obj.coverageConfig?.fillColor || obj.coverageArea.fill;
             obj.coverageArea.set({
@@ -412,7 +457,7 @@ export class LayerControls {
             });
           }
 
-          // CCTV resize icons
+          // Handle CCTV resize icon opacity
           if (layerName === "cctv") {
             const isCameraSelected = activeObject === obj;
             ["leftResizeIcon", "rightResizeIcon", "rotateResizeIcon"].forEach((iconType) => {
@@ -430,12 +475,12 @@ export class LayerControls {
     this.canvas.requestRenderAll();
   }
 
-  // Initialize DOM controls for toggling layers and adjusting opacity sliders
+  // Setup UI controls for each layer
   setupLayerControls() {
     Object.keys(layers).forEach((layerName) => {
       const { toggle, slider } = this.getLayerElements(layerName);
 
-      // Slider setup
+      // Setup opacity slider
       if (slider) {
         const newSlider = slider.cloneNode(true);
         slider.parentNode.replaceChild(newSlider, slider);
@@ -448,7 +493,7 @@ export class LayerControls {
         });
       }
 
-      // Toggle setup
+      // Setup visibility toggle
       if (toggle) {
         const newToggle = toggle.cloneNode(true);
         toggle.parentNode.replaceChild(newToggle, toggle);
@@ -456,7 +501,7 @@ export class LayerControls {
         newToggle.addEventListener("change", () => {
           layers[layerName].visible = newToggle.checked;
 
-          // Devices layer affects system layers
+          // Main devices toggle affects all system layers
           if (layerName === "devices") {
             SYSTEM_LAYERS.forEach((sysLayer) => {
               const sysToggle = this.getLayerElements(sysLayer).toggle;
@@ -464,7 +509,7 @@ export class LayerControls {
             });
           }
 
-          // System layers depend on devices layer
+          // System layer visibility depends on main devices layer
           if (SYSTEM_LAYERS.includes(layerName)) {
             layers[layerName].visible = newToggle.checked && layers.devices.visible;
           }
@@ -474,6 +519,7 @@ export class LayerControls {
       }
     });
 
+    // Initialize individual item controls
     this.ensurePerItemContainers();
     this.renderLayerItems("zones");
     this.renderLayerItems("rooms");
@@ -481,7 +527,7 @@ export class LayerControls {
     this.renderLayerItems("safetyZones");
   }
 
-  // Ensure the per-item UI containers for zones, rooms, risks, and safetyZones exist in the layer menu
+  // Ensure UI containers for individual item controls exist
   ensurePerItemContainers() {
     const layerControlsSubmenu = document.getElementById("layer-controls-submenu");
     if (!layerControlsSubmenu) return;
@@ -491,8 +537,7 @@ export class LayerControls {
 
       const container = document.createElement("div");
       container.id = `${name}-layer-items`;
-      container.className = "mb-3";
-      container.style.cssText = "border-top: 1px solid #e9ecef; padding-top: 12px; margin-top: 12px; max-height: 180px; overflow-y: auto; font-size: 0.9rem;";
+      container.className = "mb-3 layer-item-container";
 
       const label = document.createElement("div");
       label.textContent = name === "zones" ? "Individual Zone Controls" : name === "rooms" ? "Individual Room Controls" : name === "safetyZones" ? "Individual Safety Zone Controls" : "Individual Risk Controls";
@@ -508,7 +553,7 @@ export class LayerControls {
     });
   }
 
-  // Render list of individual zones, rooms, risks, or safetyZones with visibility/opacity controls
+  // Render individual item controls for a specific layer
   renderLayerItems(layerName) {
     this.ensurePerItemContainers();
     const container = this.perItemContainers[layerName];
@@ -526,13 +571,16 @@ export class LayerControls {
       const text = item?.text;
       if (!polygon) return;
 
-      if (!polygon._layerItemId) polygon._layerItemId = `layer-${layerName}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      if (!polygon._layerItemId) {
+        polygon._layerItemId = `layer-${layerName}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      }
 
       const name = layerName === "zones" ? polygon.zoneName || `Zone ${idx + 1}` : layerName === "rooms" ? polygon.roomName || item?.roomName || `Room ${idx + 1}` : polygon.riskName || item?.riskName || `Risk ${idx + 1}`;
 
       const row = document.createElement("div");
       row.style.cssText = "display: flex; align-items: center; gap: 8px; margin: 4px 0;";
 
+      // Individual visibility checkbox
       const checkbox = document.createElement("input");
       checkbox.type = "checkbox";
       checkbox.id = `${polygon._layerItemId}-checkbox`;
@@ -552,12 +600,14 @@ export class LayerControls {
       span.textContent = name;
       span.style.cssText = "flex: 1 1 50%; min-width: 0; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;";
 
+      // Individual opacity slider
       const slider = document.createElement("input");
       slider.type = "range";
       slider.min = "0";
       slider.max = "100";
       slider.step = "1";
-      slider.value = Math.round((typeof polygon._individualOpacity === "number" ? polygon._individualOpacity : 1) * 100).toString();
+      const opacityVal = typeof polygon._individualOpacity === "number" ? polygon._individualOpacity : 1;
+      slider.value = Math.round(opacityVal * 100).toString();
       slider.style.cssText = "flex: 1 1 50%; width: auto; min-width: 80px;";
       slider.className = "form-range";
 
@@ -582,14 +632,14 @@ export class LayerControls {
     list.scrollTop = prevScroll;
   }
 
-  // Public: trigger a full refresh of the layer system
+  // Refresh all layer data and UI
   refreshLayers() {
     if (this.isInitialized && this.canvas) {
       this.reinitializeCanvasLayers();
     }
   }
 
-  // Return snapshot of current layers state for diagnostics
+  // Get current state of the layer system for debugging
   getLayersState() {
     return {
       layers: { ...layers },
@@ -602,7 +652,7 @@ export class LayerControls {
   }
 }
 
-// Wrapper functions
+// Global wrapper functions for layer management
 export function refreshLayers() {
   if (window.layerControls) window.layerControls.refreshLayers();
 }
@@ -612,7 +662,6 @@ export function getLayersState() {
   return null;
 }
 
-// Global functions
 window.refreshLayers = refreshLayers;
 window.getLayersState = getLayersState;
 window.requestLayerItemsRefresh = () => {

@@ -1,13 +1,13 @@
-// Image Cropper - Handles image cropping functionality
-// Provides an interface to crop background images before scaling
+// Image Cropper handles image cropping functionality
 
 export class ImageCropper {
-  constructor(fabricCanvas, manager) {
-    this.fabricCanvas = fabricCanvas;
+  constructor(manager) {
     this.manager = manager;
     this.cropper = null;
     this.currentImageUrl = null;
     this.savedCropData = null;
+    this.isReady = false;
+    this.originalNextBtnHTML = "Next";
 
     // DOM elements
     this.elements = {
@@ -23,21 +23,17 @@ export class ImageCropper {
       modalShownTimeout: null,
       refreshRetryTimeout: null,
     };
-
-    // Helper to prevent stacked backdrops causing dark flicker
-    this.normalizeBackdrops = function () {
-      const backdrops = Array.from(document.querySelectorAll(".modal-backdrop"));
-      if (backdrops.length > 1) backdrops.slice(0, -1).forEach((bd) => bd.remove());
-      if (backdrops.length > 0) document.body.classList.add("modal-open");
-    };
   }
 
-  // Initialize the cropper modal
+  // Initialize cropper modal and listeners
   initialize() {
+    if (this.elements.cropNextBtn) {
+      this.originalNextBtnHTML = this.elements.cropNextBtn.innerHTML || "Next";
+    }
     this.setupEventListeners();
   }
 
-  // Setup event listeners
+  // Setup event listeners for buttons and modal
   setupEventListeners() {
     if (this.elements.cropBackBtn) {
       this.elements.cropBackBtn.addEventListener("click", () => this.handleBack());
@@ -61,18 +57,25 @@ export class ImageCropper {
   startCropping(imageUrl) {
     this.currentImageUrl = imageUrl;
     this.savedCropData = null;
+    this.isReady = false;
 
-    this.normalizeBackdrops();
+    // Disable next button until cropper is ready
+    if (this.elements.cropNextBtn) {
+      this.elements.cropNextBtn.disabled = true;
+      this.elements.cropNextBtn.innerHTML = "Loading...";
+    }
+
+    this.manager.normalizeBackdrops();
     this.manager.showModal(this.elements.cropModal);
 
-    // Clean backdrops after show is queued to ensure only one remains
-    setTimeout(() => this.normalizeBackdrops(), 0);
+    // Ensure only one backdrop remains after show
+    setTimeout(() => this.manager.normalizeBackdrops(), 0);
 
     this.loadImageForCropping(imageUrl);
     this.manager.updateStepIndicators(2);
   }
 
-  // Load image into cropper
+  // Load image into cropper element
   loadImageForCropping(imageUrl) {
     if (this.elements.croppableImage) {
       this.elements.croppableImage.onload = () => {
@@ -83,15 +86,13 @@ export class ImageCropper {
     }
   }
 
-  // Initialize the Cropper.js instance
+  // Initialize Cropper.js instance
   initializeCropper() {
     if (this.timers.cropperTimeout) clearTimeout(this.timers.cropperTimeout);
-    if (this.cropper) this.cropper.destroy();
+    this.destroyCropper();
+    this.isReady = false;
 
-    this.cropper = null;
-
-    const isMapSource =
-      this.manager.currentSource === "map" || this.manager.currentSource === "maps";
+    const isMapSource = this.manager.currentSource === "map" || this.manager.currentSource === "maps";
     const initCropperInstance = () => {
       this.cropper = new Cropper(this.elements.croppableImage, {
         aspectRatio: NaN,
@@ -109,11 +110,16 @@ export class ImageCropper {
           if (this.savedCropData && this.cropper) {
             this.cropper.setData(this.savedCropData);
           }
+          this.isReady = true;
+          if (this.elements.cropNextBtn) {
+            this.elements.cropNextBtn.disabled = false;
+            this.elements.cropNextBtn.innerHTML = this.originalNextBtnHTML;
+          }
         },
       });
     };
 
-    // Handle data URLs which may need delay
+    // Delay initialization for data URLs
     const needsDelay = this.currentImageUrl.startsWith("data:");
     if (needsDelay) {
       this.timers.cropperTimeout = setTimeout(initCropperInstance, 300);
@@ -122,16 +128,13 @@ export class ImageCropper {
     }
   }
 
-  // Refresh cropper layout when modal is shown
+  // Refresh cropper layout when modal is shown or resized
   refreshCropperLayout(maxRetries = 10, delay = 100) {
     if (this.timers.refreshRetryTimeout) clearTimeout(this.timers.refreshRetryTimeout);
     if (!this.cropper || !this.elements.croppableImage) return;
 
-    const isVisible =
-      this.elements.croppableImage.isConnected &&
-      this.elements.croppableImage.offsetParent !== null;
-    const hasSize =
-      this.elements.croppableImage.clientWidth > 0 && this.elements.croppableImage.clientHeight > 0;
+    const isVisible = this.elements.croppableImage.isConnected && this.elements.croppableImage.offsetParent !== null;
+    const hasSize = this.elements.croppableImage.clientWidth > 0 && this.elements.croppableImage.clientHeight > 0;
 
     if (!isVisible || !hasSize) {
       if (maxRetries > 0) {
@@ -155,18 +158,10 @@ export class ImageCropper {
     }
   }
 
-  // Handle back button - return to source selection
+  // Handle back button and return to source selection
   handleBack() {
     this.cleanupTimers();
-
-    if (this.cropper) {
-      try {
-        this.cropper.destroy();
-      } catch (error) {
-        // Ignore destroy errors
-      }
-      this.cropper = null;
-    }
+    this.destroyCropper();
 
     // Hide crop modal
     bootstrap.Modal.getInstance(this.elements.cropModal)?.hide();
@@ -184,18 +179,18 @@ export class ImageCropper {
     if (targetModalId) {
       const targetModal = document.getElementById(targetModalId);
       if (targetModal) {
-        this.normalizeBackdrops();
+        this.manager.normalizeBackdrops();
         this.manager.showModal(targetModal);
-        setTimeout(() => this.normalizeBackdrops(), 0);
+        setTimeout(() => this.manager.normalizeBackdrops(), 0);
       }
     }
 
     this.manager.updateStepIndicators(1);
   }
 
-  // Handle next button - process cropped image
+  // Handle next button and process cropped image
   handleNext() {
-    if (!this.cropper) return;
+    if (!this.isReady || !this.cropper) return;
 
     // Save crop data
     this.savedCropData = this.cropper.getData();
@@ -216,20 +211,8 @@ export class ImageCropper {
 
     // Cleanup
     this.cleanupTimers();
-    if (this.cropper) {
-      try {
-        this.cropper.destroy();
-      } catch (error) {
-        // Ignore destroy errors
-      }
-      this.cropper = null;
-    }
-
-    // Clear image
-    if (this.elements.croppableImage) {
-      this.elements.croppableImage.src = "";
-      this.elements.croppableImage.removeAttribute("src");
-    }
+    this.destroyCropper();
+    this.clearImage();
 
     // Pass to manager for scaling
     this.manager.onCropComplete(croppedCanvas);
@@ -240,6 +223,12 @@ export class ImageCropper {
     if (!this.currentImageUrl) return false;
 
     this.manager.showModal(this.elements.cropModal);
+
+    // Disable next button until cropper is ready
+    if (this.elements.cropNextBtn) {
+      this.elements.cropNextBtn.disabled = true;
+      this.elements.cropNextBtn.innerHTML = "Loading...";
+    }
 
     if (this.elements.croppableImage) {
       if (this.elements.croppableImage.src !== this.currentImageUrl) {
@@ -267,17 +256,15 @@ export class ImageCropper {
     });
   }
 
-  // Cleanup timers
+  // Cleanup all active timers
   cleanupTimers() {
     Object.values(this.timers).forEach((timer) => {
       if (timer) clearTimeout(timer);
     });
   }
 
-  // Reset cropper state
-  resetState(preserveSavedData = false) {
-    this.cleanupTimers();
-
+  // Destroy cropper instance safely
+  destroyCropper() {
     if (this.cropper) {
       try {
         this.cropper.destroy();
@@ -286,12 +273,23 @@ export class ImageCropper {
       }
       this.cropper = null;
     }
+  }
 
+  // Clear image element
+  clearImage() {
     if (this.elements.croppableImage) {
       this.elements.croppableImage.src = "";
       this.elements.croppableImage.removeAttribute("src");
       this.elements.croppableImage.onload = null;
     }
+  }
+
+  // Reset cropper state and cleanup
+  resetState(preserveSavedData = false) {
+    this.cleanupTimers();
+    this.destroyCropper();
+    this.clearImage();
+    this.isReady = false;
 
     if (!preserveSavedData) {
       this.currentImageUrl = null;

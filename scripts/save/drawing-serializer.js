@@ -1,7 +1,9 @@
 import { ObjectTypeUtils, SerializationUtils, StyleConfig, NotificationSystem, ProjectUI, DrawingUtils } from "./utils-save.js";
 import { enablePolygonEditing, disablePolygonEditing } from "../drawing/polygon-editing.js";
 
+// Handles serialization and deserialization of drawing objects like shapes, lines, and polygons
 class OptimizedDrawingObjectSerializer {
+  // Initialize with the fabric canvas instance
   constructor(fabricCanvas) {
     this.fabricCanvas = fabricCanvas;
   }
@@ -51,7 +53,9 @@ class OptimizedDrawingObjectSerializer {
   serializeDrawingObject(obj) {
     try {
       // Skip zones, rooms, risks, safety zones, walls, and titleblocks
-      if (this.isZoneObject(obj) || this.isRoomObject(obj) || this.isRiskObject(obj) || this.isSafetyObject(obj) || this.isWallObject(obj) || this.isTitleBlockObject(obj)) return null;
+      if (this.isZoneObject(obj) || this.isRoomObject(obj) || this.isRiskObject(obj) || this.isSafetyObject(obj) || this.isWallObject(obj) || this.isTitleBlockObject(obj)) {
+        return null;
+      }
 
       const baseData = SerializationUtils.extractBaseData(obj);
 
@@ -223,7 +227,9 @@ class OptimizedDrawingObjectSerializer {
           hotspotLabel: obj.hotspotLabel || "",
           hotspotName: obj.hotspotName || "",
           hotspotSeverity: obj.hotspotSeverity || "",
-          hotspotNotes: obj.hotspotNotes || "",
+          hotspotLikelihood: obj.hotspotLikelihood || "",
+          hotspotRiskAssessment: obj.hotspotRiskAssessment || "",
+          hotspotControlMeasures: obj.hotspotControlMeasures || "",
           hotspotColor: obj.hotspotColor || (circle && circle.fill) || "#ff6b35",
           hotspotStroke: obj.hotspotStroke || (circle && circle.stroke) || "#8b0000",
           lockUniScaling: obj.lockUniScaling ?? true,
@@ -250,7 +256,9 @@ class OptimizedDrawingObjectSerializer {
   serializeZones() {
     if (!window.zones?.length) return [];
     return window.zones
-      .filter((z) => z.polygon && this.fabricCanvas.getObjects().includes(z.polygon) && z.text && this.fabricCanvas.getObjects().includes(z.text))
+      .filter((z) => {
+        return z.polygon && this.fabricCanvas.getObjects().includes(z.polygon) && z.text && this.fabricCanvas.getObjects().includes(z.text);
+      })
       .map((z, i) => {
         try {
           const p = z.polygon;
@@ -277,7 +285,9 @@ class OptimizedDrawingObjectSerializer {
   serializeRooms() {
     if (!window.rooms?.length) return [];
     return window.rooms
-      .filter((r) => r.polygon && this.fabricCanvas.getObjects().includes(r.polygon) && r.text && this.fabricCanvas.getObjects().includes(r.text))
+      .filter((r) => {
+        return r.polygon && this.fabricCanvas.getObjects().includes(r.polygon) && r.text && this.fabricCanvas.getObjects().includes(r.text);
+      })
       .map((r, i) => {
         try {
           const p = r.polygon;
@@ -304,7 +314,9 @@ class OptimizedDrawingObjectSerializer {
   serializeRisks() {
     if (!window.risks?.length) return [];
     return window.risks
-      .filter((r) => r.polygon && this.fabricCanvas.getObjects().includes(r.polygon) && r.text && this.fabricCanvas.getObjects().includes(r.text))
+      .filter((r) => {
+        return r.polygon && this.fabricCanvas.getObjects().includes(r.polygon) && r.text && this.fabricCanvas.getObjects().includes(r.text);
+      })
       .map((r, i) => {
         try {
           const p = r.polygon;
@@ -328,16 +340,16 @@ class OptimizedDrawingObjectSerializer {
   serializeSafetyZones() {
     if (!window.safetyZones?.length) return [];
     return window.safetyZones
-      .filter((s) => s.polygon && this.fabricCanvas.getObjects().includes(s.polygon) && s.text && this.fabricCanvas.getObjects().includes(s.text))
+      .filter((s) => {
+        return s.polygon && this.fabricCanvas.getObjects().includes(s.polygon) && s.text && this.fabricCanvas.getObjects().includes(s.text);
+      })
       .map((s, i) => {
         try {
           const p = s.polygon;
           return {
             id: `safety_${i}`,
             safetyName: s.safetyName || p.safetyName || `Safety ${i + 1}`,
-            safetyNotes: s.safetyNotes || p.safetyNotes || "",
             safetySubDetails: s.safetySubDetails || [],
-            safetyContainment: s.safetyContainment || "",
             safetyColor: s.safetyColor || p.stroke || "#f9a825",
             devices: s.devices || [],
             polygon: DrawingUtils.extractProps(p, ["points", "fill", "stroke", "strokeWidth", "strokeDashArray", "left", "top", "scaleX", "scaleY", "angle", "class", "selectable", "evented", "hasControls", "hasBorders", "hoverCursor", "perPixelTargetFind"]),
@@ -350,6 +362,7 @@ class OptimizedDrawingObjectSerializer {
       .filter(Boolean);
   }
 
+  // Extracts relevant data from a text object for saving
   getTextObjectData(text) {
     return {
       text: text.text,
@@ -383,7 +396,7 @@ class OptimizedDrawingObjectSerializer {
     };
   }
 
-  // ===== LOADING METHODS =====
+  // Loading methods
 
   // Loads saved drawing objects back onto canvas
   async loadDrawingObjects(serializedData) {
@@ -393,8 +406,12 @@ class OptimizedDrawingObjectSerializer {
         Object.assign(this.fabricCanvas, {
           pixelsPerMeter: serializedData.canvasSettings.pixelsPerMeter || 17.5,
         });
-        if (serializedData.canvasSettings.zoom) this.fabricCanvas.setZoom(serializedData.canvasSettings.zoom);
-        if (serializedData.canvasSettings.viewportTransform) this.fabricCanvas.setViewportTransform(serializedData.canvasSettings.viewportTransform);
+        if (serializedData.canvasSettings.zoom) {
+          this.fabricCanvas.setZoom(serializedData.canvasSettings.zoom);
+        }
+        if (serializedData.canvasSettings.viewportTransform) {
+          this.fabricCanvas.setViewportTransform(serializedData.canvasSettings.viewportTransform);
+        }
       }
 
       // Restore global state
@@ -408,7 +425,11 @@ class OptimizedDrawingObjectSerializer {
       // Clean up potential conflicts
       this.fabricCanvas
         .getObjects()
-        .filter((obj) => (obj.type === "polygon" && obj.fill?.includes("165, 155, 155")) || (obj.type === "circle" && obj.fill === "#f8794b" && !obj.isWallCircle && obj.radius < 30))
+        .filter((obj) => {
+          const isLegacyPolygon = obj.type === "polygon" && obj.fill?.includes("165, 155, 155");
+          const isLegacyCircle = obj.type === "circle" && obj.fill === "#f8794b" && !obj.isWallCircle && obj.radius < 30;
+          return isLegacyPolygon || isLegacyCircle;
+        })
         .forEach((obj) => this.fabricCanvas.remove(obj));
 
       // Load objects
@@ -458,11 +479,16 @@ class OptimizedDrawingObjectSerializer {
         // Filter out legacy blue network topology lines, but keep drawing connection lines
         const stroke = objectData.properties?.stroke;
         const isTopologyLine = typeof stroke === "string" && (stroke.toLowerCase() === "#2196f3" || /rgba?\(\s*33\s*,\s*150\s*,\s*243/i.test(stroke)) && objectData.properties?.selectable === false && objectData.properties?.evented === false;
+
         if (isTopologyLine) return resolve(null);
 
         // For connection lines, only check ID to avoid position-based false duplicates
         const isConnectionLine = objectData.properties?.isConnectionLine === true;
-        const duplicate = isConnectionLine ? this.fabricCanvas.getObjects().find((o) => o.id === objectData.id) : this.fabricCanvas.getObjects().find((o) => o.id === objectData.id || (o.type === objectData.type && Math.abs(o.left - objectData.position.left) < 1 && Math.abs(o.top - objectData.position.top) < 1));
+        const duplicate = isConnectionLine
+          ? this.fabricCanvas.getObjects().find((o) => o.id === objectData.id)
+          : this.fabricCanvas.getObjects().find((o) => {
+              return o.id === objectData.id || (o.type === objectData.type && Math.abs(o.left - objectData.position.left) < 1 && Math.abs(o.top - objectData.position.top) < 1);
+            });
 
         if (duplicate) {
           // Don't apply standard styling to connection lines - they need special properties preserved
@@ -503,6 +529,7 @@ class OptimizedDrawingObjectSerializer {
     });
   }
 
+  // Checks if an object is a network connection line
   isConnectionLine(objectData) {
     // Check if the object has the isConnectionLine property set
     if (objectData.properties?.isConnectionLine === true) return true;
@@ -520,7 +547,10 @@ class OptimizedDrawingObjectSerializer {
     const simpleCreators = {
       circle: () => new fabric.Circle(props),
       rectangle: () => new fabric.Rect(props),
-      text: () => new (objectData.type === "textbox" ? fabric.Textbox : fabric.IText)(properties.text, props),
+      text: () => {
+        const TextClass = objectData.type === "textbox" ? fabric.Textbox : fabric.IText;
+        return new TextClass(properties.text, props);
+      },
       line: () => {
         const lineProps = {
           ...props,
@@ -537,11 +567,15 @@ class OptimizedDrawingObjectSerializer {
       triangle: () => new fabric.Triangle(props),
     };
 
-    if (simpleCreators[objectData.drawingType]) return (callback) => callback(simpleCreators[objectData.drawingType]());
+    if (simpleCreators[objectData.drawingType]) {
+      return (callback) => callback(simpleCreators[objectData.drawingType]());
+    }
 
     // Complex creators (image, uploadedImage, arrow, measurement, buildingFront)
     return (callback, reject) => {
-      if (objectData.drawingType === "image" || objectData.drawingType === "uploadedImage") {
+      const isImage = objectData.drawingType === "image" || objectData.drawingType === "uploadedImage";
+
+      if (isImage) {
         if (!properties.src) return reject(new Error("No image source"));
         fabric.Image.fromURL(
           properties.src,
@@ -623,6 +657,7 @@ class OptimizedDrawingObjectSerializer {
     return group;
   }
 
+  // Creates an access point group from saved data
   createAccessPointGroup(objectData, props) {
     const circleData = objectData.accessPointData?.circle || {};
     const textData = objectData.accessPointData?.text || {};
@@ -691,6 +726,7 @@ class OptimizedDrawingObjectSerializer {
     return group;
   }
 
+  // Creates a hotspot group from saved data
   createHotspotGroup(objectData, props) {
     const circleData = objectData.hotspotData?.circle || {};
     const textData = objectData.hotspotData?.text || {};
@@ -717,7 +753,9 @@ class OptimizedDrawingObjectSerializer {
     const labelText = textData.text || objectData.properties?.hotspotLabel || textData.hotspotLabel || "1";
     const hotspotName = objectData.properties?.hotspotName || `Hotspot ${labelText}`;
     const hotspotSeverity = objectData.properties?.hotspotSeverity || "";
-    const hotspotNotes = objectData.properties?.hotspotNotes || "";
+    const hotspotLikelihood = objectData.properties?.hotspotLikelihood || "";
+    const hotspotRiskAssessment = objectData.properties?.hotspotRiskAssessment || "";
+    const hotspotControlMeasures = objectData.properties?.hotspotControlMeasures || "";
 
     const text = new fabric.IText(labelText, {
       fontSize: textData.fontSize || 16,
@@ -743,7 +781,9 @@ class OptimizedDrawingObjectSerializer {
       hotspotLabel: labelText,
       hotspotName,
       hotspotSeverity,
-      hotspotNotes,
+      hotspotLikelihood,
+      hotspotRiskAssessment,
+      hotspotControlMeasures,
       hotspotColor: storedColor || circle.fill,
       hotspotStroke: storedStroke || circle.stroke,
       lockUniScaling: props.lockUniScaling ?? true,
@@ -889,9 +929,7 @@ class OptimizedDrawingObjectSerializer {
         } else if (type === "safetyZones") {
           props = {
             safetyName: itemData.safetyName,
-            safetyNotes: itemData.safetyNotes,
             safetySubDetails: itemData.safetySubDetails || [],
-            safetyContainment: itemData.safetyContainment || "",
           };
         } else {
           props = { riskName: itemData.riskName, riskNotes: itemData.riskNotes };
@@ -928,9 +966,7 @@ class OptimizedDrawingObjectSerializer {
             polygon,
             text,
             safetyName: itemData.safetyName,
-            safetyNotes: itemData.safetyNotes,
             safetySubDetails: itemData.safetySubDetails || [],
-            safetyContainment: itemData.safetyContainment || "",
             safetyColor: itemData.safetyColor,
             devices: itemData.devices || [],
           });
@@ -944,7 +980,13 @@ class OptimizedDrawingObjectSerializer {
             devices: itemData.devices || [],
           });
         }
-        const handlerMethod = type === "zones" ? "addZoneEventHandlers" : type === "rooms" ? "addRoomEventHandlers" : type === "safetyZones" ? "addSafetyEventHandlers" : "addRiskEventHandlers";
+        const handlerMap = {
+          zones: "addZoneEventHandlers",
+          rooms: "addRoomEventHandlers",
+          safetyZones: "addSafetyEventHandlers",
+          risks: "addRiskEventHandlers",
+        };
+        const handlerMethod = handlerMap[type] || "addRiskEventHandlers";
         this[handlerMethod](polygon, text);
         await new Promise((r) => setTimeout(r, 50));
       } catch (e) {
@@ -961,7 +1003,11 @@ class OptimizedDrawingObjectSerializer {
     // Remove existing walls
     this.fabricCanvas
       .getObjects()
-      .filter((obj) => (obj.type === "circle" && obj.isWallCircle) || (obj.type === "line" && !obj.deviceType && !obj.isResizeIcon && !obj.isConnectionLine))
+      .filter((obj) => {
+        const isWallCircle = obj.type === "circle" && obj.isWallCircle;
+        const isWallLine = obj.type === "line" && !obj.deviceType && !obj.isResizeIcon && !obj.isConnectionLine;
+        return isWallCircle || isWallLine;
+      })
       .forEach((obj) => {
         if (obj._wallUpdateHandler) obj.off("moving", obj._wallUpdateHandler);
         this.fabricCanvas.remove(obj);
@@ -1018,8 +1064,15 @@ class OptimizedDrawingObjectSerializer {
           borderColor: li.borderColor || "#f8794b",
           isWallLine: true,
         });
-        if (li.startCircleIndex !== null && li.startCircleIndex >= 0 && loadedCircles[li.startCircleIndex]) line.startCircle = loadedCircles[li.startCircleIndex];
-        if (li.endCircleIndex !== null && li.endCircleIndex >= 0 && loadedCircles[li.endCircleIndex]) line.endCircle = loadedCircles[li.endCircleIndex];
+
+        if (li.startCircleIndex !== null && li.startCircleIndex >= 0 && loadedCircles[li.startCircleIndex]) {
+          line.startCircle = loadedCircles[li.startCircleIndex];
+        }
+
+        if (li.endCircleIndex !== null && li.endCircleIndex >= 0 && loadedCircles[li.endCircleIndex]) {
+          line.endCircle = loadedCircles[li.endCircleIndex];
+        }
+
         // Events will be bound by Wall class via walls:loaded event
         this.fabricCanvas.add(line);
       } catch (e) {
@@ -1125,7 +1178,9 @@ class OptimizedDrawingObjectSerializer {
         });
         titleblockGroup.id = titleblockData.id;
         this.fabricCanvas.add(titleblockGroup);
-        if (window.activeTitleBlocks && Array.isArray(window.activeTitleBlocks)) window.activeTitleBlocks.push(titleblockGroup);
+        if (window.activeTitleBlocks && Array.isArray(window.activeTitleBlocks)) {
+          window.activeTitleBlocks.push(titleblockGroup);
+        }
         await new Promise((r) => setTimeout(r, 50));
       } catch (e) {
         console.error("Failed to load titleblock:", e);
@@ -1133,6 +1188,7 @@ class OptimizedDrawingObjectSerializer {
     }
   }
 
+  // Updates wall lines when a connected circle is moved
   updateConnectedWallLines(movedCircle) {
     const center = movedCircle.getCenterPoint();
     this.fabricCanvas
@@ -1154,12 +1210,17 @@ class OptimizedDrawingObjectSerializer {
     this.fabricCanvas.requestRenderAll();
   }
 
+  // Removes connected circles when a wall line is deleted
   handleWallLineDeletion(deletedLine) {
-    const remaining = this.fabricCanvas.getObjects().filter((obj) => obj.type === "line" && !obj.deviceType && !obj.isResizeIcon && !obj.isConnectionLine && obj !== deletedLine);
+    const remaining = this.fabricCanvas.getObjects().filter((obj) => {
+      return obj.type === "line" && !obj.deviceType && !obj.isResizeIcon && !obj.isConnectionLine && obj !== deletedLine;
+    });
     [deletedLine.startCircle, deletedLine.endCircle]
       .filter((c) => c && this.fabricCanvas.getObjects().includes(c))
       .forEach((c) => {
-        if (!remaining.some((l) => l.startCircle === c || l.endCircle === c)) this.fabricCanvas.remove(c);
+        if (!remaining.some((l) => l.startCircle === c || l.endCircle === c)) {
+          this.fabricCanvas.remove(c);
+        }
       });
     this.fabricCanvas
       .getObjects("group")
@@ -1168,21 +1229,27 @@ class OptimizedDrawingObjectSerializer {
     this.fabricCanvas.renderAll();
   }
 
+  // Placeholder for organizing wall layers
   organizeWallLayers() {}
+  // Placeholder for ensuring camera resize icons stay on top
   ensureCameraResizeIconsOnTop() {}
 
+  // Sets up event handlers for zone polygons and labels
   addZoneEventHandlers(polygon, text) {
     this.addPolygonTextEventHandlers(
       polygon,
       text,
       "zone",
       (p) => {
-        if (window.showDeviceProperties) window.showDeviceProperties("zone-polygon", text, p, p.height);
+        if (window.showDeviceProperties) {
+          window.showDeviceProperties("zone-polygon", text, p, p.height);
+        }
       },
       () => window.maintainZoneLayerOrder?.()
     );
   }
 
+  // Sets up event handlers for room polygons and labels
   addRoomEventHandlers(polygon, text) {
     this.addPolygonTextEventHandlers(
       polygon,
@@ -1190,12 +1257,15 @@ class OptimizedDrawingObjectSerializer {
       "room",
       (p) => {
         const r = window.rooms.find((r) => r.polygon === p);
-        if (r && window.showRoomProperties) window.showRoomProperties(p, text, r);
+        if (r && window.showRoomProperties) {
+          window.showRoomProperties(p, text, r);
+        }
       },
       () => window.maintainRoomLayerOrder?.()
     );
   }
 
+  // Sets up event handlers for risk polygons and labels
   addRiskEventHandlers(polygon, text) {
     this.addPolygonTextEventHandlers(
       polygon,
@@ -1203,12 +1273,15 @@ class OptimizedDrawingObjectSerializer {
       "risk",
       (p) => {
         const r = window.risks.find((r) => r.polygon === p);
-        if (r && window.showRiskProperties) window.showRiskProperties(p, text, r);
+        if (r && window.showRiskProperties) {
+          window.showRiskProperties(p, text, r);
+        }
       },
       () => window.maintainRiskLayerOrder?.()
     );
   }
 
+  // Sets up event handlers for safety zone polygons and labels
   addSafetyEventHandlers(polygon, text) {
     this.addPolygonTextEventHandlers(
       polygon,
@@ -1216,21 +1289,31 @@ class OptimizedDrawingObjectSerializer {
       "safety",
       (p) => {
         const s = window.safetyZones.find((s) => s.polygon === p);
-        if (s && window.showSafetyProperties) window.showSafetyProperties(p, text, s);
+        if (s && window.showSafetyProperties) {
+          window.showSafetyProperties(p, text, s);
+        }
       },
       () => window.maintainSafetyLayerOrder?.()
     );
   }
 
+  // Shared logic for adding event handlers to polygons and their text labels
   addPolygonTextEventHandlers(polygon, text, type, showProps, maintainOrder) {
     polygon.off();
     text.off();
     setTimeout(() => {
-      if (polygon && this.fabricCanvas.getObjects().includes(polygon)) polygon.originalCenter = polygon.getCenterPoint();
+      const isPolygonOnCanvas = polygon && this.fabricCanvas.getObjects().includes(polygon);
+      if (isPolygonOnCanvas) {
+        polygon.originalCenter = polygon.getCenterPoint();
+      }
     }, 100);
 
     const textMovingHandler = () => {
-      if (!text || !polygon || !this.fabricCanvas.getObjects().includes(text) || !this.fabricCanvas.getObjects().includes(polygon)) return;
+      const isTextOnCanvas = text && this.fabricCanvas.getObjects().includes(text);
+      const isPolygonOnCanvas = polygon && this.fabricCanvas.getObjects().includes(polygon);
+
+      if (!isTextOnCanvas || !isPolygonOnCanvas) return;
+
       const center = polygon.getCenterPoint();
       text.offsetX = text.left - center.x;
       text.offsetY = text.top - center.y;
@@ -1244,7 +1327,10 @@ class OptimizedDrawingObjectSerializer {
       // The Snapping.js handles the snapping logic separately
       if (text && this.fabricCanvas.getObjects().includes(text)) {
         const center = polygon.getCenterPoint();
-        text.set({ left: center.x + (text.offsetX || 0), top: center.y + (text.offsetY || 0) });
+        text.set({
+          left: center.x + (text.offsetX || 0),
+          top: center.y + (text.offsetY || 0),
+        });
         text.setCoords();
       }
       this.fabricCanvas.requestRenderAll();
@@ -1253,11 +1339,21 @@ class OptimizedDrawingObjectSerializer {
     const polygonMouseDown = (e) => {
       const pointer = this.fabricCanvas.getPointer(e.e);
       polygon.set("evented", false);
-      const devices = this.fabricCanvas.getObjects().filter((o) => o !== polygon && o !== text && o.type === "group" && o.deviceType && o.containsPoint(pointer));
+      const devices = this.fabricCanvas.getObjects().filter((o) => {
+        return o !== polygon && o !== text && o.type === "group" && o.deviceType && o.containsPoint(pointer);
+      });
       polygon.set("evented", true);
       e.e.preventDefault();
       e.e.stopPropagation();
-      this.fabricCanvas.setActiveObject(devices.length > 0 ? devices[0] : type === "zone" ? text : polygon);
+
+      let target = polygon;
+      if (devices.length > 0) {
+        target = devices[0];
+      } else if (type === "zone") {
+        target = text;
+      }
+
+      this.fabricCanvas.setActiveObject(target);
       this.fabricCanvas.requestRenderAll();
     };
 
@@ -1301,6 +1397,7 @@ class OptimizedDrawingObjectSerializer {
     });
   }
 
+  // Reinitializes all drawing tools and event handlers after loading
   reinitializeDrawingTools() {
     const tools = ["setupShapeTools", "setupTextTools", "setupLineTools", "setupNetworkLinkTool", "setupMeasurementTools", "setupImageUploadTool", "setupNorthArrowTool", "setupColorPicker", "setupTextColorPicker", "setupBackgroundColorPicker", "setupTitleBlockTool"];
     tools.forEach((tool) => {
@@ -1311,8 +1408,12 @@ class OptimizedDrawingObjectSerializer {
       setupDeletion(this.fabricCanvas, (obj) => this.isDrawingObject(obj));
       this.fabricCanvas.getObjects().forEach((obj) => {
         if (this.isDrawingObject(obj)) {
-          if (!obj.borderColor || obj.borderColor !== "#f8794b") this.applyStandardStyling(obj);
-          const shouldHaveControls = !(obj.type === "group" && (obj.isArrow || obj.groupType === "measurement"));
+          if (!obj.borderColor || obj.borderColor !== "#f8794b") {
+            this.applyStandardStyling(obj);
+          }
+          const isMeasurementOrArrow = obj.type === "group" && (obj.isArrow || obj.groupType === "measurement");
+          const shouldHaveControls = !isMeasurementOrArrow;
+
           obj.set({
             selectable: true,
             evented: true,

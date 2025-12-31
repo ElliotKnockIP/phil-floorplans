@@ -1,4 +1,4 @@
-// Canvas utilities - shared helper functions for canvas operations
+// Shared helper functions for canvas operations
 
 // Get the center point of the canvas viewport
 export function getCanvasCenter(canvas) {
@@ -16,9 +16,7 @@ export function screenToCanvas(canvas, screenX, screenY) {
 
 // Check if a point is within canvas bounds
 export function isPointInCanvas(canvas, point) {
-  return (
-    point.x >= 0 && point.x <= canvas.getWidth() && point.y >= 0 && point.y <= canvas.getHeight()
-  );
+  return point.x >= 0 && point.x <= canvas.getWidth() && point.y >= 0 && point.y <= canvas.getHeight();
 }
 
 // Get all objects of a specific type from canvas
@@ -31,7 +29,7 @@ export function getDistance(point1, point2) {
   return Math.sqrt(Math.pow(point2.x - point1.x, 2) + Math.pow(point2.y - point1.y, 2));
 }
 
-// Debounce function calls
+// Debounce function calls to limit execution frequency
 export function debounce(func, wait) {
   let timeout;
   return function executedFunction(...args) {

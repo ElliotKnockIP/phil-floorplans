@@ -33,9 +33,9 @@ import { initFloorManager } from "../floor/FloorManager.js";
 import { NetworkManager } from "../network/NetworkManager.js";
 import { initTopologyBuilder } from "../network/topology/TopologyBuilder.js";
 
-// Fixes browser compatibility issues
+// Fix browser compatibility issues
 (function () {
-  // Fix textBaseline typo
+  // Fix textBaseline typo in some browsers
   const ctxProto = CanvasRenderingContext2D.prototype;
   const descriptor = Object.getOwnPropertyDescriptor(ctxProto, "textBaseline");
   if (descriptor?.set) {
@@ -48,7 +48,7 @@ import { initTopologyBuilder } from "../network/topology/TopologyBuilder.js";
     });
   }
 
-  // Fix canvas context warning
+  // Optimize canvas context for frequent reads
   const originalGetContext = HTMLCanvasElement.prototype.getContext;
   HTMLCanvasElement.prototype.getContext = function (contextType, contextAttributes) {
     if (["2d", "webgl", "webgl2"].includes(contextType)) {
@@ -61,32 +61,31 @@ import { initTopologyBuilder } from "../network/topology/TopologyBuilder.js";
   };
 })();
 
-// Fix Bootstrap modal focus issues
+// Remove focus from active element when modal closes
 document.addEventListener("hide.bs.modal", (event) => {
   if (document.activeElement?.blur) {
     document.activeElement.blur();
   }
 });
 
-// Flag to track if HTML includes are loaded
+// Track loading state of HTML includes and DOM
 let htmlIncludesLoaded = false;
 let domLoaded = false;
 
-// Listen for HTML includes loaded event
+// Mark HTML includes as loaded
 document.addEventListener("htmlIncludesLoaded", () => {
   htmlIncludesLoaded = true;
   tryInitCanvas();
 });
 
-// Listen for window load
+// Mark DOM as loaded
 window.addEventListener("load", () => {
   domLoaded = true;
   tryInitCanvas();
 });
 
-// Try to initialize canvas when both conditions are met
+// Initialize canvas if both DOM and HTML includes are ready
 function tryInitCanvas() {
-  // If HTML includes exist in the page, wait for them to load
   const hasIncludes = document.querySelector("[data-include]") !== null;
 
   if (domLoaded && (htmlIncludesLoaded || !hasIncludes)) {
@@ -94,7 +93,7 @@ function tryInitCanvas() {
   }
 }
 
-// Sets up the main canvas and all modules
+// Main initialization for Fabric.js canvas and all system modules
 function initCanvas() {
   const container = document.querySelector(".canvas-container");
   const fabricCanvas = new fabric.Canvas("canvas-layout", {
@@ -104,12 +103,12 @@ function initCanvas() {
     stopContextMenu: true,
   });
 
-  // Make canvas available globally
+  // Expose canvas globally for other modules
   window.fabricCanvas = fabricCanvas;
 
   const subSidebar = document.getElementById("sub-sidebar");
 
-  // Initialize core canvas features
+  // Initialize core canvas modules
   const coreModules = [
     () => new CanvasOperations(fabricCanvas),
     () => {
@@ -133,7 +132,7 @@ function initCanvas() {
 
   coreModules.forEach((init) => init());
 
-  // Initialize snapping and expose API
+  // Setup snapping system and expose its API
   const snappingInstance = new CanvasSnapping(fabricCanvas);
   window.canvasSnapping = {
     setSnapThreshold: (threshold) => snappingInstance.setSnapThreshold(threshold),
@@ -147,7 +146,7 @@ function initCanvas() {
     hasBackgroundImage: () => snappingInstance.hasBackgroundImage(),
   };
 
-  // Initialize drawing tools
+  // Initialize all drawing and annotation tools
   const drawingTools = [
     () => setupTextTools(fabricCanvas),
     () => setupShapeTools(fabricCanvas),
@@ -167,34 +166,34 @@ function initCanvas() {
 
   drawingTools.forEach((setup) => setup());
 
-  // Create save system
+  // Setup save system and UI integration
   const enhancedSaveSystem = new SaveSystem(fabricCanvas);
   enhancedSaveSystem.setupButtonIntegration();
 
-  // Initialize floor manager
+  // Initialize floor and level management
   const floorManager = initFloorManager(fabricCanvas, enhancedSaveSystem);
 
-  // Initialize undo system
+  // Initialize undo/redo functionality
   const undoSystem = new CanvasUndoSystem(fabricCanvas);
 
-  // Initialize takeoff feature
+  // Initialize device takeoff and reporting
   const takeoffGenerator = initTakeoffFeature(fabricCanvas);
 
-  // Initialize network topology
+  // Initialize network management and topology
   const topologyManager = new NetworkManager(fabricCanvas);
   initTopologyBuilder(fabricCanvas, topologyManager);
 
-  // Initialize global settings
+  // Initialize device-specific settings
   new DeviceSettings(fabricCanvas);
 
-  // Initialize project library
+  // Load project library module dynamically
   import("../save/project-library.js").then((module) => {
     const { ProjectManager } = module;
     const projectManager = new ProjectManager(fabricCanvas, enhancedSaveSystem);
     window.projectManager = projectManager;
   });
 
-  // Expose global APIs
+  // Expose core systems to global window object
   const globalAPIs = {
     enhancedSaveSystem,
     cameraSerializer: enhancedSaveSystem.getCameraSerializer(),
@@ -211,14 +210,14 @@ function initCanvas() {
 
   Object.assign(window, globalAPIs);
 
-  // Notify modules that canvas is ready
+  // Signal that canvas is fully initialized
   document.dispatchEvent(
     new CustomEvent("canvas:initialized", {
       detail: { canvas: fabricCanvas },
     })
   );
 
-  // Handle window resize
+  // Update canvas dimensions and center viewport on window resize
   const handleResize = () => {
     fabricCanvas.setDimensions({
       width: container.clientWidth,
@@ -235,13 +234,14 @@ function initCanvas() {
 
   window.addEventListener("resize", handleResize);
 
-  // Check layers initialization
+  // Refresh layers after a short delay to ensure UI is ready
   setTimeout(() => {
     if (window.refreshLayers) {
       window.refreshLayers();
     }
   }, 100);
 
+  // Verify layer initialization and force refresh if needed
   setTimeout(() => {
     if (window.getLayersState) {
       const layersState = window.getLayersState();

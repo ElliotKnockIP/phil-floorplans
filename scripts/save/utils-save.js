@@ -12,18 +12,30 @@ export const ObjectTypeUtils = {
   // Checks if an object is a drawing object
   isDrawingObject: (obj) => {
     if (obj.isCoverage || obj.isBackground) return false;
-    if (obj.type === "group" && obj.deviceType && obj.deviceType !== "title-block") return false;
+    if (obj.type === "group" && obj.deviceType && obj.deviceType !== "title-block") {
+      return false;
+    }
     if (obj.type === "text" && obj.isDeviceLabel) return false;
     if (obj.type === "polygon" && obj.fill?.includes("165, 155, 155")) return false;
     if (obj.isResizeIcon === true) return false;
-    if (obj.isConnectionSegment || obj.isNetworkSplitPoint || obj.isNetworkConnection || obj.isSegmentDistanceLabel || obj.isConnectionCustomLabel || obj.isChannelLabel) return false;
+
+    const isNetworkObj = obj.isConnectionSegment || obj.isNetworkSplitPoint || obj.isNetworkConnection || obj.isSegmentDistanceLabel || obj.isConnectionCustomLabel || obj.isChannelLabel;
+
+    if (isNetworkObj) return false;
+
     if (obj.type === "circle" && obj.radius <= 6 && !obj.isWallCircle) return false;
-    if (obj.type === "circle" && obj.fill === "#f8794b" && obj.radius < 30 && !obj.isWallCircle) return false;
+    if (obj.type === "circle" && obj.fill === "#f8794b" && obj.radius < 30 && !obj.isWallCircle) {
+      return false;
+    }
     return true;
   },
   // Checks if an object is a managed object
   isManagedObject: (obj) => {
-    return ObjectTypeUtils.isDevice(obj) || (obj.type === "text" && obj.isDeviceLabel) || (obj.type === "polygon" && obj.fill?.includes("165, 155, 155")) || obj.isResizeIcon === true || (obj.type === "circle" && obj.fill === "#f8794b" && obj.radius < 30 && !obj.isWallCircle) || obj.isCoverage === true || obj.isSegmentDistanceLabel || obj.isConnectionCustomLabel || obj.isChannelLabel;
+    const isLegacyPolygon = obj.type === "polygon" && obj.fill?.includes("165, 155, 155");
+    const isLegacyCircle = obj.type === "circle" && obj.fill === "#f8794b" && obj.radius < 30 && !obj.isWallCircle;
+    const isNetworkLabel = obj.isSegmentDistanceLabel || obj.isConnectionCustomLabel || obj.isChannelLabel;
+
+    return ObjectTypeUtils.isDevice(obj) || (obj.type === "text" && obj.isDeviceLabel) || isLegacyPolygon || obj.isResizeIcon === true || isLegacyCircle || obj.isCoverage === true || isNetworkLabel;
   },
   // Checks if an object is a zone object
   isZoneObject: (obj) => (obj.type === "polygon" && obj.class === "zone-polygon") || (obj.type === "i-text" && obj.class === "zone-text"),
@@ -34,7 +46,11 @@ export const ObjectTypeUtils = {
   // Checks if an object is a safety object
   isSafetyObject: (obj) => (obj.type === "polygon" && obj.class === "safety-polygon") || (obj.type === "i-text" && obj.class === "safety-text"),
   // Checks if an object is a wall object
-  isWallObject: (obj) => (obj.type === "line" && !obj.deviceType && !obj.isResizeIcon && !obj.isConnectionLine && obj.stroke !== "grey" && obj.stroke !== "blue") || (obj.type === "circle" && obj.isWallCircle === true),
+  isWallObject: (obj) => {
+    const isWallLine = obj.type === "line" && !obj.deviceType && !obj.isResizeIcon && !obj.isConnectionLine && obj.stroke !== "grey" && obj.stroke !== "blue";
+    const isWallCircle = obj.type === "circle" && obj.isWallCircle === true;
+    return isWallLine || isWallCircle;
+  },
   // Checks if an object is a title block
   isTitleBlockObject: (obj) => obj.type === "group" && obj.deviceType === "title-block",
 };
@@ -146,13 +162,10 @@ export const FormUtils = {
 export const NotificationSystem = {
   // Shows a notification message to the user
   show: (message, isSuccess = true) => {
-    const notification = Object.assign(document.createElement("div"), { textContent: message });
-    notification.style.cssText = `
-      position: fixed; top: 20px; right: 20px; padding: 12px 24px;
-      background: ${isSuccess ? "#ff6f42" : "#dc3545"}; color: white;
-      border-radius: 4px; z-index: 10000; font-size: 14px;
-      box-shadow: 0 2px 10px rgba(0,0,0,0.2); transition: opacity 0.3s ease;
-    `;
+    const notification = document.createElement("div");
+    notification.textContent = message;
+    notification.className = `notification-toast ${isSuccess ? "success" : "error"}`;
+
     document.body.appendChild(notification);
     setTimeout(() => {
       notification.style.opacity = "0";
@@ -220,7 +233,15 @@ export const ProjectUI = {
       Object.entries(fieldMappings).forEach(([id, value]) => FormUtils.setValue(id, value));
       const logoPreview = document.getElementById("client-logo-preview");
       if (logoPreview && clientDetails.logoFile && clientDetails.logoFile.present) {
-        logoPreview.innerHTML = `<img src="${clientDetails.logoFile.src}" alt="${clientDetails.logoFile.alt}" style="max-width: 100%; max-height: 100px;">`;
+        const img = document.createElement("img");
+        img.src = clientDetails.logoFile.src;
+        img.alt = clientDetails.logoFile.alt;
+        img.style.maxWidth = "100%";
+        img.style.maxHeight = "100px";
+
+        logoPreview.innerHTML = "";
+        logoPreview.appendChild(img);
+
         try {
           localStorage.setItem("clientLogoDataUrl", clientDetails.logoFile.src);
         } catch (_) {}
@@ -421,6 +442,7 @@ export const DrawingUtils = {
     }
     return "generic";
   },
+  // Extracts data from a title block sub-object for saving
   getTitleBlockObjectData: (obj) => {
     const base = {
       type: obj.type,
@@ -465,6 +487,7 @@ export const DrawingUtils = {
     }
     return base;
   },
+  // Gets visual properties like borders and controls for an object
   getVisualProps: (obj) => ({
     selectable: obj.selectable !== false,
     hasControls: obj.hasControls || false,
@@ -477,12 +500,15 @@ export const DrawingUtils = {
     cornerStyle: obj.cornerStyle,
     transparentCorners: obj.transparentCorners,
   }),
+  // Gets current canvas settings like zoom and viewport transform
   getCanvasSettings: (fabricCanvas) => ({
     pixelsPerMeter: fabricCanvas.pixelsPerMeter || 17.5,
     zoom: fabricCanvas.getZoom(),
     viewportTransform: [...fabricCanvas.viewportTransform],
   }),
+  // Calculates the distance between two points
   calculateDistance: (p1, p2) => Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2),
+  // Extracts relevant data from a text object for saving
   getTextObjectData: (text) => ({
     text: text.text,
     left: text.left,
@@ -516,7 +542,9 @@ export const DrawingUtils = {
   // Saves walls data from the canvas
   serializeWalls: (fabricCanvas) => {
     const circles = fabricCanvas.getObjects().filter((obj) => obj.type === "circle" && obj.isWallCircle);
-    const lines = fabricCanvas.getObjects().filter((obj) => obj.type === "line" && !obj.deviceType && !obj.isResizeIcon && !obj.isConnectionLine && obj.stroke !== "grey" && obj.stroke !== "blue");
+    const lines = fabricCanvas.getObjects().filter((obj) => {
+      return obj.type === "line" && !obj.deviceType && !obj.isResizeIcon && !obj.isConnectionLine && obj.stroke !== "grey" && obj.stroke !== "blue";
+    });
     return {
       circles: circles.map((c, i) => ({
         id: `wall_circle_${i}`,
@@ -568,6 +596,7 @@ export const DrawingUtils = {
       }),
     };
   },
+  // Saves all title block objects from the canvas
   serializeTitleBlocks: (fabricCanvas) =>
     fabricCanvas
       .getObjects()

@@ -6,7 +6,12 @@ export function setupBuildingFrontTool(fabricCanvas) {
   let startPoint = null;
   let tempLine = null;
 
-  setupDeletion(fabricCanvas, (obj) => obj.type === "group" && obj._objects?.some((subObj) => subObj.type === "triangle"));
+  // Configure deletion behavior for building front groups
+  setupDeletion(fabricCanvas, (obj) => {
+    const isGroup = obj.type === "group";
+    const hasTriangle = obj._objects?.some((subObj) => subObj.type === "triangle");
+    return isGroup && hasTriangle;
+  });
 
   buildingFrontBtn.addEventListener("click", () => {
     closeSidebar();
@@ -27,6 +32,7 @@ export function setupBuildingFrontTool(fabricCanvas) {
 
       const dx = pointer.x - startPoint.x;
       const dy = pointer.y - startPoint.y;
+      // Calculate angle for the arrow based on drag direction
       const angle = Math.atan2(dy, dx) * (180 / Math.PI) + 90;
 
       const arrow = new fabric.Triangle({
@@ -42,6 +48,7 @@ export function setupBuildingFrontTool(fabricCanvas) {
         evented: false,
       });
 
+      // Position text relative to the arrow
       const textOffset = 60;
       const textX = pointer.x + textOffset * Math.cos((angle - 90) * (Math.PI / 180));
       const textY = pointer.y + textOffset * Math.sin((angle - 90) * (Math.PI / 180));
@@ -58,6 +65,7 @@ export function setupBuildingFrontTool(fabricCanvas) {
         evented: false,
       });
 
+      // Group arrow and text together
       const group = new fabric.Group([arrow, text], {
         left: pointer.x,
         top: pointer.y,

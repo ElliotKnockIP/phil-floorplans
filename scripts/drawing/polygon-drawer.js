@@ -14,7 +14,7 @@ class PolygonDrawer {
     this.lineLock = false;
     this.keyHandler = null;
 
-    // Initialize arrays and event listeners
+    // Initialize arrays and event listeners based on polygon type
     const arrayName = type === "zone" ? "zones" : type === "room" ? "rooms" : type === "risk" ? "risks" : "safetyZones";
     const btnId = type === "zone" ? "create-zone-btn" : type === "room" ? "create-room-btn" : type === "risk" ? "create-risk-btn" : "create-safety-btn";
     window[arrayName] = window[arrayName] || [];
@@ -23,6 +23,7 @@ class PolygonDrawer {
     if (btn) {
       btn.addEventListener("click", () => this.activate());
     } else {
+      // Handle case where button is loaded dynamically
       document.addEventListener("htmlIncludesLoaded", () => {
         document.getElementById(btnId)?.addEventListener("click", () => this.activate());
       });
@@ -44,6 +45,7 @@ class PolygonDrawer {
         const currentPoly = fabricCanvas.currentEditedPolygon;
         if (!currentPoly) return;
         const target = opt.target;
+        // Check if clicked object is related to the current polygon
         const isRelated = target && (target === currentPoly || target === currentPoly.associatedText || (target.data && target.data.polygon === currentPoly));
         if (!isRelated) {
           disablePolygonEditing(fabricCanvas, currentPoly);
@@ -55,7 +57,10 @@ class PolygonDrawer {
 
   // Get array name based on type
   getArrayName() {
-    return this.type === "zone" ? "zones" : this.type === "room" ? "rooms" : this.type === "risk" ? "risks" : "safetyZones";
+    if (this.type === "zone") return "zones";
+    if (this.type === "room") return "rooms";
+    if (this.type === "risk") return "risks";
+    return "safetyZones";
   }
 
   // Get color based on type and count
@@ -83,31 +88,12 @@ class PolygonDrawer {
     toggle.id = "line-lock-toggle";
     toggle.innerHTML = `
       <span style="font-weight:500">Line Lock:</span>
-      <div class="switch" style="position:relative;width:44px;height:24px;background:#555;border-radius:12px;cursor:pointer;transition:background 0.3s">
-        <div class="slider" style="position:absolute;top:2px;left:2px;width:20px;height:20px;background:white;border-radius:50%;transition:transform 0.3s;box-shadow:0 2px 4px rgba(0,0,0,0.2)"></div>
+      <div class="switch">
+        <div class="slider"></div>
       </div>
       <span class="status" style="font-weight:600;min-width:30px"></span>
       <div style="font-size:12px;color:#aaa;margin-top:4px;text-align:center;">Press 'L' to toggle<br>ESC to exit</div>
     `;
-
-    Object.assign(toggle.style, {
-      position: "fixed",
-      top: "20px",
-      right: "20px",
-      background: "rgba(40,40,40,0.95)",
-      border: "2px solid #f8794b",
-      borderRadius: "8px",
-      padding: "12px 16px",
-      color: "white",
-      fontFamily: '"Poppins", sans-serif',
-      fontSize: "14px",
-      zIndex: "1000",
-      display: "none",
-      alignItems: "center",
-      gap: "10px",
-      backdropFilter: "blur(5px)",
-      boxShadow: "0 4px 12px rgba(0,0,0,0.3)",
-    });
 
     toggle.querySelector(".switch").onclick = () => this.toggleLock();
     document.body.appendChild(toggle);
@@ -128,8 +114,12 @@ class PolygonDrawer {
     const [switchEl, slider, status] = [".switch", ".slider", ".status"].map((sel) => toggle.querySelector(sel));
     const isOn = this.lineLock;
 
-    switchEl.style.background = isOn ? "#f8794b" : "#555";
-    slider.style.transform = isOn ? "translateX(20px)" : "translateX(0)";
+    if (isOn) {
+      switchEl.classList.add("active");
+    } else {
+      switchEl.classList.remove("active");
+    }
+
     status.textContent = isOn ? "ON" : "OFF";
     status.style.color = isOn ? "#51cf66" : "#ff6b6b";
   }
@@ -146,14 +136,18 @@ class PolygonDrawer {
     let angle = (Math.atan2(dy, dx) * 180) / Math.PI;
     if (angle < 0) angle += 360;
 
+    // Find closest cardinal direction
     const cardinals = [0, 90, 180, 270];
+    const getDiff = (a, b) => Math.min(Math.abs(a - b), Math.abs(a - b + 360), Math.abs(a - b - 360));
+
     const closest = cardinals.reduce((prev, curr) => {
-      const prevDiff = Math.min(Math.abs(angle - prev), Math.abs(angle - prev + 360), Math.abs(angle - prev - 360));
-      const currDiff = Math.min(Math.abs(angle - curr), Math.abs(angle - curr + 360), Math.abs(angle - curr - 360));
+      const prevDiff = getDiff(angle, prev);
+      const currDiff = getDiff(angle, curr);
       return currDiff < prevDiff ? curr : prev;
     });
 
-    const angleDiff = Math.min(Math.abs(angle - closest), Math.abs(angle - closest + 360), Math.abs(angle - closest - 360));
+    // Snap if within 15 degrees of cardinal
+    const angleDiff = getDiff(angle, closest);
     if (angleDiff <= 15) {
       const rad = (closest * Math.PI) / 180;
       return { x: start.x + dist * Math.cos(rad), y: start.y + dist * Math.sin(rad) };
@@ -162,10 +156,20 @@ class PolygonDrawer {
   }
 
   // Utility functions
+  // Calculate distance between two points
   distance = (p1, p2) => Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
+  // Check if point is near the start point to close polygon
   isNearStart = (point) => this.points.length >= 3 && this.distance(point, this.points[0]) <= 20;
-  calcArea = (points, ppm = 17.5) => Math.abs(points.reduce((area, p, i) => area + p.x * points[(i + 1) % points.length].y - points[(i + 1) % points.length].x * p.y, 0)) / (2 * ppm * ppm);
-  calcCenter = (points) => ({ x: points.reduce((sum, p) => sum + p.x, 0) / points.length, y: points.reduce((sum, p) => sum + p.y, 0) / points.length });
+  // Calculate area of polygon in square meters
+  calcArea = (points, ppm = 17.5) => {
+    const area = points.reduce((acc, p, i) => acc + p.x * points[(i + 1) % points.length].y - points[(i + 1) % points.length].x * p.y, 0);
+    return Math.abs(area) / (2 * ppm * ppm);
+  };
+  // Calculate geometric center of points
+  calcCenter = (points) => ({
+    x: points.reduce((sum, p) => sum + p.x, 0) / points.length,
+    y: points.reduce((sum, p) => sum + p.y, 0) / points.length,
+  });
 
   // Clear guide lines from canvas
   clearGuideLines() {
@@ -191,6 +195,7 @@ class PolygonDrawer {
       else if (Math.abs(pointer.y - startPoint.y) <= threshold) pointer.y = startPoint.y;
     }
 
+    // Complete polygon if clicking near start
     if (this.isNearStart(pointer)) return this.complete();
 
     this.points.push(pointer);
@@ -251,6 +256,7 @@ class PolygonDrawer {
       const verticallyAligned = Math.abs(pointer.x - startPoint.x) <= threshold;
       const horizontallyAligned = Math.abs(pointer.y - startPoint.y) <= threshold;
 
+      // Show vertical alignment guide
       if (verticallyAligned) {
         const guide = new fabric.Line([startPoint.x, 0, startPoint.x, this.fabricCanvas.height], {
           stroke: "#00ff00",
@@ -266,6 +272,7 @@ class PolygonDrawer {
         pointer.x = startPoint.x;
       }
 
+      // Show horizontal alignment guide
       if (horizontallyAligned) {
         const guide = new fabric.Line([0, startPoint.y, this.fabricCanvas.width, startPoint.y], {
           stroke: "#00ff00",
@@ -354,6 +361,7 @@ class PolygonDrawer {
       [`${this.type}Notes`]: "",
     };
 
+    // Add height/volume for non-risk types
     if (this.type !== "risk") {
       const height = 2.4;
       polygonProps.area = area;
@@ -405,10 +413,21 @@ class PolygonDrawer {
       item = { polygon, text };
     } else if (this.type === "room") {
       const height = 2.4;
-      item = { polygon, text, roomName: name, roomNotes: "", devices: [], roomColor: color, area, height, volume: area * height };
+      item = {
+        polygon,
+        text,
+        roomName: name,
+        roomNotes: "",
+        devices: [],
+        roomColor: color,
+        area,
+        height,
+        volume: area * height,
+      };
     } else if (this.type === "safety") {
-      item = { polygon, text, safetyName: name, safetyNotes: "", safetySubDetails: [], safetyContainment: "", devices: [], safetyColor: color };
+      item = { polygon, text, safetyName: name, safetySubDetails: [], devices: [], safetyColor: color };
     } else {
+      // Risk type
       item = { polygon, text, riskName: name, riskNotes: "", devices: [], riskColor: color };
     }
     window[arrayName].push(item);
@@ -525,7 +544,7 @@ class PolygonDrawer {
     toggle.style.display = "flex";
     this.updateToggleUI();
 
-    // Set up keyboard handler
+    // Set up keyboard handler for line lock
     this.keyHandler = (e) => {
       if (e.key.toLowerCase() === "l" || e.key === "F8") {
         e.preventDefault();
@@ -591,6 +610,7 @@ function setupDeletion(fabricCanvas, type) {
   const className = `${type}-polygon`;
   const textClass = `${type}-text`;
 
+  // Delete item from canvas and global array
   const deleteItem = (item) => {
     const index = window[arrayName].findIndex((obj) => obj.polygon === item || obj.text === item);
     if (index === -1) return false;
@@ -612,10 +632,16 @@ function setupDeletion(fabricCanvas, type) {
 
   window[`delete${type.charAt(0).toUpperCase() + type.slice(1)}`] = deleteItem;
 
+  // Handle delete key events
   const handler = (e) => {
     if (e.key === "Delete" || e.key === "Backspace") {
       const active = fabricCanvas.getActiveObject();
-      if (active && ((active.type === "polygon" && active.class === className) || (active.type === "i-text" && active.class === textClass))) {
+      if (!active) return;
+
+      const isTargetPolygon = active.type === "polygon" && active.class === className;
+      const isTargetText = active.type === "i-text" && active.class === textClass;
+
+      if (isTargetPolygon || isTargetText) {
         if (deleteItem(active)) {
           e.preventDefault();
           e.stopPropagation();

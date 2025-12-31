@@ -9,6 +9,7 @@ export function setupMeasurementTools(fabricCanvas) {
   let tempLine = null;
   let tempText = null;
 
+  // Configure deletion for measurement groups
   setupDeletion(fabricCanvas, (obj) => obj.type === "group" && obj._objects);
 
   // Cleans up temporary objects
@@ -34,6 +35,7 @@ export function setupMeasurementTools(fabricCanvas) {
       startTool(fabricCanvas, "measure", handleMeasureClick, handleMeasureMove);
     });
   } else {
+    // Handle case where button is loaded dynamically
     document.addEventListener("htmlIncludesLoaded", () => {
       document.getElementById("measure-btn")?.addEventListener("click", () => {
         closeSidebar();
@@ -53,6 +55,7 @@ export function setupMeasurementTools(fabricCanvas) {
       startTool(fabricCanvas, "apex", handleApexClick, handleApexMove);
     });
   } else {
+    // Handle case where button is loaded dynamically
     document.addEventListener("htmlIncludesLoaded", () => {
       document.getElementById("apex-btn")?.addEventListener("click", () => {
         closeSidebar();
@@ -91,11 +94,14 @@ export function setupMeasurementTools(fabricCanvas) {
     const pointer = fabricCanvas.getPointer(e.e);
 
     if (!startPoint) {
+      // Set start point on first click
       startPoint = { x: pointer.x, y: pointer.y };
     } else {
+      // Create final measurement on second click
       if (tempLine) fabricCanvas.remove(tempLine);
       if (tempText) fabricCanvas.remove(tempText);
 
+      // Calculate distance and convert to meters
       const distance = Math.hypot(pointer.x - startPoint.x, pointer.y - startPoint.y);
       const meters = (distance / (fabricCanvas.pixelsPerMeter || 17.5)).toFixed(2);
       const midX = (startPoint.x + pointer.x) / 2;
@@ -124,12 +130,14 @@ export function setupMeasurementTools(fabricCanvas) {
         borderColor: "#f8794b",
       });
 
+      // Handle undo/redo state
       const wasExecuting = window.undoSystem ? window.undoSystem.isExecutingCommand : false;
       if (window.undoSystem) window.undoSystem.isExecutingCommand = true;
 
       fabricCanvas.add(group);
       fabricCanvas.setActiveObject(group);
 
+      // Add to undo stack
       if (window.undoSystem) {
         window.undoSystem.isExecutingCommand = wasExecuting;
         const command = new window.UndoCommands.AddCommand(fabricCanvas, group, []);
@@ -152,6 +160,7 @@ export function setupMeasurementTools(fabricCanvas) {
     if (tempLine) fabricCanvas.remove(tempLine);
     if (tempText) fabricCanvas.remove(tempText);
 
+    // Calculate distance and convert to meters for preview
     const distance = Math.hypot(pointer.x - startPoint.x, pointer.y - startPoint.y);
     const meters = (distance / (fabricCanvas.pixelsPerMeter || 17.5)).toFixed(2);
     const midX = (startPoint.x + pointer.x) / 2;

@@ -1,10 +1,7 @@
-// Context Menu - Handles right-click context menu for canvas objects
+// Handles right-click context menu for canvas objects
 import { handleObjectDeletion } from "../../drawing/drawing-utils.js";
 import { isCameraType } from "../../devices/categories/device-types.js";
-import {
-  attachLabelBehavior,
-  getNextAvailableDeviceNumber,
-} from "../../devices/device-label-utils.js";
+import { attachLabelBehavior, getNextAvailableDeviceNumber } from "../../devices/device-label-utils.js";
 import { ratioOnPath } from "../../network/network-utils.js";
 
 export class ContextMenu {
@@ -18,83 +15,52 @@ export class ContextMenu {
     this.setupEventHandlers();
   }
 
+  // Create the context menu DOM elements and styling
   createMenu() {
-    // Create context menu
     this.menu = document.createElement("div");
     this.menu.id = "fabric-context-menu";
-    Object.assign(this.menu.style, {
-      position: "fixed",
-      background: "#e0e0e0",
-      color: "#000",
-      border: "1px solid rgba(0,0,0,0.2)",
-      borderRadius: "6px",
-      padding: "6px",
-      display: "none",
-      zIndex: 3000,
-      boxShadow: "0 6px 18px rgba(0,0,0,0.4)",
-    });
+    this.menu.className = "fabric-context-menu";
 
-    const btnStyle =
-      "display:block;padding:6px 10px;cursor:pointer;border-radius:4px;margin:2px 0;text-align:left;background:transparent;color:inherit;font-size:13px;border:none;";
-
-    // Create buttons
+    // Initialize menu buttons
     this.copyBtn = document.createElement("button");
     this.copyBtn.innerText = "Clone";
-    this.copyBtn.setAttribute("style", btnStyle);
+    this.copyBtn.className = "context-menu-button";
 
     this.deleteBtn = document.createElement("button");
     this.deleteBtn.innerText = "Delete";
-    this.deleteBtn.setAttribute("style", btnStyle + "color:#ff6b6b;");
+    this.deleteBtn.className = "context-menu-button delete";
 
     this.splitBtn = document.createElement("button");
     this.splitBtn.innerText = "Split Connection";
-    this.splitBtn.setAttribute("style", btnStyle);
+    this.splitBtn.className = "context-menu-button";
 
     this.addTextBtn = document.createElement("button");
     this.addTextBtn.innerText = "Add Text";
-    this.addTextBtn.setAttribute("style", btnStyle);
+    this.addTextBtn.className = "context-menu-button";
 
     this.menu.appendChild(this.copyBtn);
     this.menu.appendChild(this.splitBtn);
     this.menu.appendChild(this.addTextBtn);
     this.menu.appendChild(this.deleteBtn);
     document.body.appendChild(this.menu);
-
-    // Add hover effects
-    this.addHoverEffect(this.copyBtn);
-    this.addHoverEffect(this.splitBtn);
-    this.addHoverEffect(this.addTextBtn);
-    this.addHoverEffect(this.deleteBtn, "#ff6b6b");
   }
 
-  addHoverEffect(btn, defaultColor = "inherit") {
-    btn.addEventListener("mouseenter", () => {
-      btn.style.background = "#f8794b";
-      btn.style.color = "white";
-    });
-    btn.addEventListener("mouseleave", () => {
-      btn.style.background = "transparent";
-      btn.style.color = defaultColor;
-    });
-  }
-
+  // Hide the context menu
   hideMenu() {
     this.menu.style.display = "none";
     this.currentTarget = null;
   }
 
+  // Show the context menu at specific coordinates for a target object
   showMenuForTarget(target, x, y) {
     if (!target) return;
 
-    // Show/hide buttons based on target type
+    // Toggle button visibility based on the type of object clicked
     if (target.type === "group" && target.deviceType && target.deviceType !== "title-block") {
       this.copyBtn.style.display = "block";
       this.splitBtn.style.display = "none";
       this.addTextBtn.style.display = "none";
-    } else if (
-      target.type === "line" &&
-      (target.isNetworkConnection || target.isConnectionSegment)
-    ) {
+    } else if (target.type === "line" && (target.isNetworkConnection || target.isConnectionSegment)) {
       this.copyBtn.style.display = "none";
       this.splitBtn.style.display = "block";
       this.addTextBtn.style.display = "block";
@@ -109,20 +75,21 @@ export class ContextMenu {
     this.menu.style.display = "block";
   }
 
+  // Handle deletion of various canvas object types
   deleteObject(target) {
     if (!target) return;
 
-    // Use centralized deletion handler if available
+    // Use centralized deletion logic if available
     if (typeof handleObjectDeletion === "function") {
       try {
         const handled = handleObjectDeletion(this.fabricCanvas, target);
         if (handled) return;
       } catch (e) {
-        // fall back to built-in behaviour
+        // Fallback to manual deletion if handler fails
       }
     }
 
-    // Device groups
+    // Delete device groups and their associated UI elements
     if (target.type === "group" && target.deviceType) {
       if (target.textObject) this.fabricCanvas.remove(target.textObject);
       if (target.coverageArea) this.fabricCanvas.remove(target.coverageArea);
@@ -132,11 +99,8 @@ export class ContextMenu {
       return;
     }
 
-    // Zone or room polygons
-    if (
-      target.type === "polygon" &&
-      (target.class === "zone-polygon" || target.class === "room-polygon")
-    ) {
+    // Delete zone or room polygons and update global state
+    if (target.type === "polygon" && (target.class === "zone-polygon" || target.class === "room-polygon")) {
       if (target.class === "zone-polygon" && window.deleteZone) {
         window.deleteZone(target);
         return;
@@ -146,7 +110,6 @@ export class ContextMenu {
         return;
       }
 
-      // Fallback
       if (target.associatedText) this.fabricCanvas.remove(target.associatedText);
       this.fabricCanvas.remove(target);
       try {
@@ -162,11 +125,8 @@ export class ContextMenu {
       return;
     }
 
-    // IText (zone/room text)
-    if (
-      target.type === "i-text" &&
-      (target.class === "zone-text" || target.class === "room-text")
-    ) {
+    // Delete text labels associated with zones or rooms
+    if (target.type === "i-text" && (target.class === "zone-text" || target.class === "room-text")) {
       if (target.associatedPolygon) {
         this.fabricCanvas.remove(target.associatedPolygon);
         try {
@@ -184,7 +144,7 @@ export class ContextMenu {
       return;
     }
 
-    // Network connections
+    // Delete network connection lines
     if (target.type === "line" && target.isNetworkConnection) {
       if (target.connectionLabel) this.fabricCanvas.remove(target.connectionLabel);
       this.fabricCanvas.remove(target);
@@ -192,30 +152,22 @@ export class ContextMenu {
       return;
     }
 
-    // Connection segments
+    // Split connection at segment before deletion
     if (target.type === "line" && target.isConnectionSegment) {
-      if (
-        window.topologyManager &&
-        typeof window.topologyManager.splitConnectionAtSegment === "function"
-      ) {
+      if (window.topologyManager && typeof window.topologyManager.splitConnectionAtSegment === "function") {
         window.topologyManager.splitConnectionAtSegment(target);
       }
       return;
     }
 
-    // Default deletion
+    // Default object removal
     this.fabricCanvas.remove(target);
     this.fabricCanvas.requestRenderAll();
   }
 
+  // Create a copy of a device group with a new label and number
   cloneObject(target) {
-    if (
-      !target ||
-      target.type !== "group" ||
-      !target.deviceType ||
-      target.deviceType === "title-block"
-    )
-      return;
+    if (!target || target.type !== "group" || !target.deviceType || target.deviceType === "title-block") return;
 
     try {
       const isCamera = isCameraType(target.deviceType);
@@ -237,11 +189,9 @@ export class ContextMenu {
           originY: target.originY || "center",
         });
 
-        // Preserve and copy key props
+        // Copy device-specific properties and metadata
         cloned.deviceType = target.deviceType;
-        cloned.coverageConfig = target.coverageConfig
-          ? JSON.parse(JSON.stringify(target.coverageConfig))
-          : null;
+        cloned.coverageConfig = target.coverageConfig ? JSON.parse(JSON.stringify(target.coverageConfig)) : null;
         cloned.labelHidden = target.labelHidden !== undefined ? target.labelHidden : undefined;
         cloned.borderColor = target.borderColor || "#000000";
         cloned.borderScaleFactor = target.borderScaleFactor || 2;
@@ -250,20 +200,9 @@ export class ContextMenu {
         cloned.hoverCursor = target.hoverCursor;
         cloned.deviceNumber = nextNumber;
 
-        // Copy metadata fields commonly used elsewhere
-        [
-          "location",
-          "mountedPosition",
-          "partNumber",
-          "stockNumber",
-          "ipAddress",
-          "subnetMask",
-          "gatewayAddress",
-          "macAddress",
-          "focalLength",
-          "sensorSize",
-          "resolution",
-        ].forEach((prop) => {
+        const deviceProps = ["location", "mountedPosition", "partNumber", "stockNumber", "ipAddress", "subnetMask", "gatewayAddress", "macAddress", "focalLength", "sensorSize", "resolution"];
+
+        deviceProps.forEach((prop) => {
           cloned[prop] = target[prop] || "";
         });
 
@@ -273,7 +212,7 @@ export class ContextMenu {
 
         this.fabricCanvas.add(cloned);
 
-        // Clone the label (if any)
+        // Clone and update the device label
         if (target.textObject) {
           const textClone = fabric.util.object.clone(target.textObject);
           const dx = (target.textObject.left || 0) - (target.left || 0);
@@ -300,6 +239,7 @@ export class ContextMenu {
           }
         }
 
+        // Ensure cleanup of associated objects when cloned device is removed
         cloned.on("removed", () => {
           if (cloned.textObject) this.fabricCanvas.remove(cloned.textObject);
           if (cloned.coverageArea) this.fabricCanvas.remove(cloned.coverageArea);
@@ -308,12 +248,11 @@ export class ContextMenu {
           if (cloned.rotateResizeIcon) this.fabricCanvas.remove(cloned.rotateResizeIcon);
         });
 
-        // Add camera coverage if needed
+        // Add camera coverage visualization if applicable
         if (isCamera && typeof addCameraCoverage === "function") {
           addCameraCoverage(this.fabricCanvas, cloned);
         }
 
-        // Bring to front and select
         cloned.bringToFront();
         if (cloned.textObject && cloned.textObject.visible !== false) {
           cloned.textObject.bringToFront();
@@ -327,6 +266,7 @@ export class ContextMenu {
     }
   }
 
+  // Split a network connection at the clicked point
   splitConnection(target) {
     if (!target || target.type !== "line" || !target.isConnectionSegment) return;
     const manager = window.topologyManager;
@@ -340,13 +280,9 @@ export class ContextMenu {
     manager.splitConnection(target, pointer);
   }
 
+  // Add a custom text label to a network connection
   addTextToConnection(target) {
-    if (
-      !target ||
-      target.type !== "line" ||
-      (!target.isNetworkConnection && !target.isConnectionSegment)
-    )
-      return;
+    if (!target || target.type !== "line" || (!target.isNetworkConnection && !target.isConnectionSegment)) return;
 
     const manager = window.topologyManager;
     if (!manager || !target.connectionId) return;
@@ -371,11 +307,9 @@ export class ContextMenu {
 
     manager.renderConnection(conn);
 
-    const created = this.fabricCanvas
-      .getObjects()
-      .find(
-        (o) => o.isConnectionCustomLabel && o.customTextId === id && o.connectionId === conn.id
-      );
+    const created = this.fabricCanvas.getObjects().find((o) => {
+      return o.isConnectionCustomLabel && o.customTextId === id && o.connectionId === conn.id;
+    });
 
     if (created && typeof created.enterEditing === "function") {
       created.enterEditing();
@@ -383,14 +317,13 @@ export class ContextMenu {
     }
   }
 
+  // Setup event listeners for right-click and menu interactions
   setupEventHandlers() {
-    // Prevent default browser context menu on the canvas element
     this.canvasEl.addEventListener("contextmenu", (evt) => evt.preventDefault());
 
-    // Right-click handler
+    // Handle right-click on canvas to show menu
     this.fabricCanvas.on("mouse:down", (e) => {
       if (e.e.button === 2) {
-        // Right click
         e.e.preventDefault();
         e.e.stopPropagation();
 
@@ -406,18 +339,16 @@ export class ContextMenu {
       }
     });
 
-    // Hide menu on canvas click
+    // Hide menu on left-click or selection clear
     this.fabricCanvas.on("mouse:down", (e) => {
       if (e.e.button !== 2) {
-        // Not right click
         this.hideMenu();
       }
     });
 
-    // Hide menu on selection cleared
     this.fabricCanvas.on("selection:cleared", () => this.hideMenu());
 
-    // Button event handlers
+    // Setup button click handlers
     this.copyBtn.addEventListener("click", () => {
       if (!this.currentTarget) return;
       this.cloneObject(this.currentTarget);
@@ -442,8 +373,8 @@ export class ContextMenu {
       this.hideMenu();
     });
 
-    // Expose helpers for other modules
-    window._fabricContextMenu = {
+    // Expose context menu globally
+    window.fabricContextMenu = {
       showMenu: (t, x, y) => {
         this.currentTarget = t;
         this.showMenuForTarget(t, x, y);

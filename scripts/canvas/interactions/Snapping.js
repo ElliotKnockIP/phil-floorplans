@@ -1,4 +1,4 @@
-// Canvas Snapping - Class-based, with legacy API compatibility restored
+// Handles snapping objects to background edges and original positions
 export class CanvasSnapping {
   constructor(fabricCanvas) {
     this.fabricCanvas = fabricCanvas;
@@ -21,41 +21,54 @@ export class CanvasSnapping {
     this.initializeSnapToggle();
   }
 
-  // === Helpers ===
+  // Check if device snapping is enabled in UI
   isDeviceSnappingEnabled() {
     const snapToggle = document.getElementById("snap-device-toggle");
     return !snapToggle || !snapToggle.checked;
   }
 
+  // Check if canvas has a background image to snap to
   hasBackgroundImage() {
     const bg = this.fabricCanvas.getObjects().find((obj) => obj.isBackground === true);
     return bg && bg.width && bg.height;
   }
 
+  // Identify if object is a device
   isDeviceObject(obj) {
     return obj?.type === "group" && obj.deviceType && obj.deviceType !== "title-block";
   }
+
+  // Identify if object is a zone
   isZone(obj) {
     return obj?.type === "polygon" && obj.class === "zone-polygon";
   }
+
+  // Identify if object is a room
   isRoom(obj) {
     return obj?.type === "polygon" && obj.class === "room-polygon";
   }
+
+  // Identify if object is a risk
   isRisk(obj) {
     return obj?.type === "polygon" && obj.class === "risk-polygon";
   }
+
+  // Identify if object is a safety zone
   isSafety(obj) {
     return obj?.type === "polygon" && obj.class === "safety-polygon";
   }
+
+  // Check if object is eligible for snapping
   isSnappableObject(obj) {
     return this.isDeviceObject(obj) || this.isZone(obj) || this.isRoom(obj) || this.isRisk(obj) || this.isSafety(obj);
   }
 
+  // Calculate distance between two points
   calculateDistance(p1, p2) {
     return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
   }
 
-  // === Background snap points ===
+  // Get coordinates for background snap points
   getSnapPoints() {
     const bg = this.fabricCanvas.getObjects().find((obj) => obj.isBackground === true);
     if (!bg?.width || !bg?.height) return null;
@@ -84,7 +97,7 @@ export class CanvasSnapping {
     };
   }
 
-  // === Snap line helpers ===
+  // Create a visual snap line
   createSnapLine(x1, y1, x2, y2) {
     return new fabric.Line([x1, y1, x2, y2], {
       stroke: "#FF6B35",
@@ -98,17 +111,20 @@ export class CanvasSnapping {
     });
   }
 
+  // Remove all snap lines from canvas
   clearSnapLines() {
     this.snapLines.forEach((line) => this.fabricCanvas.remove(line));
     this.snapLines = [];
     this.fabricCanvas.renderAll();
   }
 
+  // Add a snap line to canvas
   addSnapLine(line) {
     this.snapLines.push(line);
     this.fabricCanvas.add(line);
   }
 
+  // Show visual guides for snapping
   showSnapLines(snapPoint, type, bounds) {
     this.clearSnapLines();
     const { left, right, top, bottom } = bounds;
@@ -133,7 +149,7 @@ export class CanvasSnapping {
     this.fabricCanvas.renderAll();
   }
 
-  // === Core snap checks ===
+  // Check if object center snaps to specific points
   checkSnapPoints(obj, objCenter, snapData, pointType, threshold = this.snapThreshold) {
     const points = this.SNAP_TYPES[pointType];
     if (!points) return null;
@@ -147,7 +163,11 @@ export class CanvasSnapping {
         obj.set({ left: point.x, top: point.y });
         obj.setCoords();
 
-        const displayType = pointType === "centerPoint" ? (pointName.includes("Top") || pointName.includes("Bottom") ? "centerV" : "centerH") : pointType;
+        let displayType = pointType;
+        if (pointType === "centerPoint") {
+          const isVertical = pointName.includes("Top") || pointName.includes("Bottom");
+          displayType = isVertical ? "centerV" : "centerH";
+        }
 
         this.showSnapLines(point, displayType, snapData.bounds);
         return { snapped: true, point, type: displayType };
@@ -156,6 +176,7 @@ export class CanvasSnapping {
     return null;
   }
 
+  // Check if object aligns with background edges
   checkEdgeAlignment(obj, objCenter, edges, bounds) {
     const edgeChecks = [
       { edge: "left", isVertical: true },
@@ -184,6 +205,7 @@ export class CanvasSnapping {
     return null;
   }
 
+  // Run all snapping checks for an object
   checkSnapping(obj) {
     if (!this.hasBackgroundImage()) return { snapped: false };
 
@@ -215,11 +237,12 @@ export class CanvasSnapping {
     return { snapped: false };
   }
 
-  // === Zone/Room/Risk snapping (to original center) ===
+  // Check if point is within threshold of original center
   isNearOriginal(currentCenter, originalCenter, threshold) {
     return this.calculateDistance(currentCenter, originalCenter) <= threshold;
   }
 
+  // Snap polygon back to its original center point
   snapToOriginalCenter(obj, threshold, collectionName) {
     if (!obj.originalCenter) return false;
 
@@ -248,7 +271,7 @@ export class CanvasSnapping {
     return true;
   }
 
-  // === Event handlers ===
+  // Setup canvas event listeners for snapping
   setupEventHandlers() {
     this.fabricCanvas.on("object:moving", (e) => {
       const obj = e.target;
@@ -314,6 +337,7 @@ export class CanvasSnapping {
     });
   }
 
+  // Initialize UI toggle for snapping
   initializeSnapToggle() {
     const snapToggle = document.getElementById("snap-device-toggle");
     if (!snapToggle) return;
@@ -326,28 +350,38 @@ export class CanvasSnapping {
     });
   }
 
-  // === Public API ===
+  // Set global snap threshold
   setSnapThreshold(threshold) {
     this.snapThreshold = threshold;
   }
+
+  // Get global snap threshold
   getSnapThreshold() {
     return this.snapThreshold;
   }
+
+  // Set zone-specific snap threshold
   setZoneSnapThreshold(threshold) {
     this.ZONE_SNAP_THRESHOLD = Math.max(10, Math.min(100, threshold));
   }
+
+  // Set room-specific snap threshold
   setRoomSnapThreshold(threshold) {
     this.ROOM_SNAP_THRESHOLD = Math.max(10, Math.min(100, threshold));
   }
+
+  // Set safety zone-specific snap threshold
   setSafetySnapThreshold(threshold) {
     this.SAFETY_SNAP_THRESHOLD = Math.max(10, Math.min(100, threshold));
   }
+
+  // Check if snapping is currently active
   isSnapping() {
     return this.isSnappingFlag;
   }
 }
 
-// Legacy functional entry point for backwards compatibility
+// Initialize snapping system and return public API
 export function initCanvasSnapping(fabricCanvas) {
   const instance = new CanvasSnapping(fabricCanvas);
   return {

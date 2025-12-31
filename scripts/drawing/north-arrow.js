@@ -4,6 +4,7 @@ import { closeSidebar, startTool, stopCurrentTool, setupDeletion, applyStandardS
 export function setupNorthArrowTool(fabricCanvas) {
   const northArrowBtn = document.getElementById("north-arrow-btn");
 
+  // Configure deletion for north arrow images
   setupDeletion(fabricCanvas, (obj) => {
     return obj.type === "image" && obj.northArrowImage;
   });
@@ -21,6 +22,7 @@ export function setupNorthArrowTool(fabricCanvas) {
 
     const pointer = fabricCanvas.getPointer(e.e);
 
+    // Load and place the north arrow image
     fabric.Image.fromURL(
       "../images/content/north-arrow.png",
       (img) => {

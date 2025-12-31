@@ -2,6 +2,7 @@
 import { closeSidebar, startTool, stopCurrentTool, registerToolCleanup } from "./drawing-utils.js";
 
 export class Wall {
+  // Initializes wall tool state and properties
   constructor(fabricCanvas) {
     this.fabricCanvas = fabricCanvas;
     this.isAddingLine = false;
@@ -18,6 +19,7 @@ export class Wall {
     this.CLOSE_DISTANCE_THRESHOLD = 25;
     this.MIN_POINTS_FOR_COMPLETION = 2;
 
+    // Default properties for wall lines
     this.WALL_LINE_PROPS = {
       stroke: "red",
       strokeWidth: 2,
@@ -35,6 +37,7 @@ export class Wall {
       strokeMiterLimit: 2,
     };
 
+    // Default properties for wall vertex circles
     this.WALL_CIRCLE_PROPS = {
       radius: 4,
       fill: "black",
@@ -50,6 +53,7 @@ export class Wall {
       moveCursor: "move",
     };
 
+    // Default properties for the preview line during drawing
     this.PREVIEW_LINE_PROPS = {
       stroke: "red",
       strokeWidth: 3,
@@ -65,7 +69,7 @@ export class Wall {
     this.init();
   }
 
-  // Rebind events for existing wall lines and circles after loading or changes
+  // Rebinds events for existing wall lines and circles after loading
   rebindWallEvents() {
     this.lineSegments = [];
     this.fabricCanvas.getObjects().forEach((obj) => {
@@ -86,29 +90,21 @@ export class Wall {
     this.hideAllWallCircles();
   }
 
-  // Handle deletion of a wall line and clean up associated circles if no longer connected
+  // Handles deletion of a wall line and cleans up orphaned circles
   handleWallLineDeletion(deletedLine) {
     this.lineSegments = this.lineSegments.filter((s) => s.line !== deletedLine);
-    const remaining = this.fabricCanvas
-      .getObjects()
-      .filter(
-        (obj) =>
-          obj.type === "line" &&
-          !obj.deviceType &&
-          !obj.isResizeIcon &&
-          !obj.isConnectionLine &&
-          obj !== deletedLine
-      );
+    const remaining = this.fabricCanvas.getObjects().filter((obj) => {
+      return obj.type === "line" && !obj.deviceType && !obj.isResizeIcon && !obj.isConnectionLine && obj !== deletedLine;
+    });
     [deletedLine.startCircle, deletedLine.endCircle]
       .filter((c) => c && this.fabricCanvas.getObjects().includes(c))
       .forEach((c) => {
-        if (!remaining.some((l) => l.startCircle === c || l.endCircle === c))
-          this.fabricCanvas.remove(c);
+        if (!remaining.some((l) => l.startCircle === c || l.endCircle === c)) this.fabricCanvas.remove(c);
       });
     this.updateCoverage();
   }
 
-  // Initialize the wall tool by setting up event listeners and button handlers
+  // Initializes the wall tool and sets up global listeners
   init() {
     const addLineButton = document.getElementById("add-wall-btn");
     if (addLineButton) {
@@ -120,13 +116,12 @@ export class Wall {
       this.fabricCanvas.getObjects("circle").forEach((circle) => circle.bringToFront());
     });
 
-    // Listen for walls loaded event
+    // Listens for walls loaded event to rebind
     document.addEventListener("walls:loaded", () => {
       this.rebindWallEvents();
       this.updateCoverage();
     });
 
-    // Initial rebind
     this.rebindWallEvents();
 
     setTimeout(() => {
@@ -145,32 +140,31 @@ export class Wall {
     }, 0);
   }
 
-  // Calculate Euclidean distance between two points
+  // Calculates distance between two points
   calculateDistance(p1, p2) {
     return Math.sqrt((p1.x - p2.x) ** 2 + (p1.y - p2.y) ** 2);
   }
 
-  // Check if the pointer is close enough to the starting point to complete the wall
+  // Checks if pointer is near the starting point to close the loop
   isCloseToStart(pointer) {
-    return (
-      this.tempSegments.length >= this.MIN_POINTS_FOR_COMPLETION &&
-      this.startPointCircle &&
-      this.calculateDistance(pointer, this.startPointCircle.getCenterPoint()) <=
-        this.CLOSE_DISTANCE_THRESHOLD
-    );
+    const hasMinPoints = this.tempSegments.length >= this.MIN_POINTS_FOR_COMPLETION;
+    if (!hasMinPoints || !this.startPointCircle) return false;
+
+    const dist = this.calculateDistance(pointer, this.startPointCircle.getCenterPoint());
+    return dist <= this.CLOSE_DISTANCE_THRESHOLD;
   }
 
-  // Temporarily disable the undo system during wall operations
+  // Disables undo system during drawing
   disableUndo() {
     if (window.undoSystem) window.undoSystem.isExecutingCommand = true;
   }
 
-  // Re-enable the undo system after wall operations
+  // Enables undo system after drawing
   enableUndo() {
     if (window.undoSystem) window.undoSystem.isExecutingCommand = false;
   }
 
-  // Create a new wall line segment between two points with associated circles
+  // Creates a new wall line segment
   createWallLine(x1, y1, x2, y2, startCircle, endCircle) {
     const line = new fabric.Line([x1, y1, x2, y2], this.WALL_LINE_PROPS);
     line.set({ selectable: false, evented: true });
@@ -179,7 +173,7 @@ export class Wall {
     return line;
   }
 
-  // Create a wall circle at the specified position
+  // Creates a new wall vertex circle
   createWallCircle(x, y) {
     const circle = new fabric.Circle({ ...this.WALL_CIRCLE_PROPS, left: x, top: y });
     circle.set({ selectable: false, evented: true });
@@ -187,20 +181,14 @@ export class Wall {
     return circle;
   }
 
-  // Update coverage areas for all devices after wall changes
+  // Updates coverage areas for all devices
   updateCoverage() {
-    // Temporarily disable selection to prevent artifacts
     const wasSelection = this.fabricCanvas.selection;
     this.fabricCanvas.selection = false;
 
     this.fabricCanvas.getObjects("group").forEach((obj) => {
-      if (
-        obj.type === "group" &&
-        obj.deviceType &&
-        obj.coverageConfig &&
-        obj.createOrUpdateCoverageArea
-      ) {
-        obj.lastCoverageState = null; // Force update by clearing cache
+      if (obj.type === "group" && obj.deviceType && obj.coverageConfig && obj.createOrUpdateCoverageArea) {
+        obj.lastCoverageState = null;
         obj.createOrUpdateCoverageArea();
       }
     });
@@ -209,7 +197,7 @@ export class Wall {
     this.fabricCanvas.requestRenderAll();
   }
 
-  // Clean up temporary wall segments and circles
+  // Removes temporary drawing objects
   cleanupTempObjects() {
     this.tempSegments.forEach(({ line }) => this.fabricCanvas.remove(line));
     this.tempSegments.length = 0;
@@ -224,7 +212,7 @@ export class Wall {
     setTimeout(() => this.updateCoverage(), 50);
   }
 
-  // Get all circles connected to the starting circle through wall segments
+  // Finds all circles connected to a starting circle
   getAllConnectedCircles(startCircle) {
     const connectedCircles = new Set([startCircle]);
     const queue = [startCircle];
@@ -232,9 +220,10 @@ export class Wall {
 
     while (queue.length > 0) {
       const current = queue.shift();
-      const segments = [...this.lineSegments, ...this.tempSegments].filter(
-        (s) => (s.startCircle === current || s.endCircle === current) && !visitedLines.has(s.line)
-      );
+      const segments = [...this.lineSegments, ...this.tempSegments].filter((s) => {
+        const isConnected = s.startCircle === current || s.endCircle === current;
+        return isConnected && !visitedLines.has(s.line);
+      });
 
       segments.forEach((seg) => {
         visitedLines.add(seg.line);
@@ -248,7 +237,7 @@ export class Wall {
     return connectedCircles;
   }
 
-  // Show circles for all segments connected to the given wall line
+  // Shows circles for all segments connected to a line
   showCirclesForWallLine(line) {
     if (!line || !line.isWallLine) return;
     const startNode = line.startCircle || line.endCircle;
@@ -262,7 +251,7 @@ export class Wall {
     this.fabricCanvas.requestRenderAll();
   }
 
-  // Hide all wall circles except temporary ones
+  // Hides all wall vertex circles
   hideAllWallCircles() {
     if (this.isAddingLine) return;
     const temps = new Set(this.tempCircles);
@@ -272,7 +261,7 @@ export class Wall {
     this.fabricCanvas.requestRenderAll();
   }
 
-  // Show circles for all segments connected to the given circle
+  // Shows circles for all segments connected to a circle
   showCirclesForConnectedSegments(circle) {
     if (!circle || !circle.isWallCircle) return;
     const allCircles = this.getAllConnectedCircles(circle);
@@ -283,17 +272,17 @@ export class Wall {
     this.fabricCanvas.requestRenderAll();
   }
 
-  // Set visual selection state for a wall circle
+  // Sets selection styling for a wall circle
   setCircleSelected(circle, selected) {
     if (!circle || !circle.isWallCircle) return;
-    circle.set(
-      selected
-        ? { stroke: "#f8794b", strokeWidth: 3, radius: 7 }
-        : { stroke: undefined, strokeWidth: 0, radius: 4 }
-    );
+
+    const selectedProps = { stroke: "#f8794b", strokeWidth: 3, radius: 7 };
+    const defaultProps = { stroke: undefined, strokeWidth: 0, radius: 4 };
+
+    circle.set(selected ? selectedProps : defaultProps);
   }
 
-  // Update positions of lines connected to a moving circle
+  // Updates line positions when a connected circle moves
   updateConnectedLines(circle) {
     const center = circle.getCenterPoint();
     [...this.lineSegments, ...this.tempSegments].forEach(({ line }) => {
@@ -304,19 +293,12 @@ export class Wall {
     this.fabricCanvas.requestRenderAll();
   }
 
-  // Complete the wall loop by connecting back to the start
+  // Closes the wall loop by connecting to the start
   completeWallLoop() {
     if (this.currentLine) this.fabricCanvas.remove(this.currentLine), (this.currentLine = null);
     if (this.lastPoint && this.startPointCircle) {
       const startCenter = this.startPointCircle.getCenterPoint();
-      const closingLine = this.createWallLine(
-        this.lastPoint.x,
-        this.lastPoint.y,
-        startCenter.x,
-        startCenter.y,
-        this.pointCircle,
-        this.startPointCircle
-      );
+      const closingLine = this.createWallLine(this.lastPoint.x, this.lastPoint.y, startCenter.x, startCenter.y, this.pointCircle, this.startPointCircle);
       this.fabricCanvas.add(closingLine);
       this.tempSegments.push({
         line: closingLine,
@@ -328,7 +310,7 @@ export class Wall {
     this.justCompleted = true;
   }
 
-  // Finalize temporary segments by converting them to permanent wall elements
+  // Converts temporary segments to permanent wall objects
   finalizeTempSegments() {
     const newLines = this.tempSegments.map((s) => s.line);
     const newCircles = [...this.tempCircles];
@@ -351,19 +333,20 @@ export class Wall {
     );
     this.tempCircles.length = 0;
 
-    if (
-      window.undoSystem &&
-      (newLines.length || newCircles.length) &&
-      !window.undoSystem.isExecutingCommand
-    ) {
+    if (window.undoSystem && (newLines.length || newCircles.length) && !window.undoSystem.isExecutingCommand) {
       const wasExecuting = window.undoSystem.isExecutingCommand;
       window.undoSystem.isExecutingCommand = true;
       try {
-        const commands = [
-          ...newLines.map((l) => new window.UndoCommands.AddCommand(this.fabricCanvas, l, [])),
-          ...newCircles.map((c) => new window.UndoCommands.AddCommand(this.fabricCanvas, c, [])),
-        ];
-        window.undoSystem.addToStack(new window.UndoCommands.MultipleCommand(commands));
+        const lineCommands = newLines.map((l) => {
+          return new window.UndoCommands.AddCommand(this.fabricCanvas, l, []);
+        });
+        const circleCommands = newCircles.map((c) => {
+          return new window.UndoCommands.AddCommand(this.fabricCanvas, c, []);
+        });
+
+        const commands = [...lineCommands, ...circleCommands];
+        const multipleCommand = new window.UndoCommands.MultipleCommand(commands);
+        window.undoSystem.addToStack(multipleCommand);
       } finally {
         window.undoSystem.isExecutingCommand = wasExecuting;
       }
@@ -375,13 +358,13 @@ export class Wall {
     this.fabricCanvas.requestRenderAll();
   }
 
-  // Reset the drawing state and stop the current tool
+  // Resets drawing state and stops tool
   resetDrawingState() {
     this.cleanupTempObjects();
     stopCurrentTool();
   }
 
-  // Handle mouse down events for wall drawing
+  // Handles mouse down to add a new wall segment
   handleMouseDown(o) {
     o.e.preventDefault();
     o.e.stopPropagation();
@@ -407,15 +390,12 @@ export class Wall {
         radius: 7,
       });
     } else {
-      if (this.currentLine) this.fabricCanvas.remove(this.currentLine), (this.currentLine = null);
-      const newLine = this.createWallLine(
-        this.lastPoint.x,
-        this.lastPoint.y,
-        pointer.x,
-        pointer.y,
-        this.pointCircle,
-        newCircle
-      );
+      if (this.currentLine) {
+        this.fabricCanvas.remove(this.currentLine);
+        this.currentLine = null;
+      }
+
+      const newLine = this.createWallLine(this.lastPoint.x, this.lastPoint.y, pointer.x, pointer.y, this.pointCircle, newCircle);
       this.disableUndo();
       this.fabricCanvas.add(newLine);
       this.enableUndo();
@@ -432,15 +412,13 @@ export class Wall {
     this.fabricCanvas.requestRenderAll();
   }
 
-  // Handle mouse move events to preview wall segments
+  // Handles mouse move to show segment preview
   handleMouseMove(o) {
     if (!this.lastPoint) return;
     const pointer = this.fabricCanvas.getPointer(o.e);
     if (!this.currentLine) {
-      this.currentLine = new fabric.Line(
-        [this.lastPoint.x, this.lastPoint.y, pointer.x, pointer.y],
-        this.PREVIEW_LINE_PROPS
-      );
+      const points = [this.lastPoint.x, this.lastPoint.y, pointer.x, pointer.y];
+      this.currentLine = new fabric.Line(points, this.PREVIEW_LINE_PROPS);
       this.currentLine.set({ selectable: false, evented: false });
       this.disableUndo();
       this.fabricCanvas.add(this.currentLine);
@@ -463,12 +441,16 @@ export class Wall {
     this.fabricCanvas.requestRenderAll();
   }
 
-  // Activate the wall drawing tool
+  // Activates wall drawing mode
   activate() {
     if (this.isAddingLine) return;
     this.hideAllWallCircles();
-    if (this.selectedWallCircle)
-      this.setCircleSelected(this.selectedWallCircle, false), (this.selectedWallCircle = null);
+
+    if (this.selectedWallCircle) {
+      this.setCircleSelected(this.selectedWallCircle, false);
+      this.selectedWallCircle = null;
+    }
+
     this.isAddingLine = true;
     closeSidebar();
     this.cleanupTempObjects();
@@ -481,7 +463,7 @@ export class Wall {
     );
   }
 
-  // Handle global mouse down events for wall selection and interaction
+  // Handles global mouse down for selection and interaction
   handleGlobalMouseDown(opt) {
     if (this.justCompleted) {
       this.justCompleted = false;
@@ -489,21 +471,25 @@ export class Wall {
     }
     if (this.isAddingLine) return;
     const target = opt.target;
-    const isLineWithWallRefs =
-      target && target.type === "line" && (target.startCircle || target.endCircle);
+    const isLineWithWallRefs = target && target.type === "line" && (target.startCircle || target.endCircle);
     if (target && target.type === "line" && (target.isWallLine || isLineWithWallRefs)) {
-      if (this.selectedWallCircle)
-        this.setCircleSelected(this.selectedWallCircle, false), (this.selectedWallCircle = null);
+      if (this.selectedWallCircle) {
+        this.setCircleSelected(this.selectedWallCircle, false);
+        this.selectedWallCircle = null;
+      }
       this.showCirclesForWallLine(target);
     } else if (target && target.isWallCircle) {
-      if (this.selectedWallCircle && this.selectedWallCircle !== target)
+      if (this.selectedWallCircle && this.selectedWallCircle !== target) {
         this.setCircleSelected(this.selectedWallCircle, false);
+      }
       this.selectedWallCircle = target;
       this.setCircleSelected(target, true);
       this.showCirclesForConnectedSegments(target);
     } else {
-      if (this.selectedWallCircle)
-        this.setCircleSelected(this.selectedWallCircle, false), (this.selectedWallCircle = null);
+      if (this.selectedWallCircle) {
+        this.setCircleSelected(this.selectedWallCircle, false);
+        this.selectedWallCircle = null;
+      }
       this.hideAllWallCircles();
     }
   }

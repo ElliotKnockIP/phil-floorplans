@@ -17,13 +17,13 @@ export class ScreenshotCropper {
     this.init();
   }
 
+  // Initialize Bootstrap modal and event listeners
   init() {
-    // Set up Bootstrap modal
     if (this.elements.modal && typeof bootstrap !== "undefined") {
-      this.cropModalInstance = new bootstrap.Modal(this.elements.modal);
+      this.cropModalInstance = new bootstrap.Modal(this.elements.modal, { backdrop: "static" });
     }
 
-    // Set up event listeners
+    // Close modal on button click
     this.elements.modal?.querySelector(".btn-close")?.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -31,20 +31,19 @@ export class ScreenshotCropper {
     });
 
     if (this.elements.modal) {
+      // Reset cropper and show sidebar when modal is hidden
       this.elements.modal.addEventListener("hidden.bs.modal", () => {
         this.resetCropper();
         if (this.subSidebar) this.subSidebar.classList.remove("hidden");
       });
+      // Resize cropper when modal is shown
       this.elements.modal.addEventListener("shown.bs.modal", () => {
         if (this.cropperInstance) setTimeout(() => this.cropperInstance.resize(), 100);
-      });
-      this.elements.modal.addEventListener("click", (e) => {
-        if (e.target === this.elements.modal) this.closeModal();
       });
     }
   }
 
-  // Creates the Cropper.js instance
+  // Initialize Cropper.js on the preview image
   initCropper() {
     if (this.cropperInstance) this.cropperInstance.destroy();
     setTimeout(() => {
@@ -66,7 +65,7 @@ export class ScreenshotCropper {
     }, 300);
   }
 
-  // Cleans up cropper and preview
+  // Destroy cropper instance and clear preview image
   resetCropper() {
     if (this.cropperInstance) {
       this.cropperInstance.destroy();
@@ -79,7 +78,7 @@ export class ScreenshotCropper {
     }
   }
 
-  // Shows the crop modal
+  // Show the crop modal and load the canvas screenshot
   showModal() {
     if (this.subSidebar) this.subSidebar.classList.add("hidden");
     this.resetCropper();
@@ -100,123 +99,57 @@ export class ScreenshotCropper {
     if (this.cropModalInstance) this.cropModalInstance.show();
   }
 
-  // Hides the crop modal
+  // Hide the crop modal and restore sidebar
   closeModal() {
     if (this.cropModalInstance) this.cropModalInstance.hide();
     this.resetCropper();
     if (this.subSidebar) this.subSidebar.classList.remove("hidden");
   }
 
-  // Creates a preview item for a screenshot
+  // Create a preview item for the captured screenshot in the UI
   createPreview(screenshot) {
-    if (!this.elements.previews) return;
+    if (!this.elements.previews || !this.elements.template?.content) return;
 
-    let previewItem;
+    const container = this.elements.template.content.cloneNode(true);
+    const previewItem = container.querySelector(".screenshot-preview-item");
+    if (!previewItem) return;
 
-    // Try template first
-    if (this.elements.template?.content) {
-      try {
-        const container = this.elements.template.content.cloneNode(true);
-        previewItem = container.querySelector(".screenshot-preview-item");
-        if (previewItem) {
-          const img = previewItem.querySelector(".screenshot-image");
-          const checkbox = previewItem.querySelector(".screenshot-checkbox");
-          const label = previewItem.querySelector(".screenshot-checkbox-label");
+    const img = previewItem.querySelector(".screenshot-image");
+    const checkbox = previewItem.querySelector(".screenshot-checkbox");
+    const label = previewItem.querySelector(".screenshot-checkbox-label");
+    const titleTextarea = previewItem.querySelector(".screenshot-title");
+    const deleteBtn = previewItem.querySelector(".screenshot-delete-btn");
 
-          if (img) {
-            img.src = screenshot.dataURL;
-            img.alt = `Screenshot ${this.screenshots.length}`;
-          }
-          if (checkbox) checkbox.id = `screenshot-${screenshot.id}`;
-          if (label && checkbox) label.setAttribute("for", checkbox.id);
-          this.elements.previews.appendChild(container);
+    if (img) {
+      img.src = screenshot.dataURL;
+      img.alt = `Screenshot ${this.screenshots.length}`;
+    }
+
+    if (checkbox) {
+      checkbox.id = `screenshot-${screenshot.id}`;
+      checkbox.checked = screenshot.includeInPrint || false;
+      checkbox.addEventListener("change", () => (screenshot.includeInPrint = checkbox.checked));
+    }
+
+    if (label && checkbox) label.setAttribute("for", checkbox.id);
+    if (titleTextarea && screenshot.title) titleTextarea.value = screenshot.title;
+
+    if (deleteBtn) {
+      deleteBtn.addEventListener("click", () => {
+        const index = this.screenshots.indexOf(screenshot);
+        if (index > -1) {
+          this.screenshots.splice(index, 1);
+          previewItem.remove();
+          setTimeout(() => window.updateScreenshotStatus?.(), 100);
         }
-      } catch (e) {
-        previewItem = this.createManualPreview(screenshot);
-      }
-    } else {
-      previewItem = this.createManualPreview(screenshot);
+      });
     }
 
-    // Add event listeners
-    if (previewItem) {
-      const checkbox = previewItem.querySelector(".screenshot-checkbox");
-      const deleteBtn = previewItem.querySelector(".screenshot-delete-btn");
-
-      if (checkbox)
-        checkbox.addEventListener("change", () => (screenshot.includeInPrint = checkbox.checked));
-      if (deleteBtn)
-        deleteBtn.addEventListener("click", () => {
-          const index = this.screenshots.indexOf(screenshot);
-          if (index > -1) {
-            this.screenshots.splice(index, 1);
-            previewItem.remove();
-            setTimeout(() => window.updateScreenshotStatus?.(), 100);
-          }
-        });
-      setTimeout(() => window.updateScreenshotStatus?.(), 100);
-    }
+    this.elements.previews.appendChild(container);
+    setTimeout(() => window.updateScreenshotStatus?.(), 100);
   }
 
-  // Creates preview manually when no template exists
-  createManualPreview(screenshot) {
-    const previewItem = document.createElement("div");
-    previewItem.className = "screenshot-preview-item";
-
-    // Create image
-    const img = document.createElement("img");
-    img.className = "screenshot-image";
-    img.src = screenshot.dataURL;
-    img.alt = `Screenshot ${this.screenshots.length}`;
-    img.style.cssText = "width: 100%; height: auto; margin-bottom: 10px;";
-
-    // Create controls
-    const controls = document.createElement("div");
-    controls.className = "screenshot-controls";
-    controls.style.cssText = "display: flex; flex-direction: column; gap: 5px;";
-
-    // Checkbox with label
-    const checkboxLabel = document.createElement("label");
-    checkboxLabel.className = "screenshot-checkbox-label";
-    checkboxLabel.style.cssText = "display: flex; align-items: center; gap: 5px;";
-
-    const checkbox = document.createElement("input");
-    checkbox.type = "checkbox";
-    checkbox.className = "screenshot-checkbox";
-    checkbox.id = `screenshot-${screenshot.id}`;
-
-    const checkboxText = document.createElement("span");
-    checkboxText.textContent = "Include in print";
-
-    checkboxLabel.appendChild(checkbox);
-    checkboxLabel.appendChild(checkboxText);
-
-    // Title textarea
-    const titleTextarea = document.createElement("textarea");
-    titleTextarea.className = "screenshot-title";
-    titleTextarea.placeholder = "Title or Description";
-    titleTextarea.maxLength = 74;
-    titleTextarea.style.cssText = "width: 100%; min-height: 40px; resize: vertical;";
-
-    // Delete button
-    const deleteBtn = document.createElement("button");
-    deleteBtn.className = "screenshot-delete-btn";
-    deleteBtn.textContent = "Delete";
-    deleteBtn.style.cssText =
-      "padding: 5px 10px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer;";
-
-    // Assemble
-    controls.appendChild(checkboxLabel);
-    controls.appendChild(titleTextarea);
-    controls.appendChild(deleteBtn);
-    previewItem.appendChild(img);
-    previewItem.appendChild(controls);
-    this.elements.previews.appendChild(previewItem);
-
-    return previewItem;
-  }
-
-  // Handles the crop action
+  // Process the cropped image for download or report inclusion
   handleCrop(type) {
     const croppedCanvas = this.cropperInstance?.getCroppedCanvas({
       width: 1200,
@@ -232,13 +165,12 @@ export class ScreenshotCropper {
 
     if (type === "download") {
       const croppedDataURL = croppedCanvas.toDataURL("image/png", 1.0);
-      // Download the cropped image
       const link = document.createElement("a");
       link.href = croppedDataURL;
       link.download = "floorplan.png";
       link.click();
     } else {
-      // Save as screenshot preview - use JPEG for smaller JSON size
+      // Save as JPEG for report to keep file size manageable
       const croppedDataURL = croppedCanvas.toDataURL("image/jpeg", 0.7);
       this.screenshots.push({
         dataURL: croppedDataURL,
@@ -250,7 +182,7 @@ export class ScreenshotCropper {
     this.closeModal();
   }
 
-  // Public API methods
+  // Capture canvas and start cropping for image download
   startCropForDownload() {
     document.getElementById("select-background-popup")?.style.setProperty("display", "none");
     this.fabricCanvas.renderAll();
@@ -260,10 +192,10 @@ export class ScreenshotCropper {
       quality: 1.0,
     });
     this.showModal();
-    if (this.elements.confirmBtn)
-      this.elements.confirmBtn.onclick = () => this.handleCrop("download");
+    if (this.elements.confirmBtn) this.elements.confirmBtn.onclick = () => this.handleCrop("download");
   }
 
+  // Capture canvas and start cropping for report screenshot
   startCropForScreenshot() {
     document.getElementById("select-background-popup")?.style.setProperty("display", "none");
     this.fabricCanvas.renderAll();
@@ -273,29 +205,32 @@ export class ScreenshotCropper {
       quality: 1.0,
     });
     this.showModal();
-    if (this.elements.confirmBtn)
-      this.elements.confirmBtn.onclick = () => this.handleCrop("screenshot");
+    if (this.elements.confirmBtn) this.elements.confirmBtn.onclick = () => this.handleCrop("screenshot");
   }
 
+  // Cancel the current cropping operation
   cancelCrop() {
     this.closeModal();
   }
 
+  // Reset cropper to initial state
   resetCrop() {
     this.cropperInstance?.reset();
   }
 
+  // Return the list of captured screenshots
   getScreenshots() {
     return this.screenshots;
   }
 
+  // Clear all captured screenshots from memory and UI
   clearScreenshots() {
     this.screenshots.length = 0;
     this.elements.previews && (this.elements.previews.innerHTML = "");
   }
 }
 
-// Wrapper function for backward compatibility
+// Initialize the screenshot cropper module
 export function initCanvasCrop(fabricCanvas, subSidebar) {
   return new ScreenshotCropper(fabricCanvas, subSidebar);
 }

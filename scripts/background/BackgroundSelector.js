@@ -1,5 +1,4 @@
-// Background Selector - Coordinates background source selection
-// Manages the main source selection modal and delegates to specific source handlers
+// Background Selector coordinates background source selection
 
 import { FileSourceHandler } from "./sources/FileSource.js";
 import { MapSourceHandler } from "./sources/MapSource.js";
@@ -25,19 +24,9 @@ export class BackgroundSelector {
     this.fileHandler = new FileSourceHandler(manager);
     this.mapHandler = new MapSourceHandler(manager, GOOGLE_MAPS_API_KEY);
     this.customHandler = new CustomSourceHandler(manager);
-
-    // Helper to prevent stacked backdrops causing dark flicker
-    this.normalizeBackdrops = function () {
-      const backdrops = Array.from(document.querySelectorAll(".modal-backdrop"));
-      if (backdrops.length > 1) {
-        backdrops.slice(0, -1).forEach((bd) => bd.remove());
-      }
-      // Ensure body keeps modal-open when a modal is present
-      if (backdrops.length > 0) document.body.classList.add("modal-open");
-    };
   }
 
-  // Initialize all source handlers
+  // Initialize source handlers and listeners
   initialize() {
     this.fileHandler.setupFileInputs();
     this.setupButtonListeners();
@@ -83,7 +72,7 @@ export class BackgroundSelector {
     }
   }
 
-  // Handle source selection
+  // Handle source selection and show appropriate modal
   handleSourceSelection(sourceType) {
     bootstrap.Modal.getInstance(this.elements.mainModal)?.hide();
 

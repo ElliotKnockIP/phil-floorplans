@@ -9,6 +9,7 @@ let savedPositions = {};
 
 // Handles the topology map modal view
 class TopologyBuilder {
+  // Initialize topology builder with main canvas and manager references
   constructor(mainCanvas, topologyManager) {
     this.mainCanvas = mainCanvas;
     this.topologyManager = topologyManager;
@@ -23,7 +24,6 @@ class TopologyBuilder {
   }
 
   // Open the topology builder modal
-
   open(elements) {
     this.elements = elements;
     this.ensureModal();
@@ -31,6 +31,7 @@ class TopologyBuilder {
     setTimeout(() => this.build(), 200);
   }
 
+  // Ensure the bootstrap modal instance exists
   ensureModal() {
     if (!this.modal && typeof bootstrap !== "undefined") {
       this.modal = new bootstrap.Modal(this.elements.modalEl);
@@ -40,7 +41,14 @@ class TopologyBuilder {
   // Build/rebuild topology view
 
   build() {
+    if (!this.elements) return;
     const { wrapper, canvasEl } = this.elements;
+
+    const w = wrapper.clientWidth;
+    const h = wrapper.clientHeight;
+
+    // Don't initialize if dimensions are 0 (modal hidden)
+    if (w === 0 || h === 0) return;
 
     // Dispose existing canvas
     if (this.topoCanvas) {
@@ -53,8 +61,6 @@ class TopologyBuilder {
     }
 
     // Create new canvas
-    const w = wrapper.clientWidth;
-    const h = wrapper.clientHeight;
     canvasEl.width = w;
     canvasEl.height = h;
     this.topoCanvas = new fabric.Canvas(canvasEl, {
@@ -69,9 +75,7 @@ class TopologyBuilder {
     this.workingConnections.clear();
 
     // Get devices and connections
-    const allDevices = this.mainCanvas
-      .getObjects()
-      .filter((obj) => obj.type === "group" && obj.deviceType);
+    const allDevices = this.mainCanvas.getObjects().filter((obj) => obj.type === "group" && obj.deviceType);
     const connectedIds = new Set();
     let connectionsData = [];
 
@@ -179,11 +183,7 @@ class TopologyBuilder {
     connectionsData.forEach((c) => {
       const d1Center = this.getMainDeviceCenter(c.device1Id);
       const d2Center = this.getMainDeviceCenter(c.device2Id);
-      const points = [
-        d1Center,
-        ...(c.splitPoints || []).map((p) => ({ x: p.x, y: p.y })),
-        d2Center,
-      ];
+      const points = [d1Center, ...(c.splitPoints || []).map((p) => ({ x: p.x, y: p.y })), d2Center];
       const dist = (pathLength(points) / this.baselinePixelsPerMeter).toFixed(2);
       this.fixedDistances.set(c.id, dist);
     });
@@ -191,11 +191,12 @@ class TopologyBuilder {
 
   // Get main canvas device center by ID
   getMainDeviceCenter(deviceId) {
-    const device =
-      this.topologyManager?.findDeviceById?.(deviceId) ||
-      this.mainCanvas
-        .getObjects()
-        .find((obj) => obj.type === "group" && this.getDeviceId(obj) === deviceId);
+    const fromManager = this.topologyManager?.findDeviceById?.(deviceId);
+    const fromCanvas = this.mainCanvas.getObjects().find((obj) => {
+      return obj.type === "group" && this.getDeviceId(obj) === deviceId;
+    });
+
+    const device = fromManager || fromCanvas;
 
     if (device) {
       const c = device.getCenterPoint?.() || { x: device.left, y: device.top };
@@ -320,7 +321,7 @@ class TopologyBuilder {
   renderConnections() {
     this.renderer.clearSimplified();
 
-    // Group by device pair
+    // Group by device pair to handle multiple connections between the same two devices
     const groups = new Map();
     this.workingConnections.forEach((wc) => {
       const n1 = this.nodeMap.get(wc.device1Id);
@@ -347,9 +348,13 @@ class TopologyBuilder {
           distanceText: `${this.fixedDistances.get(first.id) || ""} m`,
           label: props.label || "",
           customLabels: props.customTextLabels || [],
+          channel: props.channel,
+          panelDeviceId: props.panelDeviceId,
+          device1Id: first.device1Id,
+          device2Id: first.device2Id,
         });
       } else {
-        // Multiple parallel connections
+        // Multiple parallel connections with spacing offset
         const spacing = 6;
         const totalWidth = (conns.length - 1) * spacing;
         const startOffset = -totalWidth / 2;
@@ -360,9 +365,14 @@ class TopologyBuilder {
             id: conn.id,
             p1,
             p2,
+            // Only show distance and labels for the first connection in a group
             distanceText: idx === 0 ? `${this.fixedDistances.get(conn.id) || ""} m` : "",
             label: idx === 0 ? conn.properties?.label || "" : "",
             customLabels: idx === 0 ? conn.properties?.customTextLabels || [] : [],
+            channel: conn.properties?.channel,
+            panelDeviceId: conn.properties?.panelDeviceId,
+            device1Id: conn.device1Id,
+            device2Id: conn.device2Id,
             isMultiple: true,
             offset,
           });
@@ -377,12 +387,12 @@ class TopologyBuilder {
     const objects = this.topoCanvas.getObjects();
 
     objects.filter((o) => o.isTopoSegment).forEach((o) => this.topoCanvas.sendToBack(o));
-    objects
-      .filter((o) => o.type === "group" && o.deviceId)
-      .forEach((o) => this.topoCanvas.bringToFront(o));
-    objects
-      .filter((o) => o.type === "text" && !o.isDeviceLabel && !o.isTopoSegment)
-      .forEach((o) => this.topoCanvas.bringToFront(o));
+    objects.filter((o) => o.type === "group" && o.deviceId).forEach((o) => this.topoCanvas.bringToFront(o));
+
+    const textObjects = objects.filter((o) => {
+      return o.type === "text" && !o.isDeviceLabel && !o.isTopoSegment;
+    });
+    textObjects.forEach((o) => this.topoCanvas.bringToFront(o));
   }
 
   // Highlight all connections related to a device
@@ -438,9 +448,7 @@ class TopologyBuilder {
   autoLayout() {
     if (!this.topoCanvas) return;
 
-    const allDevices = this.mainCanvas
-      .getObjects()
-      .filter((o) => o.type === "group" && o.deviceType);
+    const allDevices = this.mainCanvas.getObjects().filter((o) => o.type === "group" && o.deviceType);
     const connectedIds = new Set();
 
     if (this.topologyManager) {
@@ -474,12 +482,11 @@ class TopologyBuilder {
 
   // Get device ID with fallback
   getDeviceId(device) {
-    if (this.topologyManager?.getDeviceId) return this.topologyManager.getDeviceId(device);
-    return (
-      device?.id ||
-      device?.topologyId ||
-      (device.id = `device_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`)
-    );
+    if (this.topologyManager?.getDeviceId) {
+      return this.topologyManager.getDeviceId(device);
+    }
+    const fallbackId = `device_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    return device?.id || device?.topologyId || (device.id = fallbackId);
   }
 
   // Get device center point
@@ -493,6 +500,7 @@ class TopologyBuilder {
     return device?.textObject?.text || device?.initialLabelText || "Device";
   }
 
+  // Clamp a point to stay within the topology canvas margins
   clampPosition(point) {
     const canvas = this.topoCanvas;
     const w = canvas?.getWidth() || 800;
@@ -512,6 +520,7 @@ class TopologyBuilder {
     return savedPositions;
   }
 
+  // Get a copy of all saved node positions
   getPositions() {
     return { ...savedPositions };
   }
@@ -540,6 +549,7 @@ export function initTopologyBuilder(mainCanvas, topologyManager) {
   if (!elements.openBtn || !elements.modalEl || !elements.wrapper || !elements.canvasEl) return;
 
   const builder = new TopologyBuilder(mainCanvas, topologyManager);
+  builder.elements = elements;
 
   // Open button
   elements.openBtn.addEventListener("click", () => builder.open(elements));

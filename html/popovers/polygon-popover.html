@@ -136,15 +136,10 @@
           <input type="text" class="form-control" id="safety-label-input" placeholder="Enter safety area name" />
         </div>
 
-        <div class="mb-3">
-          <label for="safety-notes-input" class="form-label">General Notes:</label>
-          <input type="text" class="form-control" id="safety-notes-input" placeholder="Enter general notes" />
-        </div>
-
-        <div class="mb-3">
+        <div class="mb-3" style="display: flex; flex-direction: column; flex: 1">
           <span class="form-label">Risk Assessments:</span>
-          <div id="safety-sub-details-list" class="mb-2" style="max-height: 300px; overflow-y: auto"></div>
-          <button type="button" class="btn btn-sm btn-outline-primary w-100" id="safety-add-sub-detail-btn"><i class="bi bi-plus"></i> Add Risk Assessment</button>
+          <div id="safety-sub-details-list" class="mb-2" style="overflow-y: auto; max-height: calc(100vh - 400px)"></div>
+          <button type="button" class="btn btn-sm w-100 text-white" id="safety-add-sub-detail-btn" style="background-color: #f8794b; font-weight: 600; padding: 8px">Add Risk Assessment</button>
         </div>
       </div>
     </div>
@@ -194,7 +189,7 @@
             <div class="colour-icon" data-color="#00BFFF" style="background-color: #00bfff"></div>
             <label class="colour-picker-icon">
               <input type="color" id="zone-color-picker" />
-              <span>🎨</span>
+              <span><img src="./images/icons/colour-palette.svg" alt="Colour Palette" /></span>
             </label>
           </div>
         </div>
@@ -219,7 +214,7 @@
             <div class="colour-icon" data-color="#2f4f4f" style="background-color: #2f4f4f"></div>
             <label class="colour-picker-icon">
               <input type="color" id="zone-text-color-picker" />
-              <span>🎨</span>
+              <span><img src="./images/icons/colour-palette.svg" alt="Colour Palette" /></span>
             </label>
           </div>
         </div>
@@ -269,7 +264,7 @@
             <div class="colour-icon" data-color="#cc0000" style="background-color: #cc0000"></div>
             <label class="colour-picker-icon">
               <input type="color" id="room-color-picker" />
-              <span>🎨</span>
+              <span><img src="./images/icons/colour-palette.svg" alt="Colour Palette" /></span>
             </label>
           </div>
         </div>
@@ -294,7 +289,7 @@
             <div class="colour-icon" data-color="#333333" style="background-color: #333333"></div>
             <label class="colour-picker-icon">
               <input type="color" id="room-text-color-picker" />
-              <span>🎨</span>
+              <span><img src="./images/icons/colour-palette.svg" alt="Colour Palette" /></span>
             </label>
           </div>
         </div>
@@ -329,7 +324,7 @@
             <div class="colour-icon" data-color="#00695c" style="background-color: #00695c"></div>
             <label class="colour-picker-icon">
               <input type="color" id="risk-color-picker" />
-              <span>🎨</span>
+              <span><img src="./images/icons/colour-palette.svg" alt="Colour Palette" /></span>
             </label>
           </div>
         </div>
@@ -354,25 +349,18 @@
             <div class="colour-icon" data-color="#333333" style="background-color: #333333"></div>
             <label class="colour-picker-icon">
               <input type="color" id="risk-text-color-picker" />
-              <span>🎨</span>
+              <span><img src="./images/icons/colour-palette.svg" alt="Colour Palette" /></span>
             </label>
           </div>
         </div>
       </div>
 
-      <!-- Safety Appearance Properties -->
       <div id="safety-appearance-properties" style="display: none">
         <div class="row mb-3">
-          <div class="col-6">
+          <div class="col-12">
             <div class="checkbox-group">
               <input class="form-check-input" type="checkbox" id="safety-name-toggle" checked />
               <label class="form-check-label" for="safety-name-toggle"> Show Name </label>
-            </div>
-          </div>
-          <div class="col-6">
-            <div class="checkbox-group">
-              <input class="form-check-input" type="checkbox" id="safety-notes-toggle" />
-              <label class="form-check-label" for="safety-notes-toggle"> Show Notes </label>
             </div>
           </div>
         </div>
@@ -389,7 +377,7 @@
             <div class="colour-icon" data-color="#ff6f00" style="background-color: #ff6f00"></div>
             <label class="colour-picker-icon">
               <input type="color" id="safety-color-picker" />
-              <span>🎨</span>
+              <span><img src="./images/icons/colour-palette.svg" alt="Colour Palette" /></span>
             </label>
           </div>
         </div>
@@ -414,7 +402,7 @@
             <div class="colour-icon" data-color="#333333" style="background-color: #333333"></div>
             <label class="colour-picker-icon">
               <input type="color" id="safety-text-color-picker" />
-              <span>🎨</span>
+              <span><img src="./images/icons/colour-palette.svg" alt="Colour Palette" /></span>
             </label>
           </div>
         </div>
@@ -422,3 +410,53 @@
     </div>
   </div>
 </div>
+
+<!-- Template for Safety Sub-Detail Items -->
+<template id="safety-sub-detail-template">
+  <div class="rounded mb-2 border position-relative text-dark" style="background-color: #f8f9fa; padding: 6px 10px">
+    <button class="btn btn-sm remove-sub-detail p-0 d-flex align-items-center justify-content-center" style="position: absolute; right: 6px; top: 6px; width: 20px; height: 20px; background-color: #f8794b; border: none; border-radius: 4px; color: white; z-index: 10">
+      <span style="font-size: 16px; font-weight: bold; line-height: 1">X</span>
+    </button>
+    <div class="d-flex gap-2">
+      <div class="fw-bold text-dark pt-1 sub-detail-index" style="font-size: 13px; min-width: 22px">
+        <!-- Index will be inserted here -->
+      </div>
+      <div class="flex-grow-1" style="padding-right: 20px">
+        <div class="row gx-2 mb-1">
+          <div class="col-7 d-flex flex-column">
+            <label class="form-label text-uppercase fw-bold text-muted mb-0" style="font-size: 12px; letter-spacing: 0.5px">Risk Name</label>
+            <input type="text" class="form-control form-control-sm sub-detail-name" placeholder="Name" style="background: white; font-size: 11px; padding: 2px 5px; height: 24px" />
+          </div>
+          <div class="col-4 d-flex flex-column">
+            <label class="form-label text-uppercase fw-bold text-muted mb-0" style="font-size: 12px; letter-spacing: 0.5px">Likelihood</label>
+            <select class="form-select form-select-sm sub-detail-likelihood" style="background: white; font-size: 11px; padding: 2px 5px; height: 24px">
+              <option value="">Select...</option>
+              <option value="very-low">Very Low</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="very-high">Very High</option>
+            </select>
+          </div>
+        </div>
+        <div class="row gx-2">
+          <div class="col-7 d-flex flex-column">
+            <label class="form-label text-uppercase fw-bold text-muted mb-0" style="font-size: 12px; letter-spacing: 0.5px">Severity</label>
+            <select class="form-select form-select-sm sub-detail-severity" style="background: white; font-size: 11px; padding: 2px 5px; height: 24px">
+              <option value="">Select...</option>
+              <option value="very-low">Very Low</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="very-high">Very High</option>
+            </select>
+          </div>
+          <div class="col-4 d-flex flex-column">
+            <label class="form-label text-uppercase fw-bold text-muted mb-0" style="font-size: 12px; letter-spacing: 0.5px">Control Measures</label>
+            <input type="text" class="form-control form-control-sm sub-detail-control" placeholder="Measures" style="background: white; font-size: 11px; padding: 2px 5px; height: 24px" />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</template>

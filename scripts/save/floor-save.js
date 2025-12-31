@@ -17,6 +17,7 @@ const GLOBAL_SETTINGS_CONFIG = {
 
 // Floor serialization and save/load operations
 export class FloorSerializer {
+  // Initialize with canvas, save system, and floor manager
   constructor(fabricCanvas, saveSystem, floorManager) {
     this.fabricCanvas = fabricCanvas;
     this.saveSystem = saveSystem;
@@ -182,7 +183,12 @@ export class FloorSerializer {
 
   // Saves background images to the floor data
   serializeBackgroundObjects() {
-    const backgroundObjects = this.fabricCanvas.getObjects().filter((obj) => obj.isBackground || (obj.type === "image" && !obj.selectable && !obj.evented));
+    const backgroundObjects = this.fabricCanvas.getObjects().filter((obj) => {
+      const isBg = obj.isBackground;
+      const isStaticImage = obj.type === "image" && !obj.selectable && !obj.evented;
+      return isBg || isStaticImage;
+    });
+
     return backgroundObjects.length > 0 ? this.fabricCanvas.toJSON(["isBackground", "pixelsPerMeter"]) : null;
   }
 
@@ -198,7 +204,10 @@ export class FloorSerializer {
           rotateIconVisible: obj.rotateResizeIcon?.visible || false,
         };
         coverageStates.set(obj, state);
-        [obj.coverageArea, obj.leftResizeIcon, obj.rightResizeIcon, obj.rotateResizeIcon].filter(Boolean).forEach((item) => this.fabricCanvas.remove(item));
+
+        const itemsToRemove = [obj.coverageArea, obj.leftResizeIcon, obj.rightResizeIcon, obj.rotateResizeIcon].filter(Boolean);
+
+        itemsToRemove.forEach((item) => this.fabricCanvas.remove(item));
       }
     });
     return coverageStates;

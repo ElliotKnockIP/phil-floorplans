@@ -1,8 +1,9 @@
-// DeviceSettings class manages global device settings and zoom controls
+// Manages global configuration and visual styles for all devices on the canvas
 import { setTextVisibility } from "../sidebar/sidebar-utils.js";
 import { DeviceFactory } from "./DeviceFactory.js";
 
 export class DeviceSettings {
+  // Initialize settings with default values and canvas reference
   constructor(fabricCanvas) {
     this.fabricCanvas = fabricCanvas;
     this.globalIconSize = 30;
@@ -23,7 +24,7 @@ export class DeviceSettings {
     this.setupDeviceHoverEvents();
   }
 
-  // Set global default values
+  // Export local settings to the global window object for cross-module access
   setGlobalDefaults() {
     const globalDefaults = {
       defaultDeviceIconSize: this.globalIconSize,
@@ -39,15 +40,16 @@ export class DeviceSettings {
     Object.assign(window, globalDefaults);
   }
 
-  // Get all device groups on canvas
+  // Retrieve all objects on the canvas that are identified as devices
   getAllDeviceGroups() {
     return this.fabricCanvas.getObjects().filter((obj) => obj.type === "group" && obj.deviceType);
   }
 
-  // Update device icon size
+  // Resize a specific device icon and its associated elements
   updateDeviceIconSize(group, size) {
     if (!group || !group.getObjects) return;
 
+    // Re-attach label behavior to ensure correct positioning after scale change
     DeviceFactory.attachLabelBehavior(group, group.textObject, this.fabricCanvas);
 
     const clampedSize = Math.max(1, Math.min(100, parseInt(size) || 30));
@@ -60,17 +62,20 @@ export class DeviceSettings {
     if (imageObj && circleObj) {
       const baseCircleRadius = 20;
 
+      // Scale the icon image
       imageObj.set({
         scaleX: scaleFactor * (30 / imageObj.width),
         scaleY: scaleFactor * (30 / imageObj.height),
       });
 
+      // Scale the background circle
       circleObj.set({
         radius: baseCircleRadius * scaleFactor,
         scaleX: 1,
         scaleY: 1,
       });
 
+      // Update group dimensions
       group.set({
         scaleX: 1,
         scaleY: 1,
@@ -78,7 +83,7 @@ export class DeviceSettings {
         height: circleObj.radius * 2,
       });
 
-      // Update text position and size
+      // Adjust label font size and position
       if (group.textObject) {
         const fontSize = 12 * scaleFactor;
 
@@ -88,7 +93,7 @@ export class DeviceSettings {
         DeviceFactory.applyLabelPosition(group);
       }
 
-      // Update coverage if exists
+      // Refresh camera coverage area if it exists
       if (group.coverageConfig && group.createOrUpdateCoverageArea) {
         group.createOrUpdateCoverageArea();
       }
@@ -97,7 +102,7 @@ export class DeviceSettings {
     }
   }
 
-  // Update device color
+  // Change the background circle color for a device
   updateDeviceColor(group, color) {
     if (!group || !group.getObjects) return;
     const circleObj = group.getObjects().find((obj) => obj.type === "circle");
@@ -107,19 +112,19 @@ export class DeviceSettings {
     }
   }
 
-  // Update device text color
+  // Change the text color for a device label
   updateDeviceTextColor(group, color) {
     if (!group || !group.textObject) return;
     group.textObject.set({ fill: color });
   }
 
-  // Update device font
+  // Change the font family for a device label
   updateDeviceFont(group, font) {
     if (!group || !group.textObject) return;
     group.textObject.set({ fontFamily: font });
   }
 
-  // Update device text background
+  // Toggle the semi-transparent background for a device label
   updateDeviceTextBackground(group, showBackground) {
     if (!group || !group.textObject) return;
     group.textObject.set({
@@ -127,13 +132,13 @@ export class DeviceSettings {
     });
   }
 
-  // Update device bold text
+  // Toggle bold styling for a device label
   updateDeviceBoldText(group, isBold) {
     if (!group || !group.textObject) return;
     group.textObject.set({ fontWeight: isBold ? "bold" : "normal" });
   }
 
-  // Check if device is complete
+  // Determine if all required fields for a device have been filled out
   isDeviceComplete(group) {
     if (!group) return false;
     const deviceName = group.textObject?.text || "";
@@ -142,22 +147,17 @@ export class DeviceSettings {
     const partNumber = group.partNumber || "";
     const stockNumber = group.stockNumber || "";
 
-    return (
-      deviceName.trim() !== "" &&
-      mounted.trim() !== "" &&
-      location.trim() !== "" &&
-      partNumber.trim() !== "" &&
-      stockNumber.trim() !== ""
-    );
+    return deviceName.trim() !== "" && mounted.trim() !== "" && location.trim() !== "" && partNumber.trim() !== "" && stockNumber.trim() !== "";
   }
 
-  // Update device complete indicator
+  // Change device color to green if complete, or revert to original color
   updateDeviceCompleteIndicator(group) {
     if (!group || !group.getObjects) return;
 
     const circleObj = group.getObjects().find((obj) => obj.type === "circle");
     if (!circleObj) return;
 
+    // Store original color before changing to green
     if (!group.originalCircleColor) {
       group.originalCircleColor = circleObj.fill;
     }
@@ -171,7 +171,7 @@ export class DeviceSettings {
     this.fabricCanvas.renderAll();
   }
 
-  // Handle device hover
+  // Show or hide labels when hovering over devices if global visibility is off
   handleDeviceHover(group, isHover) {
     if (this.globalIconTextVisible || !group.textObject) return;
     if (group.deviceType === "text-device") return;
@@ -189,13 +189,13 @@ export class DeviceSettings {
     this.fabricCanvas.renderAll();
   }
 
-  // Ensure group label behavior
+  // Ensure the label behavior is correctly attached to a group
   ensureGroupLabelBehavior(group) {
     if (!group || !group.textObject) return;
     DeviceFactory.attachLabelBehavior(group, group.textObject, this.fabricCanvas);
   }
 
-  // Update all icon sizes
+  // Apply a new icon size to all devices on the canvas
   updateAllIconSizes(size) {
     this.globalIconSize = size;
     window.defaultDeviceIconSize = size;
@@ -203,7 +203,7 @@ export class DeviceSettings {
     this.fabricCanvas.renderAll();
   }
 
-  // Update all icon text visibility
+  // Toggle label visibility for all devices
   updateAllIconTextVisibility(visible) {
     this.globalIconTextVisible = visible;
     window.globalIconTextVisible = visible;
@@ -219,7 +219,7 @@ export class DeviceSettings {
     this.fabricCanvas.renderAll();
   }
 
-  // Update all device colors
+  // Apply a new background color to all device icons
   updateAllDeviceColors(color) {
     this.globalDeviceColor = color;
     window.globalDeviceColor = color;
@@ -227,7 +227,7 @@ export class DeviceSettings {
     this.fabricCanvas.renderAll();
   }
 
-  // Update all text colors
+  // Apply a new text color to all device labels
   updateAllTextColors(color) {
     this.globalTextColor = color;
     window.globalTextColor = color;
@@ -235,7 +235,7 @@ export class DeviceSettings {
     this.fabricCanvas.renderAll();
   }
 
-  // Update all fonts
+  // Apply a new font family to all device labels
   updateAllFonts(font) {
     this.globalFont = font;
     window.globalFont = font;
@@ -243,17 +243,15 @@ export class DeviceSettings {
     this.fabricCanvas.renderAll();
   }
 
-  // Update all text backgrounds
+  // Toggle label backgrounds for all devices
   updateAllTextBackgrounds(showBackground) {
     this.globalTextBackground = showBackground;
     window.globalTextBackground = showBackground;
-    this.getAllDeviceGroups().forEach((group) =>
-      this.updateDeviceTextBackground(group, showBackground)
-    );
+    this.getAllDeviceGroups().forEach((group) => this.updateDeviceTextBackground(group, showBackground));
     this.fabricCanvas.renderAll();
   }
 
-  // Update all bold text
+  // Toggle bold styling for all device labels
   updateAllBoldText(isBold) {
     this.globalBoldText = isBold;
     window.globalBoldText = isBold;
@@ -261,7 +259,7 @@ export class DeviceSettings {
     this.fabricCanvas.renderAll();
   }
 
-  // Update all label drag
+  // Enable or disable label dragging for all devices
   updateAllLabelDrag(enabled) {
     this.globalLabelDragEnabled = enabled;
     window.globalLabelDragEnabled = enabled;
@@ -274,17 +272,17 @@ export class DeviceSettings {
     this.fabricCanvas.renderAll();
   }
 
-  // Update all complete indicators
+  // Refresh the completion status indicator for all devices
   updateAllCompleteIndicators() {
     this.getAllDeviceGroups().forEach((group) => this.updateDeviceCompleteIndicator(group));
   }
 
-  // Clamp zoom value
+  // Restrict zoom level to a safe range
   clampZoom(z) {
     return Math.min(10, Math.max(0.25, z));
   }
 
-  // Set zoom and center
+  // Zoom the canvas to a specific point and update the UI
   setZoomAndCenter(newZoom, centerPoint) {
     const vpt = this.fabricCanvas.viewportTransform;
     if (!centerPoint) {
@@ -296,7 +294,7 @@ export class DeviceSettings {
     this.updateZoomDisplay();
   }
 
-  // Update zoom display
+  // Update the zoom percentage text in the UI
   updateZoomDisplay() {
     const zoomPctEl = document.getElementById("zoom-percentage");
     if (!zoomPctEl) return;
@@ -304,13 +302,14 @@ export class DeviceSettings {
     zoomPctEl.textContent = pct + "%";
   }
 
-  // Update slider track
+  // Update the visual track of a range slider
   updateSliderTrack(slider, value, min, max) {
     const percentage = ((value - min) / (max - min)) * 100;
-    slider.style.background = `linear-gradient(to right, var(--orange-ip2, #f8794b) ${percentage}%, #e9ecef ${percentage}%)`;
+    const color = "var(--orange-ip2, #f8794b)";
+    slider.style.background = `linear-gradient(to right, ${color} ${percentage}%, #e9ecef ${percentage}%)`;
   }
 
-  // Initialize settings listeners
+  // Bind UI elements to settings logic
   initializeSettingsListeners() {
     // Zoom controls
     const zoomOutBtn = document.getElementById("zoom-out-btn");
@@ -344,9 +343,7 @@ export class DeviceSettings {
       globalFontSelect: document.getElementById("global-font-select"),
       globalTextBackgroundToggle: document.getElementById("global-text-background-toggle"),
       globalBoldTextToggle: document.getElementById("global-bold-text-toggle"),
-      globalCompleteDeviceIndicatorToggle: document.getElementById(
-        "global-complete-device-indicator-toggle"
-      ),
+      globalCompleteDeviceIndicatorToggle: document.getElementById("global-complete-device-indicator-toggle"),
       globalLabelDragToggle: document.getElementById("global-label-drag-toggle"),
     };
 
@@ -428,6 +425,7 @@ export class DeviceSettings {
       });
     }
 
+    // Label drag toggle
     if (elements.globalLabelDragToggle) {
       elements.globalLabelDragToggle.addEventListener("change", (e) => {
         this.updateAllLabelDrag(e.target.checked);
@@ -443,39 +441,26 @@ export class DeviceSettings {
       }
     }
 
-    if (elements.globalIconTextToggle)
-      elements.globalIconTextToggle.checked = this.globalIconTextVisible;
-    if (elements.globalDeviceColorPicker)
-      elements.globalDeviceColorPicker.value = this.globalDeviceColor;
+    if (elements.globalIconTextToggle) elements.globalIconTextToggle.checked = this.globalIconTextVisible;
+    if (elements.globalDeviceColorPicker) elements.globalDeviceColorPicker.value = this.globalDeviceColor;
     if (elements.globalTextColorPicker) elements.globalTextColorPicker.value = this.globalTextColor;
     if (elements.globalFontSelect) elements.globalFontSelect.value = this.globalFont;
-    if (elements.globalTextBackgroundToggle)
-      elements.globalTextBackgroundToggle.checked = this.globalTextBackground;
+    if (elements.globalTextBackgroundToggle) elements.globalTextBackgroundToggle.checked = this.globalTextBackground;
     if (elements.globalBoldTextToggle) elements.globalBoldTextToggle.checked = this.globalBoldText;
-    if (elements.globalCompleteDeviceIndicatorToggle)
+    if (elements.globalCompleteDeviceIndicatorToggle) {
       elements.globalCompleteDeviceIndicatorToggle.checked = this.globalCompleteDeviceIndicator;
-    if (elements.globalLabelDragToggle)
-      elements.globalLabelDragToggle.checked = this.globalLabelDragEnabled;
+    }
+    if (elements.globalLabelDragToggle) elements.globalLabelDragToggle.checked = this.globalLabelDragEnabled;
   }
 
-  // Apply settings from save
+  // Restore settings from a saved project state
   applySettingsFromSave(savedSettings = {}) {
     if (!savedSettings || typeof savedSettings !== "object") {
       this.updateAllCompleteIndicators();
       return;
     }
 
-    const {
-      defaultDeviceIconSize,
-      globalIconTextVisible: savedTextVisible,
-      globalDeviceColor: savedDeviceColor,
-      globalTextColor: savedTextColor,
-      globalFont: savedFont,
-      globalTextBackground: savedTextBackground,
-      globalBoldText: savedBoldText,
-      globalCompleteDeviceIndicator: savedCompleteIndicator,
-      globalLabelDragEnabled: savedLabelDragEnabled,
-    } = savedSettings;
+    const { defaultDeviceIconSize, globalIconTextVisible: savedTextVisible, globalDeviceColor: savedDeviceColor, globalTextColor: savedTextColor, globalFont: savedFont, globalTextBackground: savedTextBackground, globalBoldText: savedBoldText, globalCompleteDeviceIndicator: savedCompleteIndicator, globalLabelDragEnabled: savedLabelDragEnabled } = savedSettings;
 
     const elements = {
       slider: document.getElementById("global-icon-size-slider"),
@@ -525,8 +510,7 @@ export class DeviceSettings {
 
     if (typeof savedTextBackground === "boolean") {
       this.updateAllTextBackgrounds(savedTextBackground);
-      if (elements.textBackgroundToggle)
-        elements.textBackgroundToggle.checked = savedTextBackground;
+      if (elements.textBackgroundToggle) elements.textBackgroundToggle.checked = savedTextBackground;
     }
 
     if (typeof savedBoldText === "boolean") {
@@ -538,8 +522,7 @@ export class DeviceSettings {
       this.globalCompleteDeviceIndicator = savedCompleteIndicator;
       window.globalCompleteDeviceIndicator = savedCompleteIndicator;
       this.updateAllCompleteIndicators();
-      if (elements.completeIndicatorToggle)
-        elements.completeIndicatorToggle.checked = savedCompleteIndicator;
+      if (elements.completeIndicatorToggle) elements.completeIndicatorToggle.checked = savedCompleteIndicator;
     } else {
       this.updateAllCompleteIndicators();
     }
@@ -550,7 +533,7 @@ export class DeviceSettings {
     }
   }
 
-  // Setup device hover events
+  // Register mouse events for device hover effects
   setupDeviceHoverEvents() {
     this.fabricCanvas.on("mouse:over", (e) => {
       const target = e.target;
@@ -567,10 +550,11 @@ export class DeviceSettings {
     });
   }
 
-  // Initialize everything
+  // Initialize the settings manager and expose its API
   init() {
     this.updateAllLabelDrag(this.globalLabelDragEnabled);
 
+    // Apply any settings that were queued before initialization
     if (window.pendingGlobalSettings) {
       try {
         this.applySettingsFromSave(window.pendingGlobalSettings);
@@ -607,7 +591,7 @@ export class DeviceSettings {
   }
 }
 
-// Initialize device settings when canvas is ready
+// Initialize device settings when the canvas is ready
 document.addEventListener("canvas:initialized", (e) => {
   const fabricCanvas = e.detail.canvas;
   if (!fabricCanvas) return;

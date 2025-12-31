@@ -1,4 +1,4 @@
-// TextDevices class manages custom text device creation and management
+// Manages custom text device creation and storage
 export class TextDevices {
   constructor() {
     this.storageKey = "textDevicesV1";
@@ -17,7 +17,7 @@ export class TextDevices {
             .filter((x) => x?.id && x?.text)
             .map((x) => ({
               ...x,
-              name: x.name || x.text, // Backward compatibility
+              name: x.name || x.text,
             }))
         : [];
     } catch (e) {
@@ -26,7 +26,7 @@ export class TextDevices {
     }
   }
 
-  // Save text devices to local storage
+  // Save text devices list to local storage
   saveTextDevices(list) {
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(list));
@@ -35,17 +35,18 @@ export class TextDevices {
     }
   }
 
-  // Generate unique ID
+  // Generate a unique ID for a new text device
   generateId() {
     return "td_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
   }
 
-  // Create preview element for text device
+  // Create a preview element for the text device in the sidebar
   createTextDevicePreview(text, shape, bgColor, textColor) {
     const container = document.createElement("div");
     container.style.position = "relative";
     container.style.display = "inline-block";
 
+    // Apply styles based on the selected shape
     if (shape === "rectangle") {
       Object.assign(container.style, {
         backgroundColor: bgColor,
@@ -76,7 +77,7 @@ export class TextDevices {
     return container;
   }
 
-  // Create device item element for list
+  // Create the HTML element for a text device in the sidebar list
   createDeviceItem(device) {
     const wrapper = document.createElement("div");
     wrapper.className = "device-wrapper";
@@ -103,7 +104,7 @@ export class TextDevices {
     iconBox.appendChild(this.createTextDevicePreview(device.text, device.shape, device.bgColor, device.textColor));
     item.appendChild(iconBox);
 
-    // Delete button
+    // Create and setup the delete button for the text device
     const delBtn = document.createElement("button");
     delBtn.type = "button";
     delBtn.className = "device-delete-btn";
@@ -126,12 +127,13 @@ export class TextDevices {
     return wrapper;
   }
 
-  // Render text devices list
+  // Render the list of text devices in the sidebar
   renderList() {
     const listEl = document.getElementById("text-devices-list");
     if (!listEl) return;
     listEl.innerHTML = "";
 
+    // Show empty message if no text devices exist
     if (!this.textDevices.length) {
       const empty = document.createElement("div");
       empty.className = "text-muted p-2";
@@ -142,6 +144,7 @@ export class TextDevices {
 
     let rowEl = null;
     this.textDevices.forEach((device, idx) => {
+      // Create a new row every 3 items
       if (idx % 3 === 0) {
         rowEl = document.createElement("div");
         rowEl.className = "device-row";
@@ -152,7 +155,7 @@ export class TextDevices {
     this.setupDragHandlers();
   }
 
-  // Setup modal buttons
+  // Setup event listeners for modal buttons
   setupButtons() {
     const addBtn = document.getElementById("add-text-device-btn");
     const saveBtn = document.getElementById("save-text-device-btn");
@@ -160,7 +163,7 @@ export class TextDevices {
     if (addBtn) {
       addBtn.addEventListener("click", () => {
         const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("text-device-modal"));
-        // Reset form
+        // Reset form inputs to default values
         const inputs = {
           "text-device-text": "",
           "text-device-name": "",
@@ -184,11 +187,13 @@ export class TextDevices {
         const bgColorInput = document.getElementById("text-device-bg-color");
         const textColorInput = document.getElementById("text-device-text-color");
 
+        // Validate that text was entered
         if (!textInput?.value.trim()) {
           alert("Please enter device text");
           return;
         }
 
+        // Create the new text device entry object
         const entry = {
           id: this.generateId(),
           text: textInput.value.trim(),
@@ -209,7 +214,7 @@ export class TextDevices {
     }
   }
 
-  // Setup drag handlers
+  // Setup drag and drop event listeners for text devices
   setupDragHandlers() {
     const items = document.querySelectorAll(".text-device-item");
     items.forEach((item) => {
@@ -223,6 +228,7 @@ export class TextDevices {
           textColor: item.dataset.textColor,
         };
 
+        // Set drag data payload
         try {
           e.dataTransfer.setData("application/json", JSON.stringify(payload));
         } catch (_) {}
@@ -234,7 +240,7 @@ export class TextDevices {
     });
   }
 
-  // Create text device on canvas
+  // Create a text device object on the fabric canvas
   createTextDeviceOnCanvas(fabricCanvas, canvasX, canvasY, payload) {
     if (!payload || payload.type !== "text-device") return false;
 
@@ -242,7 +248,7 @@ export class TextDevices {
     const scaleFactor = Math.max(1, Math.min(100, window.defaultDeviceIconSize || 30)) / 30;
     const fontSize = 14 * scaleFactor;
 
-    // Create shape object
+    // Create the background shape for the text device
     let shapeObj = null;
     if (shape === "rectangle") {
       const tempText = new fabric.Text(text, {
@@ -270,7 +276,7 @@ export class TextDevices {
       });
     }
 
-    // Create text object
+    // Create the text object for the canvas
     const textObj = new fabric.Text(text, {
       fontSize,
       fontFamily: "Poppins, sans-serif",
@@ -280,7 +286,7 @@ export class TextDevices {
       originY: "center",
     });
 
-    // Create group
+    // Group the shape and text together
     const groupItems = shape === "none" ? [textObj] : [shapeObj, textObj];
     const group = new fabric.Group(groupItems, {
       left: canvasX,
@@ -294,7 +300,7 @@ export class TextDevices {
       scaleFactor,
     });
 
-    // Set properties
+    // Set device properties and configuration
     if (!group.id) {
       group.id = `text_device_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
     }
@@ -302,10 +308,11 @@ export class TextDevices {
     group.textDeviceConfig = { text, shape, bgColor, textColor };
     group.initialLabelText = text;
 
-    // Initialize device properties
-    ["location", "mountedPosition", "partNumber", "stockNumber", "ipAddress", "subnetMask", "gatewayAddress", "macAddress"].forEach((prop) => (group[prop] = ""));
+    // Initialize empty device metadata fields
+    const metadataFields = ["location", "mountedPosition", "partNumber", "stockNumber", "ipAddress", "subnetMask", "gatewayAddress", "macAddress"];
+    metadataFields.forEach((prop) => (group[prop] = ""));
 
-    // Create label (hidden by default)
+    // Create a label that appears below the device (hidden by default)
     const labelText = new fabric.Text(text, {
       left: canvasX,
       top: canvasY + (shape === "circle" ? 20 * scaleFactor : 30 * scaleFactor) + 10,
@@ -326,7 +333,7 @@ export class TextDevices {
     group.textObject = labelText;
     group.labelHidden = true;
 
-    // Event handlers
+    // Update label position when the device is moved
     group.on("moving", () => {
       const groupCenter = group.getCenterPoint();
       const currentScaleFactor = group.scaleFactor || 1;
@@ -339,6 +346,7 @@ export class TextDevices {
       fabricCanvas.requestRenderAll();
     });
 
+    // Show device properties when selected
     group.isFirstSelectionAfterDrop = true;
     group.on("selected", () => {
       if (window.suppressDeviceProperties) return;
@@ -353,18 +361,19 @@ export class TextDevices {
       fabricCanvas.renderAll();
     });
 
+    // Hide properties on deselection and cleanup on removal
     group.on("deselected", () => window.hideDeviceProperties?.());
     group.on("removed", () => {
       if (labelText) fabricCanvas.remove(labelText);
       fabricCanvas.renderAll();
     });
 
-    // Add to canvas
+    // Add the group to the canvas and render
     fabricCanvas.add(group);
     group.bringToFront();
     fabricCanvas.setActiveObject(group);
 
-    // Update device complete indicator
+    // Update the device completion status indicator
     setTimeout(() => {
       if (typeof window.updateDeviceCompleteIndicator === "function") {
         window.updateDeviceCompleteIndicator(group);
@@ -375,7 +384,7 @@ export class TextDevices {
     return true;
   }
 
-  // Patch drop handler to support text devices
+  // Patch the global drop handler to support text device data
   patchDropHandler() {
     const originalHandler = window.__getCustomDropPayload;
     window.__getCustomDropPayload = function (dataTransfer) {
@@ -389,12 +398,14 @@ export class TextDevices {
     };
   }
 
-  // Patch device creation function
+  // Expose the text device creation function globally
   patchDeviceCreation() {
-    window.createTextDeviceOnCanvas = (fabricCanvas, canvasX, canvasY, payload) => this.createTextDeviceOnCanvas(fabricCanvas, canvasX, canvasY, payload);
+    window.createTextDeviceOnCanvas = (fabricCanvas, canvasX, canvasY, payload) => {
+      return this.createTextDeviceOnCanvas(fabricCanvas, canvasX, canvasY, payload);
+    };
   }
 
-  // Initialize the text devices system
+  // Initialize the text devices system and setup listeners
   init() {
     const initialize = () => {
       this.renderList();
@@ -403,13 +414,14 @@ export class TextDevices {
       this.patchDeviceCreation();
     };
 
+    // Wait for HTML includes to load if necessary
     if (document.getElementById("save-text-device-btn")) {
       initialize();
     } else {
       document.addEventListener("htmlIncludesLoaded", initialize);
     }
 
-    // Add canvas drop listener
+    // Setup drop listener on the canvas container
     document.addEventListener("canvas:initialized", (e) => {
       const fabricCanvas = e.detail.canvas;
       if (!fabricCanvas) return;
@@ -420,7 +432,8 @@ export class TextDevices {
       canvasContainer.addEventListener(
         "drop",
         (e) => {
-          const customPayload = typeof window.__getCustomDropPayload === "function" ? window.__getCustomDropPayload(e.dataTransfer) : null;
+          const getPayload = window.__getCustomDropPayload;
+          const customPayload = typeof getPayload === "function" ? getPayload(e.dataTransfer) : null;
 
           if (customPayload?.type === "text-device") {
             e.preventDefault();
@@ -446,5 +459,5 @@ export class TextDevices {
   }
 }
 
-// Initialize text devices
+// Create instance of TextDevices
 new TextDevices();

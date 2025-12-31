@@ -19,15 +19,13 @@ export class NetworkLink {
   init() {
     const networkLinkBtn = document.getElementById("network-link-btn");
 
+    // Listen for connection restriction events from topology manager
     if (!window.__networkLinkRestrictionListener) {
       window.__networkLinkRestrictionListener = (event) => {
         const message = event?.detail?.message;
         this.showRestrictionWarning(message);
       };
-      document.addEventListener(
-        "topology:connection-blocked",
-        window.__networkLinkRestrictionListener
-      );
+      document.addEventListener("topology:connection-blocked", window.__networkLinkRestrictionListener);
     }
 
     if (networkLinkBtn) {
@@ -45,6 +43,7 @@ export class NetworkLink {
       });
     }
 
+    // Expose cleanup function globally
     window.cleanupNetworkLinkTempObjects = () => this.cleanupTempObjects();
   }
 
@@ -76,10 +75,12 @@ export class NetworkLink {
     const pointer = this.fabricCanvas.getPointer(e.e);
     let target = this.fabricCanvas.findTarget(e.e);
 
+    // Ignore connection segments and split points as targets
     if (target && (target.isConnectionSegment || target.isNetworkSplitPoint)) {
       target = this.findDeviceAtPoint(pointer);
     }
 
+    // Ensure target is a device group
     if (!target || target.type !== "group" || !target.deviceType) {
       target = this.findDeviceAtPoint(pointer);
     }
@@ -89,6 +90,7 @@ export class NetworkLink {
     }
 
     if (!this.isConnecting) {
+      // Set source device on first click
       this.sourceDevice = target;
       this.sourceDeviceId = this.getDeviceId(target);
       this.isConnecting = true;
@@ -100,6 +102,7 @@ export class NetworkLink {
       this.showConnectionInstruction();
     } else {
       const targetDeviceId = this.getDeviceId(target);
+      // If clicking the same device, reset connection state
       if (targetDeviceId && targetDeviceId === this.sourceDeviceId) {
         this.sourceDevice = target;
         if (this.tempConnectionLine) {
@@ -114,6 +117,7 @@ export class NetworkLink {
         return;
       }
 
+      // If clicking a different device while not active, set it as new source
       if (!this.isActiveConnecting && targetDeviceId !== this.sourceDeviceId) {
         this.sourceDevice = target;
         this.sourceDeviceId = targetDeviceId;
@@ -125,6 +129,7 @@ export class NetworkLink {
         return;
       }
 
+      // Create connection via topology manager
       let connectionCreated = false;
       if (window.topologyManager && !this.createCooldown) {
         const created = window.topologyManager.createConnection(this.sourceDevice, target);
@@ -161,16 +166,14 @@ export class NetworkLink {
       this.fabricCanvas.remove(this.tempConnectionLine);
     }
 
-    this.tempConnectionLine = new fabric.Line(
-      [sourceCenter.x, sourceCenter.y, pointer.x, pointer.y],
-      {
-        stroke: "#2196F3",
-        strokeWidth: 2,
-        selectable: false,
-        evented: false,
-        opacity: 0.7,
-      }
-    );
+    // Create preview line from source to pointer
+    this.tempConnectionLine = new fabric.Line([sourceCenter.x, sourceCenter.y, pointer.x, pointer.y], {
+      stroke: "#2196F3",
+      strokeWidth: 2,
+      selectable: false,
+      evented: false,
+      opacity: 0.7,
+    });
 
     this.fabricCanvas.add(this.tempConnectionLine);
     this.fabricCanvas.requestRenderAll();
@@ -201,25 +204,21 @@ export class NetworkLink {
 
   // Find a device at the given pointer position
   findDeviceAtPoint(pointer) {
-    const devices = this.fabricCanvas
-      .getObjects()
-      .filter((obj) => obj.type === "group" && obj.deviceType);
+    const devices = this.fabricCanvas.getObjects().filter((obj) => obj.type === "group" && obj.deviceType);
 
     for (const device of devices) {
       try {
         const bounds = device.getBoundingRect();
-        if (
-          pointer.x >= bounds.left &&
-          pointer.x <= bounds.left + bounds.width &&
-          pointer.y >= bounds.top &&
-          pointer.y <= bounds.top + bounds.height
-        ) {
+        // Check if pointer is within bounding box
+        const inX = pointer.x >= bounds.left && pointer.x <= bounds.left + bounds.width;
+        const inY = pointer.y >= bounds.top && pointer.y <= bounds.top + bounds.height;
+        if (inX && inY) {
+          // Check if pointer is actually inside the device shape
           if (device.containsPoint && device.containsPoint(pointer)) {
             return device;
           }
-          const center = device.getCenterPoint
-            ? device.getCenterPoint()
-            : { x: device.left, y: device.top };
+          // Fallback to distance check for small devices
+          const center = device.getCenterPoint ? device.getCenterPoint() : { x: device.left, y: device.top };
           const distance = Math.hypot(pointer.x - center.x, pointer.y - center.y);
           if (distance < 50) {
             return device;
@@ -246,20 +245,6 @@ export class NetworkLink {
     if (!instructionDiv) {
       instructionDiv = document.createElement("div");
       instructionDiv.id = "network-link-instruction";
-      instructionDiv.style.cssText = `
-        position: fixed;
-        top: 20px;
-        left: 50%;
-        transform: translateX(-50%);
-        background: rgba(33, 150, 243, 0.95);
-        color: white;
-        padding: 10px 20px;
-        border-radius: 5px;
-        z-index: 9999;
-        font-family: Poppins, sans-serif;
-        font-size: 14px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-      `;
       document.body.appendChild(instructionDiv);
     }
     return instructionDiv;
@@ -273,8 +258,7 @@ export class NetworkLink {
     }
     const instructionDiv = this.ensureInstructionDiv();
     instructionDiv.style.background = "rgba(33, 150, 243, 0.95)";
-    instructionDiv.textContent =
-      "Click on another device to create network connection. Click the source device again to connect it to another device.";
+    instructionDiv.textContent = "Click on another device to create network connection. " + "Click the source device again to connect it to another device.";
     instructionDiv.style.display = "block";
   }
 
@@ -283,12 +267,10 @@ export class NetworkLink {
     const instructionDiv = this.ensureInstructionDiv();
     if (instructionDiv) {
       instructionDiv.style.background = "rgba(33, 150, 243, 0.95)";
-      instructionDiv.textContent =
-        "Connection created! Click on another device to continue connecting from the same source, or press ESC to stop.";
+      instructionDiv.textContent = "Connection created! Click on another device to continue connecting from the same source, " + "or press ESC to stop.";
       setTimeout(() => {
         if (instructionDiv.style.display === "block") {
-          instructionDiv.textContent =
-            "Click on another device to create network connection from the same source.";
+          instructionDiv.textContent = "Click on another device to create network connection from the same source.";
         }
       }, 2000);
     }
@@ -310,13 +292,12 @@ export class NetworkLink {
   showRestrictionWarning(message) {
     const instructionDiv = this.ensureInstructionDiv();
     instructionDiv.style.background = "rgba(220, 53, 69, 0.95)";
-    instructionDiv.textContent =
-      message ||
-      "These devices cannot be linked. Use the same category or connect via Custom/Network devices.";
+    instructionDiv.textContent = message || "These devices cannot be linked. Use the same category or connect via Custom/Network devices.";
     instructionDiv.style.display = "block";
     if (this.restrictionTimeout) {
       clearTimeout(this.restrictionTimeout);
     }
+    // Reset instruction after a delay
     this.restrictionTimeout = setTimeout(() => {
       this.restrictionTimeout = null;
       if (this.isConnecting) {
@@ -328,6 +309,7 @@ export class NetworkLink {
   }
 }
 
+// Helper function to initialize network link tool
 export function setupNetworkLinkTool(fabricCanvas) {
   new NetworkLink(fabricCanvas);
 }

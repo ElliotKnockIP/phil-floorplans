@@ -1,5 +1,8 @@
 import { closeSidebar, startTool, stopCurrentTool, setupDeletion, setupColorPicker, setupTextColorPicker, setupBackgroundColorPicker, applyStandardStyling } from "./drawing-utils.js";
 
+// Helper to identify text objects
+const isTextObject = (obj) => obj.type === "i-text" || obj.type === "textbox" || obj.type === "text";
+
 // Sets up text drawing tools
 export function setupTextTools(fabricCanvas) {
   const textBtn = document.getElementById("add-text-btn");
@@ -92,15 +95,16 @@ function setupTextSizeDropdown(fabricCanvas) {
     dropdown.value = "";
   });
 
+  // Updates dropdown to match selected text size
   function updateDropdownValue() {
     const activeObject = fabricCanvas.getActiveObject();
     if (activeObject) {
       let textSize = null;
 
-      if (activeObject.type === "i-text" || activeObject.type === "textbox" || activeObject.type === "text") {
+      if (isTextObject(activeObject)) {
         textSize = activeObject.fontSize;
       } else if (activeObject.type === "group" && activeObject._objects) {
-        const textObj = activeObject._objects.find((obj) => obj.type === "i-text" || obj.type === "textbox" || obj.type === "text");
+        const textObj = activeObject._objects.find(isTextObject);
         if (textObj) textSize = textObj.fontSize;
       }
 
@@ -117,23 +121,24 @@ function setupTextSizeDropdown(fabricCanvas) {
 function setupBoldToggle(fabricCanvas) {
   const boldBtn = document.getElementById("bold-toggle-btn");
 
+  // Toggles bold weight on selected text
   boldBtn.addEventListener("click", () => {
     const activeObject = fabricCanvas.getActiveObject();
 
     if (activeObject) {
       let isBold = false;
 
-      if (activeObject.type === "i-text" || activeObject.type === "textbox" || activeObject.type === "text") {
+      if (isTextObject(activeObject)) {
         isBold = activeObject.fontWeight === "bold";
         activeObject.set("fontWeight", isBold ? "normal" : "bold");
         fabricCanvas.renderAll();
         boldBtn.style.background = isBold ? "white" : "#f8794b";
       } else if (activeObject.type === "group" && activeObject._objects) {
-        const textObj = activeObject._objects.find((obj) => obj.type === "i-text" || obj.type === "textbox" || obj.type === "text");
+        const textObj = activeObject._objects.find(isTextObject);
         if (textObj) {
           isBold = textObj.fontWeight === "bold";
           activeObject._objects.forEach((obj) => {
-            if (obj.type === "i-text" || obj.type === "textbox" || obj.type === "text") {
+            if (isTextObject(obj)) {
               obj.set("fontWeight", isBold ? "normal" : "bold");
             }
           });
@@ -153,15 +158,16 @@ function setupBoldToggle(fabricCanvas) {
     boldBtn.style.background = "white";
   });
 
+  // Updates bold button highlight based on selection
   function updateBoldButton() {
     const activeObject = fabricCanvas.getActiveObject();
     if (activeObject) {
       let isBold = false;
 
-      if (activeObject.type === "i-text" || activeObject.type === "textbox" || activeObject.type === "text") {
+      if (isTextObject(activeObject)) {
         isBold = activeObject.fontWeight === "bold";
       } else if (activeObject.type === "group" && activeObject._objects) {
-        const textObj = activeObject._objects.find((obj) => obj.type === "i-text" || obj.type === "textbox" || obj.type === "text");
+        const textObj = activeObject._objects.find(isTextObject);
         if (textObj) isBold = textObj.fontWeight === "bold";
       }
 
@@ -174,23 +180,24 @@ function setupBoldToggle(fabricCanvas) {
 function setupItalicToggle(fabricCanvas) {
   const italicBtn = document.getElementById("italic-toggle-btn");
 
+  // Toggles italic style on selected text
   italicBtn.addEventListener("click", () => {
     const activeObject = fabricCanvas.getActiveObject();
 
     if (activeObject) {
       let isItalic = false;
 
-      if (activeObject.type === "i-text" || activeObject.type === "textbox" || activeObject.type === "text") {
+      if (isTextObject(activeObject)) {
         isItalic = activeObject.fontStyle === "italic";
         activeObject.set("fontStyle", isItalic ? "normal" : "italic");
         fabricCanvas.renderAll();
         italicBtn.style.background = isItalic ? "white" : "#f8794b";
       } else if (activeObject.type === "group" && activeObject._objects) {
-        const textObj = activeObject._objects.find((obj) => obj.type === "i-text" || obj.type === "textbox" || obj.type === "text");
+        const textObj = activeObject._objects.find(isTextObject);
         if (textObj) {
           isItalic = textObj.fontStyle === "italic";
           activeObject._objects.forEach((obj) => {
-            if (obj.type === "i-text" || obj.type === "textbox" || obj.type === "text") {
+            if (isTextObject(obj)) {
               obj.set("fontStyle", isItalic ? "normal" : "italic");
             }
           });
@@ -210,15 +217,16 @@ function setupItalicToggle(fabricCanvas) {
     italicBtn.style.background = "white";
   });
 
+  // Updates italic button highlight based on selection
   function updateItalicButton() {
     const activeObject = fabricCanvas.getActiveObject();
     if (activeObject) {
       let isItalic = false;
 
-      if (activeObject.type === "i-text" || activeObject.type === "textbox" || activeObject.type === "text") {
+      if (isTextObject(activeObject)) {
         isItalic = activeObject.fontStyle === "italic";
       } else if (activeObject.type === "group" && activeObject._objects) {
-        const textObj = activeObject._objects.find((obj) => obj.type === "i-text" || obj.type === "textbox" || obj.type === "text");
+        const textObj = activeObject._objects.find(isTextObject);
         if (textObj) isItalic = textObj.fontStyle === "italic";
       }
 

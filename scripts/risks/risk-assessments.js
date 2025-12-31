@@ -1,4 +1,4 @@
-// Unified Risk Assessment helpers and shared utilities
+// Get value from an input element by ID
 export const getValue = (id) => {
   const el = document.getElementById(id);
   if (!el) return "";
@@ -6,6 +6,7 @@ export const getValue = (id) => {
   return el.value || "";
 };
 
+// Set value for an input element by ID
 export const setValue = (id, value) => {
   const el = document.getElementById(id);
   if (!el) return;
@@ -16,6 +17,7 @@ export const setValue = (id, value) => {
   }
 };
 
+// Get value from a group of radio buttons by name
 export const getRadioValue = (name) => {
   const radios = document.querySelectorAll(`input[name="${name}"]`);
   for (const radio of radios) {
@@ -24,6 +26,7 @@ export const getRadioValue = (name) => {
   return "";
 };
 
+// Set value for a group of radio buttons by name
 export const setRadioValue = (name, value) => {
   const radios = document.querySelectorAll(`input[name="${name}"]`);
   for (const radio of radios) {
@@ -34,7 +37,7 @@ export const setRadioValue = (name, value) => {
   }
 };
 
-// ----- Intruder dropdown linkage -----
+// Options for intruder premises use dropdowns
 const PREMISES_USE_OPTIONS = {
   domestic: [
     { value: "house", label: "House" },
@@ -70,6 +73,7 @@ const PREMISES_USE_OPTIONS = {
   other: [{ value: "other", label: "Other" }],
 };
 
+// Update the second premises use dropdown based on the first selection
 const updateIntruderPremisesUse2 = () => {
   const dropdown1 = document.getElementById("risk-premises-use-1");
   const dropdown2 = document.getElementById("risk-premises-use-2");
@@ -92,6 +96,7 @@ const updateIntruderPremisesUse2 = () => {
   }
 };
 
+// Initialize intruder risk assessment modal and events
 const initIntruderRisk = () => {
   const dropdown1 = document.getElementById("risk-premises-use-1");
   if (dropdown1) dropdown1.addEventListener("change", updateIntruderPremisesUse2);
@@ -106,6 +111,7 @@ const initIntruderRisk = () => {
   }
 };
 
+// Populate the condition assessment table with access points
 const updateConditionAssessmentTable = (tbodyId = "risk-condition-assessment-tbody", riskType = null) => {
   const tbody = document.getElementById(tbodyId);
   if (!tbody) return;
@@ -115,7 +121,7 @@ const updateConditionAssessmentTable = (tbodyId = "risk-condition-assessment-tbo
   const canvas = window.fabricCanvas;
   let accessPoints = canvas ? canvas.getObjects().filter((o) => o.accessPointName) : [];
 
-  // Filter by risk type if provided
+  // Filter access points by the specific risk type
   if (riskType) {
     accessPoints = accessPoints.filter((ap) => {
       if (riskType === "intruder") return !!ap.showInIntruder;
@@ -136,16 +142,23 @@ const updateConditionAssessmentTable = (tbodyId = "risk-condition-assessment-tbo
   accessPoints.forEach((ap) => {
     const row = document.createElement("tr");
 
-    // Access Point (Number/Label)
+    // Set access point name or label
     const nameCell = document.createElement("td");
     nameCell.textContent = ap.accessPointName || ap.accessPointLabel || "AP";
     row.appendChild(nameCell);
 
-    // Condition
+    // Create condition selection dropdown
     const conditionCell = document.createElement("td");
     const select = document.createElement("select");
     select.className = "form-select form-select-sm w-100";
-    select.innerHTML = '<option value="">Select...</option>' + '<option value="good">Good</option>' + '<option value="defective">Defective</option>' + '<option value="not-suitable">Not Suitable</option>' + '<option value="other">Other</option>' + '<option value="na">N/A</option>';
+    select.innerHTML = `
+      <option value="">Select...</option>
+      <option value="good">Good</option>
+      <option value="defective">Defective</option>
+      <option value="not-suitable">Not Suitable</option>
+      <option value="other">Other</option>
+      <option value="na">N/A</option>
+    `;
     select.value = ap.accessPointCondition || "";
     select.addEventListener("change", (e) => {
       ap.accessPointCondition = e.target.value;
@@ -153,7 +166,7 @@ const updateConditionAssessmentTable = (tbodyId = "risk-condition-assessment-tbo
     conditionCell.appendChild(select);
     row.appendChild(conditionCell);
 
-    // Notes
+    // Create notes input field
     const notesCell = document.createElement("td");
     const input = document.createElement("input");
     input.type = "text";
@@ -169,6 +182,7 @@ const updateConditionAssessmentTable = (tbodyId = "risk-condition-assessment-tbo
   });
 };
 
+// Populate a risk table based on a filter function
 const updateRiskTable = (tbodyId, filterFn) => {
   const tbody = document.getElementById(tbodyId);
   if (!tbody) return;
@@ -187,12 +201,12 @@ const updateRiskTable = (tbodyId, filterFn) => {
   filteredRisks.forEach((risk, index) => {
     const row = document.createElement("tr");
 
-    // Access Elevation (Risk Name)
+    // Set risk name or default label
     const nameCell = document.createElement("td");
     nameCell.textContent = risk.riskName || `Risk ${index + 1}`;
     row.appendChild(nameCell);
 
-    // Ease of Access
+    // Create ease of access selection dropdown
     const easeCell = document.createElement("td");
     const easeSelect = document.createElement("select");
     easeSelect.className = "form-select form-select-sm w-100";
@@ -211,7 +225,7 @@ const updateRiskTable = (tbodyId, filterFn) => {
     easeCell.appendChild(easeSelect);
     row.appendChild(easeCell);
 
-    // Notes
+    // Create risk notes input field
     const notesCell = document.createElement("td");
     const notesInput = document.createElement("input");
     notesInput.type = "text";
@@ -228,26 +242,31 @@ const updateRiskTable = (tbodyId, filterFn) => {
   });
 };
 
+// Update intruder risk table
 const updateIntruderRiskTable = () => {
   updateRiskTable("risk-access-tbody", (r) => !!r.showInIntruder);
 };
 
+// Update CCTV risk table
 const updateCctvRiskTable = () => {
   updateRiskTable("cctv-risk-access-tbody", (r) => !!r.showInCctv);
 };
 
+// Update access control risk table
 const updateAccessControlRiskTable = () => {
   updateRiskTable("access-control-risk-access-tbody", (r) => !!r.showInAccess);
 };
 
+// Update fire risk table
 const updateFireRiskTable = () => {
   updateRiskTable("fire-risk-access-tbody", (r) => !!r.showInFire);
 };
 
-// ----- Access control helpers -----
+// List of access points for access control assessment
 let accessControlAccessPoints = [];
 window.accessControlAccessPoints = accessControlAccessPoints;
 
+// Add a new access point to the access control assessment
 const addAccessControlAccessPoint = () => {
   const nameInput = document.getElementById("access-control-risk-new-access-point");
   const classificationSelect = document.getElementById("access-control-risk-new-classification");
@@ -291,7 +310,9 @@ const addAccessControlAccessPoint = () => {
     <td>${classificationLabels[classification] || classification}</td>
     <td>${optionLabels[option] || option.toUpperCase()}</td>
     <td>
-      <button type="button" class="btn btn-sm text-white" style="background-color: #f8794b; padding: 0.25rem 0.5rem;" onclick="removeAccessControlAccessPoint('${rowId}')">X</button>
+      <button type="button" 
+              class="btn btn-sm text-white btn-remove-ap" 
+              onclick="removeAccessControlAccessPoint('${rowId}')">X</button>
     </td>
   `;
 
@@ -307,6 +328,7 @@ const addAccessControlAccessPoint = () => {
   if (naRadio) naRadio.checked = true;
 };
 
+// Remove an access point from the access control assessment
 window.removeAccessControlAccessPoint = (rowId) => {
   const row = document.getElementById(rowId);
   if (row) row.remove();
@@ -314,6 +336,7 @@ window.removeAccessControlAccessPoint = (rowId) => {
   window.accessControlAccessPoints = accessControlAccessPoints;
 };
 
+// Reset the access control assessment form
 const resetAccessControlForm = () => {
   const modal = document.getElementById("access-control-risk-assessment-modal");
   if (!modal) return;
@@ -333,6 +356,7 @@ const resetAccessControlForm = () => {
   if (defaultRadio) defaultRadio.checked = true;
 };
 
+// Initialize access control risk assessment modal and events
 const initAccessControlRisk = () => {
   const addBtn = document.getElementById("access-control-risk-add-access-point-btn");
   if (addBtn) addBtn.addEventListener("click", addAccessControlAccessPoint);
@@ -347,7 +371,7 @@ const initAccessControlRisk = () => {
   }
 };
 
-// ----- Fire Risk -----
+// Initialize fire risk assessment modal and events
 const initFireRisk = () => {
   const modalEl = document.getElementById("fire-risk-assessment-modal");
   if (modalEl) {
@@ -358,7 +382,7 @@ const initFireRisk = () => {
   }
 };
 
-// ----- CCTV -----
+// Initialize CCTV risk assessment modal and events
 const initCctvRisk = () => {
   const modalEl = document.getElementById("cctv-risk-assessment-modal");
   if (modalEl) {
@@ -369,13 +393,14 @@ const initCctvRisk = () => {
   }
 };
 
-// ----- Init wiring -----
+// Track if risk assessments have been initialized
 let risksInitialized = false;
 
+// Initialize all risk assessment modules
 const initAllRisks = () => {
   if (risksInitialized) return;
 
-  // Check if critical elements exist (e.g. one of the modals)
+  // Stop if risk assessment modals are not present in the DOM
   if (!document.getElementById("intruder-risk-assessment-modal")) return;
 
   initIntruderRisk();

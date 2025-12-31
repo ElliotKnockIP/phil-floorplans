@@ -3,13 +3,13 @@
 // Serialize connections for project saving (used by TopologyManager)
 export function serializeConnections(connections, getDeviceId) {
   const data = [];
-  connections.forEach(conn => {
+  connections.forEach((conn) => {
     data.push({
       id: conn.id,
       device1Id: conn.device1Id,
       device2Id: conn.device2Id,
       type: conn.type,
-      splitPoints: conn.nodes.map(n => ({ x: n.x, y: n.y })),
+      splitPoints: conn.nodes.map((n) => ({ x: n.x, y: n.y })),
       properties: { ...conn.properties },
     });
   });
@@ -21,7 +21,7 @@ export function deserializeConnections(data, findDevice, createConnection) {
   if (!Array.isArray(data)) return [];
 
   const restored = [];
-  data.forEach(connData => {
+  data.forEach((connData) => {
     const device1 = findDevice(connData.device1Id);
     const device2 = findDevice(connData.device2Id);
 
@@ -31,7 +31,7 @@ export function deserializeConnections(data, findDevice, createConnection) {
     if (!conn) return;
 
     if (connData.splitPoints?.length) {
-      conn.nodes = connData.splitPoints.map(p => ({ x: p.x, y: p.y }));
+      conn.nodes = connData.splitPoints.map((p) => ({ x: p.x, y: p.y }));
     }
 
     if (connData.properties) {
@@ -44,6 +44,7 @@ export function deserializeConnections(data, findDevice, createConnection) {
   return restored;
 }
 
+// Converts all network connections into a saveable format
 export function getConnectionsData(topologyManager) {
   const manager = topologyManager || (typeof window !== "undefined" ? window.topologyManager : null);
   if (!manager || !manager.connections) return [];
@@ -98,6 +99,7 @@ export function getConnectionsData(topologyManager) {
   return connectionsData;
 }
 
+// Restores network connections from saved data
 export function loadConnectionsData(topologyManager, connectionsData = []) {
   const manager = topologyManager || (typeof window !== "undefined" ? window.topologyManager : null);
   if (!manager || !Array.isArray(connectionsData)) return;
@@ -135,12 +137,20 @@ export function loadConnectionsData(topologyManager, connectionsData = []) {
       ...normalizedProperties,
     };
 
-    if (typeof restoredProperties.label !== "string") restoredProperties.label = "";
-    if (typeof restoredProperties.color !== "string" || !restoredProperties.color.trim()) restoredProperties.color = manager.styles.line.stroke;
+    if (typeof restoredProperties.label !== "string") {
+      restoredProperties.label = "";
+    }
+
+    const hasValidColor = typeof restoredProperties.color === "string" && restoredProperties.color.trim();
+    if (!hasValidColor) {
+      restoredProperties.color = manager.styles.line.stroke;
+    }
+
     if (typeof restoredProperties.showDistance === "string") {
       restoredProperties.showDistance = restoredProperties.showDistance.toLowerCase() !== "false";
     } else {
-      restoredProperties.showDistance = typeof restoredProperties.showDistance === "boolean" ? restoredProperties.showDistance : true;
+      const isBool = typeof restoredProperties.showDistance === "boolean";
+      restoredProperties.showDistance = isBool ? restoredProperties.showDistance : true;
     }
 
     if (Array.isArray(normalizedProperties.customTextLabels)) {
@@ -196,6 +206,7 @@ export function loadConnectionsData(topologyManager, connectionsData = []) {
   });
 }
 
+// Cleans up old connection line objects from the canvas
 export function removeLegacyConnectionLines(topologyManager) {
   const manager = topologyManager || (typeof window !== "undefined" ? window.topologyManager : null);
   if (!manager || !manager.fabricCanvas) return;
@@ -219,6 +230,7 @@ export function removeLegacyConnectionLines(topologyManager) {
   if (candidates.length) manager.fabricCanvas.requestRenderAll();
 }
 
+// Saves the entire network topology state including map positions
 export function serializeTopologyState(topologyManager, topologyBuilderAPI) {
   try {
     const connectionsData = getConnectionsData(topologyManager);
@@ -246,6 +258,7 @@ export function serializeTopologyState(topologyManager, topologyBuilderAPI) {
   }
 }
 
+// Restores the entire network topology state from saved data
 export function loadTopologyState(topologyManager, topologyData, topologyBuilderAPI) {
   const manager = topologyManager || (typeof window !== "undefined" ? window.topologyManager : null);
   if (!manager || !topologyData) return;
@@ -272,4 +285,3 @@ export function loadTopologyState(topologyManager, topologyData, topologyBuilder
     console.error("Topology load failed:", e);
   }
 }
-

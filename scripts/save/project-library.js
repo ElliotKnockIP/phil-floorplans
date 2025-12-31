@@ -11,6 +11,7 @@ class ProjectManager {
   static PROJECT_VERSION = "4.0"; // Project file format version
   static ID_RANDOM_LENGTH = 9; // Length of random ID suffix
 
+  // Initialize with canvas and save system
   constructor(fabricCanvas, saveSystem) {
     this.fabricCanvas = fabricCanvas;
     this.saveSystem = saveSystem;
@@ -19,6 +20,7 @@ class ProjectManager {
     this.init();
   }
 
+  // Set up the library modal, event listeners, and default templates
   init() {
     this.setupLibraryModal();
     this.setupEventListeners();
@@ -400,11 +402,17 @@ class ProjectManager {
         const newName = prompt(`Enter new ${itemType} name:`, item.name);
         if (newName && newName.trim() !== "" && newName !== item.name) {
           const success = isTemplate ? this.renameTemplate(item.id, newName) : this.renameProject(item.id, newName);
+
           if (success) {
             // Refresh the view after rename
             const currentContainer = document.getElementById(containerId);
             const isShowingAll = currentContainer && currentContainer.classList.contains("show-all");
-            isTemplate ? this.renderTemplates(this.getTemplates(), containerId, isShowingAll) : this.renderProjects(this.getProjects(), containerId, isShowingAll);
+
+            if (isTemplate) {
+              this.renderTemplates(this.getTemplates(), containerId, isShowingAll);
+            } else {
+              this.renderProjects(this.getProjects(), containerId, isShowingAll);
+            }
           }
         }
       });
@@ -415,11 +423,21 @@ class ProjectManager {
       deleteBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         if (confirm(`Delete ${isTemplate ? "template" : "project"} "${item.name}"?`)) {
-          isTemplate ? this.deleteTemplate(item.id) : this.deleteProject(item.id);
+          if (isTemplate) {
+            this.deleteTemplate(item.id);
+          } else {
+            this.deleteProject(item.id);
+          }
+
           // Refresh the view after delete
           const currentContainer = document.getElementById(containerId);
           const isShowingAll = currentContainer && currentContainer.classList.contains("show-all");
-          isTemplate ? this.renderTemplates(this.getTemplates(), containerId, isShowingAll) : this.renderProjects(this.getProjects(), containerId, isShowingAll);
+
+          if (isTemplate) {
+            this.renderTemplates(this.getTemplates(), containerId, isShowingAll);
+          } else {
+            this.renderProjects(this.getProjects(), containerId, isShowingAll);
+          }
         }
       });
     }
@@ -428,11 +446,21 @@ class ProjectManager {
     if (duplicateBtn) {
       duplicateBtn.addEventListener("click", (e) => {
         e.stopPropagation();
-        isTemplate ? this.duplicateTemplate(item.id) : this.duplicateProject(item.id);
+        if (isTemplate) {
+          this.duplicateTemplate(item.id);
+        } else {
+          this.duplicateProject(item.id);
+        }
+
         // Refresh the view after duplicate
         const currentContainer = document.getElementById(containerId);
         const isShowingAll = currentContainer && currentContainer.classList.contains("show-all");
-        isTemplate ? this.renderTemplates(this.getTemplates(), containerId, isShowingAll) : this.renderProjects(this.getProjects(), containerId, isShowingAll);
+
+        if (isTemplate) {
+          this.renderTemplates(this.getTemplates(), containerId, isShowingAll);
+        } else {
+          this.renderProjects(this.getProjects(), containerId, isShowingAll);
+        }
       });
     }
   }
@@ -505,7 +533,10 @@ class ProjectManager {
 
       // Set thumbnail
       const thumbnailImg = card.querySelector(".thumbnail-image");
-      if (thumbnailImg) thumbnailImg.src = project.thumbnail || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150'%3E%3Crect fill='%23f0f0f0' width='200' height='150'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3ENo Preview%3C/text%3E%3C/svg%3E";
+      if (thumbnailImg) {
+        const defaultThumb = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150'%3E" + "%3Crect fill='%23f0f0f0' width='200' height='150'/%3E" + "%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3ENo Preview%3C/text%3E%3C/svg%3E";
+        thumbnailImg.src = project.thumbnail || defaultThumb;
+      }
 
       // Set title
       const title = card.querySelector(".project-card-title");
@@ -613,7 +644,10 @@ class ProjectManager {
 
       // Set thumbnail
       const thumbnailImg = card.querySelector(".thumbnail-image");
-      if (thumbnailImg) thumbnailImg.src = templateData.thumbnail || "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150'%3E%3Crect fill='%23f0f0f0' width='200' height='150'/%3E%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3ETemplate%3C/text%3E%3C/svg%3E";
+      if (thumbnailImg) {
+        const defaultThumb = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150'%3E" + "%3Crect fill='%23f0f0f0' width='200' height='150'/%3E" + "%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3ETemplate%3C/text%3E%3C/svg%3E";
+        thumbnailImg.src = templateData.thumbnail || defaultThumb;
+      }
 
       // Set title
       const title = card.querySelector(".project-card-title");
@@ -704,7 +738,11 @@ class ProjectManager {
       projectSearch.addEventListener("input", (e) => {
         const query = e.target.value.toLowerCase();
         const projects = this.getProjects();
-        const filtered = projects.filter((p) => p.name.toLowerCase().includes(query) || (p.description && p.description.toLowerCase().includes(query)));
+        const filtered = projects.filter((p) => {
+          const nameMatch = p.name.toLowerCase().includes(query);
+          const descMatch = p.description && p.description.toLowerCase().includes(query);
+          return nameMatch || descMatch;
+        });
         this.renderProjects(filtered, "projects-grid");
       });
     }
@@ -714,7 +752,11 @@ class ProjectManager {
       templateSearch.addEventListener("input", (e) => {
         const query = e.target.value.toLowerCase();
         const templates = this.getTemplates();
-        const filtered = templates.filter((t) => t.name.toLowerCase().includes(query) || (t.description && t.description.toLowerCase().includes(query)));
+        const filtered = templates.filter((t) => {
+          const nameMatch = t.name.toLowerCase().includes(query);
+          const descMatch = t.description && t.description.toLowerCase().includes(query);
+          return nameMatch || descMatch;
+        });
         this.renderTemplates(filtered, "templates-grid");
       });
     }
@@ -742,7 +784,10 @@ class ProjectManager {
       id: "template_blank",
       name: "Blank Template",
       description: "Start with a clean canvas",
-      thumbnail: "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150'%3E%3Crect fill='%23ffffff' width='200' height='150'/%3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3EBlank Template%3C/text%3E%3C/svg%3E",
+      thumbnail: `data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='150'%3E
+        %3Crect fill='%23ffffff' width='200' height='150'/%3E
+        %3Ctext x='50%25' y='50%25' text-anchor='middle' dy='.3em' fill='%23999'%3EBlank Template%3C/text%3E
+        %3C/svg%3E`.replace(/\s+/g, " "),
       createdAt: new Date().toISOString(),
       modifiedAt: new Date().toISOString(),
       data: {

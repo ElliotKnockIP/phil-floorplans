@@ -96,6 +96,263 @@ main {
   color: var(--orange-ip2) !important;
 }
 
+/* Notification System */
+.notification-toast {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 12px 24px;
+  color: white;
+  border-radius: 4px;
+  z-index: 10000;
+  font-size: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
+  transition: opacity 0.3s ease;
+}
+
+.notification-toast.success {
+  background: #ff6f42;
+}
+
+.notification-toast.error {
+  background: #dc3545;
+}
+
+/* Survey Information */
+.survey-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.survey-info-header {
+  margin-bottom: 10px;
+  color: #333;
+  border-bottom: 2px solid #f8794b;
+  padding-bottom: 5px;
+}
+
+.survey-info-label {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.survey-info-value {
+  padding: 8px;
+  background: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  min-height: 40px;
+}
+
+.takeoff-floor-badge {
+  background-color: #ff6b00;
+  color: white;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 0.8rem;
+}
+
+.btn-remove-ap {
+  background-color: #007bff;
+  padding: 0.25rem 0.5rem;
+}
+
+.layer-item-container {
+  border-top: 1px solid #e9ecef;
+  padding-top: 12px;
+  margin-top: 12px;
+  max-height: 180px;
+  overflow-y: auto;
+  font-size: 0.9rem;
+}
+
+.print-table {
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 100% !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box !important;
+  border-collapse: collapse !important;
+  table-layout: fixed !important;
+}
+
+.print-table-cell {
+  padding: 8px !important;
+  border: 1px solid #ddd !important;
+  text-align: center !important;
+  word-wrap: break-word !important;
+  color: #333 !important;
+  background-color: transparent !important;
+  vertical-align: middle !important;
+}
+
+.print-table-cell-wrap {
+  white-space: normal !important;
+  word-wrap: break-word !important;
+  vertical-align: top !important;
+}
+
+/* ===================================================== */
+/* FLOOR BUTTONS */
+/* ===================================================== */
+.floor-btn-base {
+  width: 35px;
+  height: 30px;
+  font-size: 0.8rem;
+  border-radius: 0.25rem;
+}
+
+.floor-btn-available {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  color: white;
+  cursor: pointer;
+}
+
+.floor-btn-current {
+  background: var(--orange-ip2);
+  border: 1px solid var(--orange-ip2);
+  color: white;
+  cursor: default;
+  opacity: 1;
+}
+
+.floor-btn-unavailable {
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: rgba(255, 255, 255, 0.4);
+  cursor: not-allowed;
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* ===================================================== */
+/* NETWORK LINK INSTRUCTION */
+/* ===================================================== */
+#network-link-instruction {
+  position: fixed;
+  top: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(33, 150, 243, 0.95);
+  color: white;
+  padding: 10px 20px;
+  border-radius: 5px;
+  z-index: 9999;
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* ===================================================== */
+/* TAKEOFF TABLE */
+/* ===================================================== */
+.takeoff-counter {
+  font-weight: bold;
+  color: var(--orange-ip2);
+}
+
+.takeoff-floor-badge {
+  background-color: var(--orange-ip2) !important;
+  color: white !important;
+  font-size: 11px !important;
+}
+
+.takeoff-qty-badge {
+  background-color: var(--orange-ip2) !important;
+  color: white !important;
+  font-size: 12px !important;
+  padding: 4px 8px !important;
+}
+
+.takeoff-table th.col-counter {
+  width: 60px;
+}
+.takeoff-table th.col-floor {
+  width: 10%;
+}
+.takeoff-table th.col-location {
+  width: 12%;
+}
+.takeoff-table th.col-mounted {
+  width: 12%;
+}
+.takeoff-table th.col-zone {
+  width: 12%;
+}
+.takeoff-table th.col-room {
+  width: 12%;
+}
+.takeoff-table th.col-part {
+  width: 12%;
+}
+.takeoff-table th.col-stock {
+  width: 12%;
+}
+.takeoff-table th.col-qty {
+  width: 60px;
+}
+
+.btn-remove-ap {
+  background-color: var(--orange-ip2) !important;
+  padding: 0.25rem 0.5rem !important;
+}
+
+/* ===================================================== */
+/* LINE LOCK TOGGLE */
+/* ===================================================== */
+#line-lock-toggle {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: rgba(40, 40, 40, 0.95);
+  border: 2px solid var(--orange-ip2);
+  border-radius: 8px;
+  padding: 12px 16px;
+  color: white;
+  font-family: "Poppins", sans-serif;
+  font-size: 14px;
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  gap: 10px;
+  backdrop-filter: blur(5px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+#line-lock-toggle .switch {
+  position: relative;
+  width: 44px;
+  height: 24px;
+  background: #555;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background 0.3s;
+}
+
+#line-lock-toggle .switch .slider {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  background: white;
+  border-radius: 50%;
+  transition: transform 0.3s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+#line-lock-toggle .switch.active {
+  background: var(--orange-ip2);
+}
+
+#line-lock-toggle .switch.active .slider {
+  transform: translateX(20px);
+}
+
 /* ===================================================== */
 /* BUTTON SYSTEM */
 /* ===================================================== */
@@ -671,6 +928,12 @@ input[type="range"].form-range {
   max-height: 85vh;
 }
 
+/* Horizontal layout for safety zone popover */
+.property-popover.horizontal {
+  width: 600px;
+  max-width: 90vw;
+}
+
 /* Panel headers */
 .offcanvas-header,
 .popover-header {
@@ -704,7 +967,7 @@ input[type="range"].form-range {
   font-size: 0.9em;
 }
 
-/* Center Polygon Check Boxes - duplicate rule removed, using general rule below */
+/* Center Polygon Check Boxes */
 
 .checkbox-group .form-check-label {
   font-size: 13px;
@@ -2790,30 +3053,107 @@ input[type="range"].form-range {
 }
 
 /* ===================================================== */
+/* CONTEXT MENU */
+/* ===================================================== */
+.fabric-context-menu {
+  position: fixed;
+  background: #e0e0e0;
+  color: #000;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  padding: 6px;
+  display: none;
+  z-index: 3000;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.4);
+}
+
+.context-menu-button {
+  display: block;
+  width: 100%;
+  padding: 6px 10px;
+  cursor: pointer;
+  border-radius: 4px;
+  margin: 2px 0;
+  text-align: left;
+  background: transparent;
+  color: inherit;
+  font-size: 13px;
+  border: none;
+  transition: var(--transition-fast);
+}
+
+.context-menu-button:hover {
+  background: var(--orange-ip2);
+  color: white;
+}
+
+.context-menu-button.delete {
+  color: #ff6b6b;
+}
+
+.context-menu-button.delete:hover {
+  background: #ff6b6b;
+  color: white;
+}
+
+/* ===================================================== */
 /* SAFETY ZONE SUB-DETAIL ITEMS */
 /* ===================================================== */
 .sub-detail-item {
   background: #f8f9fa;
   border: 1px solid #e9ecef;
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .sub-detail-item:hover {
-  background: #e9ecef;
+  background-color: #f0f0f0 !important;
+  border-color: var(--orange-ip2) !important;
 }
 
 .sub-detail-item .sub-detail-number {
-  font-weight: 500;
+  width: 30px;
+  font-size: 0.85em;
+  font-weight: 600;
   color: #6c757d;
 }
 
-.sub-detail-item input.form-control {
+.sub-detail-item .sub-detail-label {
+  font-size: 10px;
+  color: #666;
+  margin-bottom: 2px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  display: block;
+}
+
+.sub-detail-item .form-control,
+.sub-detail-item .form-select {
+  border: 1px solid #ddd;
+  padding: 0.25rem 0.5rem;
   font-size: 0.85rem;
 }
 
+.sub-detail-item .form-control:focus,
+.sub-detail-item .form-select:focus {
+  border-color: var(--orange-ip2);
+  box-shadow: 0 0 0 0.2rem rgba(248, 121, 75, 0.25);
+}
+
 .sub-detail-item .sub-detail-remove {
+  padding: 0.15rem 0.4rem;
+  font-size: 0.8rem;
   line-height: 1;
-  font-size: 1rem;
+}
+
+#safety-sub-details-list {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+#safety-sub-details-list:empty {
+  flex: none;
 }
 
 #safety-sub-details-list:empty::before {
@@ -2822,7 +3162,8 @@ input[type="range"].form-range {
   text-align: center;
   color: #6c757d;
   font-size: 0.9rem;
-  padding: 1rem;
+  padding: 1.5rem;
   background: #f8f9fa;
   border-radius: 4px;
+  border: 1px dashed #dee2e6;
 }

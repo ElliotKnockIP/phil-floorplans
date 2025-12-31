@@ -4,6 +4,7 @@ import { FloorUI } from "./FloorUI.js";
 import { delay } from "../save/utils-save.js";
 
 export class FloorManager {
+  // Initialize floor manager with canvas and save system
   constructor(fabricCanvas, enhancedSaveSystem) {
     this.fabricCanvas = fabricCanvas;
     this.enhancedSaveSystem = enhancedSaveSystem;
@@ -161,6 +162,7 @@ export class FloorManager {
         window.topologyManager.clearAllConnections();
       } catch (_) {}
     }
+    // Clean up device event handlers and coverage properties before clearing canvas
     this.fabricCanvas.getObjects().forEach((obj) => {
       if (obj.type === "group" && obj.deviceType && obj.coverageConfig) {
         ["added", "modified", "moving", "selected", "deselected"].forEach((event) => {
@@ -176,6 +178,7 @@ export class FloorManager {
     });
     this.fabricCanvas.discardActiveObject();
     this.fabricCanvas.clear();
+    // Reset global counters and state
     Object.assign(window, { cameraCounter: 1, deviceCounter: 1, zones: [], rooms: [] });
     if (window.layers)
       Object.keys(window.layers).forEach((layerName) => {
@@ -252,24 +255,24 @@ export class FloorManager {
   // Loads background images for the floor
   async loadBackground(backgroundData) {
     if (!backgroundData?.objects) return;
-    const backgroundObjects = backgroundData.objects.filter(
-      (obj) => obj.type === "image" && (obj.isBackground || (!obj.selectable && !obj.evented))
-    );
+    const backgroundObjects = backgroundData.objects.filter((obj) => {
+      const isImage = obj.type === "image";
+      const isBg = obj.isBackground;
+      const isStatic = !obj.selectable && !obj.evented;
+      return isImage && (isBg || isStatic);
+    });
     if (backgroundObjects.length === 0) return;
     return new Promise((resolve) => {
-      this.fabricCanvas.loadFromJSON(
-        { version: backgroundData.version, objects: backgroundObjects },
-        () => {
-          this.fabricCanvas.getObjects().forEach((obj) => {
-            if (obj.isBackground) {
-              obj.set({ selectable: false, evented: false, hoverCursor: "default" });
-              this.fabricCanvas.sendToBack(obj);
-            }
-          });
-          this.fabricCanvas.requestRenderAll();
-          resolve();
-        }
-      );
+      this.fabricCanvas.loadFromJSON({ version: backgroundData.version, objects: backgroundObjects }, () => {
+        this.fabricCanvas.getObjects().forEach((obj) => {
+          if (obj.isBackground) {
+            obj.set({ selectable: false, evented: false, hoverCursor: "default" });
+            this.fabricCanvas.sendToBack(obj);
+          }
+        });
+        this.fabricCanvas.requestRenderAll();
+        resolve();
+      });
     });
   }
 
@@ -277,14 +280,12 @@ export class FloorManager {
   async loadDevicesWithCoverage(camerasData) {
     if (!camerasData?.cameraDevices?.length) return;
     window.isLoadingFloor = true;
+    // Temporarily disable coverage auto-generation during bulk load
     const originalAddCoverage = window.addCameraCoverage;
     window.addCameraCoverage = () => {};
     for (let i = 0; i < camerasData.cameraDevices.length; i++) {
       try {
-        await this.enhancedSaveSystem.cameraSerializer.loadCameraDevice(
-          camerasData.cameraDevices[i],
-          true
-        );
+        await this.enhancedSaveSystem.cameraSerializer.loadCameraDevice(camerasData.cameraDevices[i], true);
         if (i < camerasData.cameraDevices.length - 1) await delay(50);
       } catch (error) {
         console.error(`Failed to load device ${i + 1}:`, error);
@@ -292,22 +293,20 @@ export class FloorManager {
     }
     await delay(100);
     window.isLoadingFloor = false;
+    // Restore coverage generation and manually trigger for all loaded devices
     window.addCameraCoverage = originalAddCoverage;
-    const cameraDevices = this.fabricCanvas
-      .getObjects()
-      .filter((obj) => obj.type === "group" && obj.deviceType && obj.coverageConfig);
+    const cameraDevices = this.fabricCanvas.getObjects().filter((obj) => {
+      return obj.type === "group" && obj.deviceType && obj.coverageConfig;
+    });
     for (const device of cameraDevices) {
       if (device.coverageConfig && originalAddCoverage) {
-        [
-          device.coverageArea,
-          device.leftResizeIcon,
-          device.rightResizeIcon,
-          device.rotateResizeIcon,
-        ]
-          .filter(Boolean)
-          .forEach((item) => this.fabricCanvas.remove(item));
+        // Remove any existing coverage artifacts before re-adding
+        const artifacts = [device.coverageArea, device.leftResizeIcon, device.rightResizeIcon, device.rotateResizeIcon].filter(Boolean);
+
+        artifacts.forEach((item) => this.fabricCanvas.remove(item));
         originalAddCoverage(this.fabricCanvas, device);
         await delay(10);
+        // Ensure resize icons are hidden by default after loading
         ["leftResizeIcon", "rightResizeIcon", "rotateResizeIcon"].forEach((iconProp) => {
           if (device[iconProp]) {
             device[iconProp].set({ visible: false });
@@ -335,11 +334,7 @@ export class FloorManager {
 
       // Restore topology map positions
       const mapPositions = floorData.topologyMapPositions;
-      if (
-        mapPositions &&
-        Object.keys(mapPositions).length > 0 &&
-        window.topologyBuilderAPI?.setTopologyPositions
-      ) {
+      if (mapPositions && Object.keys(mapPositions).length > 0 && window.topologyBuilderAPI?.setTopologyPositions) {
         try {
           window.topologyBuilderAPI.setTopologyPositions(mapPositions);
         } catch (e) {
@@ -360,17 +355,22 @@ export class FloorManager {
       this.fabricCanvas.discardActiveObject();
       if (window.hideDeviceProperties) window.hideDeviceProperties();
       if (typeof window.updateZoomDisplay === "function") window.updateZoomDisplay();
-      if (window.pendingGlobalSettings && window.globalSettingsAPI?.applySettingsFromSave)
-        window.globalSettingsAPI.applySettingsFromSave(window.pendingGlobalSettings);
+
+      const settings = window.pendingGlobalSettings;
+      const api = window.globalSettingsAPI;
+      if (settings && api?.applySettingsFromSave) {
+        api.applySettingsFromSave(settings);
+      }
+
       this.fabricCanvas.requestRenderAll();
     }, 300);
   }
 
   // Hides all resize icons on devices
   forceHideAllResizeIcons() {
-    const cameraDevices = this.fabricCanvas
-      .getObjects()
-      .filter((obj) => obj.type === "group" && obj.deviceType && obj.coverageConfig);
+    const cameraDevices = this.fabricCanvas.getObjects().filter((obj) => {
+      return obj.type === "group" && obj.deviceType && obj.coverageConfig;
+    });
     cameraDevices.forEach((device) => {
       ["leftResizeIcon", "rightResizeIcon", "rotateResizeIcon"].forEach((iconProp) => {
         if (device[iconProp]) {
@@ -380,9 +380,7 @@ export class FloorManager {
         }
       });
     });
-    const standaloneResizeIcons = this.fabricCanvas
-      .getObjects()
-      .filter((obj) => obj.isResizeIcon === true);
+    const standaloneResizeIcons = this.fabricCanvas.getObjects().filter((obj) => obj.isResizeIcon === true);
     standaloneResizeIcons.forEach((icon) => {
       icon.set({ visible: false });
       icon.visible = false;
@@ -391,12 +389,14 @@ export class FloorManager {
 
   // Sets up event handlers for devices after loading
   setupDeferredEventHandlers() {
-    const devicesWithDeferredHandlers = this.fabricCanvas
-      .getObjects()
-      .filter((obj) => obj.type === "group" && obj.deviceType && obj._deferEventHandlers);
+    const devicesWithDeferredHandlers = this.fabricCanvas.getObjects().filter((obj) => {
+      return obj.type === "group" && obj.deviceType && obj._deferEventHandlers;
+    });
     devicesWithDeferredHandlers.forEach((device) => {
-      if (this.enhancedSaveSystem.cameraSerializer.addDeviceEventHandlers)
-        this.enhancedSaveSystem.cameraSerializer.addDeviceEventHandlers(device);
+      const serializer = this.enhancedSaveSystem.cameraSerializer;
+      if (serializer.addDeviceEventHandlers) {
+        serializer.addDeviceEventHandlers(device);
+      }
       delete device._deferEventHandlers;
       ["leftResizeIcon", "rightResizeIcon", "rotateResizeIcon"].forEach((iconProp) => {
         if (device[iconProp]) device[iconProp].evented = true;
@@ -410,14 +410,17 @@ export class FloorManager {
     const deviceGroups = allObjects.filter((obj) => obj.type === "group" && obj.deviceType);
     const resizeIcons = allObjects.filter((obj) => obj.isResizeIcon === true);
     resizeIcons.forEach((icon) => {
-      const belongsToDevice = deviceGroups.some((device) =>
-        [device.leftResizeIcon, device.rightResizeIcon, device.rotateResizeIcon].includes(icon)
-      );
+      const belongsToDevice = deviceGroups.some((device) => {
+        const icons = [device.leftResizeIcon, device.rightResizeIcon, device.rotateResizeIcon];
+        return icons.includes(icon);
+      });
       if (!belongsToDevice) this.fabricCanvas.remove(icon);
     });
-    const coverageAreas = allObjects.filter(
-      (obj) => obj.isCoverage || (obj.type === "polygon" && obj.fill?.includes("165, 155, 155"))
-    );
+    const coverageAreas = allObjects.filter((obj) => {
+      const isCoverage = obj.isCoverage;
+      const isLegacyCoverage = obj.type === "polygon" && obj.fill?.includes("165, 155, 155");
+      return isCoverage || isLegacyCoverage;
+    });
     coverageAreas.forEach((area) => {
       const belongsToDevice = deviceGroups.some((device) => device.coverageArea === area);
       if (!belongsToDevice) this.fabricCanvas.remove(area);
@@ -429,16 +432,22 @@ export class FloorManager {
     this.ui.updateFloorUI();
   }
 
-  // Public API methods
+  // Get the current active floor number
   getCurrentFloor() {
     return this.currentFloor;
   }
+
+  // Get the total number of floors created
   getFloorCount() {
     return this.floors.size;
   }
+
+  // Get a sorted list of all floor numbers
   getFloorList() {
     return Array.from(this.floors.keys()).sort((a, b) => a - b);
   }
+
+  // Check if a specific floor number exists
   hasFloor(floorNumber) {
     return this.floors.has(floorNumber);
   }

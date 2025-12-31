@@ -1,11 +1,10 @@
-// Custom Source Handler - Handles custom colored background creation
-// Manages custom background preview and generation
+// Custom Source Handler handles custom colored background creation
 
 export class CustomSourceHandler {
   constructor(manager) {
     this.manager = manager;
 
-    // Custom background related
+    // Custom background related elements
     this.customElements = {
       customBackgroundModal: document.getElementById("customBackgroundModal"),
       customBackBtn: document.getElementById("custom-back-btn"),
@@ -22,7 +21,7 @@ export class CustomSourceHandler {
     this.resizeObserver = null;
   }
 
-  // Setup custom background handlers
+  // Setup event listeners for custom background creation
   setupCustomHandlers() {
     if (this.customElements.customBackBtn) {
       this.customElements.customBackBtn.addEventListener("click", () => this.handleCustomBack());
@@ -33,21 +32,15 @@ export class CustomSourceHandler {
     }
 
     if (this.customElements.customWidthInput) {
-      this.customElements.customWidthInput.addEventListener("input", () =>
-        this.updateCustomPreview()
-      );
+      this.customElements.customWidthInput.addEventListener("input", () => this.updateCustomPreview());
     }
 
     if (this.customElements.customHeightInput) {
-      this.customElements.customHeightInput.addEventListener("input", () =>
-        this.updateCustomPreview()
-      );
+      this.customElements.customHeightInput.addEventListener("input", () => this.updateCustomPreview());
     }
 
     if (this.customElements.customColorSelect) {
-      this.customElements.customColorSelect.addEventListener("change", () =>
-        this.updateCustomPreview()
-      );
+      this.customElements.customColorSelect.addEventListener("change", () => this.updateCustomPreview());
     }
 
     if (this.customElements.customBackgroundModal) {
@@ -55,24 +48,21 @@ export class CustomSourceHandler {
         this.cleanupCustomPreview();
         this.manager.normalizeBackdrops();
       });
-      this.customElements.customBackgroundModal.addEventListener("shown.bs.modal", () =>
-        this.initializeCustomPreview()
-      );
+      this.customElements.customBackgroundModal.addEventListener("shown.bs.modal", () => {
+        this.initializeCustomPreview();
+      });
     }
 
-    // Handle window resize
+    // Handle window resize for preview canvas
     window.addEventListener("resize", () => {
-      if (
-        this.previewCanvas &&
-        this.customElements.customBackgroundModal?.classList.contains("show")
-      ) {
+      if (this.previewCanvas && this.customElements.customBackgroundModal?.classList.contains("show")) {
         clearTimeout(window.customCanvasResizeTimeout);
         window.customCanvasResizeTimeout = setTimeout(() => this.resizeCustomCanvas(), 100);
       }
     });
   }
 
-  // Show custom background modal
+  // Show custom background modal and initialize preview
   showCustomModal() {
     this.manager.normalizeBackdrops();
     this.manager.showModal(this.customElements.customBackgroundModal);
@@ -81,12 +71,11 @@ export class CustomSourceHandler {
     this.manager.updateStepIndicators(1);
   }
 
-  // Initialize custom preview canvas
+  // Initialize custom preview canvas with container dimensions
   initializeCustomPreview() {
     this.cleanupCustomPreview();
 
-    if (!this.customElements.customPreviewWrapper || !this.customElements.customPreviewCanvas)
-      return;
+    if (!this.customElements.customPreviewWrapper || !this.customElements.customPreviewCanvas) return;
 
     setTimeout(() => {
       const containerRect = this.customElements.customPreviewWrapper.getBoundingClientRect();
@@ -111,7 +100,7 @@ export class CustomSourceHandler {
     }, 100);
   }
 
-  // Resize custom preview canvas
+  // Resize custom preview canvas to match container
   resizeCustomCanvas() {
     if (!this.previewCanvas || !this.customElements.customPreviewWrapper) return;
 
@@ -130,15 +119,13 @@ export class CustomSourceHandler {
     this.updateCustomPreview();
   }
 
-  // Update custom preview
+  // Update custom preview rectangle based on inputs
   updateCustomPreview() {
-    if (
-      !this.previewCanvas ||
-      !this.customElements.customWidthInput ||
-      !this.customElements.customHeightInput ||
-      !this.customElements.customColorSelect
-    )
+    const { customWidthInput, customHeightInput, customColorSelect } = this.customElements;
+
+    if (!this.previewCanvas || !customWidthInput || !customHeightInput || !customColorSelect) {
       return;
+    }
 
     const width = parseInt(this.customElements.customWidthInput.value) || 800;
     const height = parseInt(this.customElements.customHeightInput.value) || 600;
@@ -174,7 +161,7 @@ export class CustomSourceHandler {
     this.previewCanvas.requestRenderAll();
   }
 
-  // Setup resize observer for custom preview
+  // Setup resize observer for custom preview container
   setupResizeObserver() {
     if (!this.customElements.customPreviewWrapper || this.resizeObserver) return;
 
@@ -189,7 +176,7 @@ export class CustomSourceHandler {
     this.resizeObserver.observe(this.customElements.customPreviewWrapper);
   }
 
-  // Handle custom back button
+  // Handle back button and return to main selection
   handleCustomBack() {
     bootstrap.Modal.getInstance(this.customElements.customBackgroundModal)?.hide();
     this.cleanupCustomPreview();
@@ -199,7 +186,7 @@ export class CustomSourceHandler {
     this.manager.updateStepIndicators(1);
   }
 
-  // Handle custom next button
+  // Handle next button and generate custom background image
   handleCustomNext() {
     const width = parseInt(this.customElements.customWidthInput.value) || 800;
     const height = parseInt(this.customElements.customHeightInput.value) || 600;
@@ -220,7 +207,7 @@ export class CustomSourceHandler {
     this.manager.updateStepIndicators(2);
   }
 
-  // Cleanup custom preview
+  // Cleanup custom preview resources
   cleanupCustomPreview() {
     if (this.resizeObserver) {
       this.resizeObserver.disconnect();

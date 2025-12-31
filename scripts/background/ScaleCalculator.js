@@ -1,5 +1,4 @@
-// Scale Calculator - Handles scale measurement and application
-// Allows users to measure distances on background images to set scale
+// Scale Calculator handles scale measurement and application
 
 export class ScaleCalculator {
   constructor(fabricCanvas, manager) {
@@ -33,21 +32,14 @@ export class ScaleCalculator {
 
     // Input handling
     this.distanceInputListener = null;
-
-    // Helper to prevent stacked backdrops when switching modals
-    this.normalizeBackdrops = function () {
-      const backdrops = Array.from(document.querySelectorAll(".modal-backdrop"));
-      if (backdrops.length > 1) backdrops.slice(0, -1).forEach((bd) => bd.remove());
-      if (backdrops.length > 0) document.body.classList.add("modal-open");
-    };
   }
 
-  // Initialize the scale calculator
+  // Initialize scale calculator and listeners
   initialize() {
     this.setupEventListeners();
   }
 
-  // Setup event listeners
+  // Setup event listeners for buttons and modal
   setupEventListeners() {
     if (this.elements.scaleBackBtn) {
       this.elements.scaleBackBtn.addEventListener("click", () => this.handleBack());
@@ -62,16 +54,16 @@ export class ScaleCalculator {
     }
   }
 
-  // Start scaling process with a canvas
+  // Start scaling process and show modal
   startScaling(canvas) {
-    this.normalizeBackdrops();
+    this.manager.normalizeBackdrops();
     this.manager.showModal(this.elements.scaleModal);
 
     this.initializeScaleCanvas(canvas);
     this.manager.updateStepIndicators(3);
   }
 
-  // Initialize the scale canvas with background image
+  // Initialize scale canvas with background image
   initializeScaleCanvas(sourceCanvas) {
     // Clean up previous canvas
     if (this.scaleCanvas) {
@@ -148,15 +140,16 @@ export class ScaleCalculator {
     );
   }
 
-  // Create distance text object
+  // Create distance text object on canvas
   createDistanceText() {
     const canvasWidth = this.scaleCanvas.getWidth();
     const canvasHeight = this.scaleCanvas.getHeight();
 
     // Get current input value or default to 50
-    const currentValue = this.elements.scaleDistanceInput
-      ? parseFloat(this.elements.scaleDistanceInput.value) || 50
-      : 50;
+    let currentValue = 50;
+    if (this.elements.scaleDistanceInput) {
+      currentValue = parseFloat(this.elements.scaleDistanceInput.value) || 50;
+    }
 
     this.distanceText = new fabric.IText(currentValue + " m", {
       left: canvasWidth / 2,
@@ -174,7 +167,7 @@ export class ScaleCalculator {
     this.scaleCanvas.bringToFront(this.distanceText);
   }
 
-  // Create instruction text
+  // Create instruction text on canvas
   createInstructionText() {
     const canvasWidth = this.scaleCanvas.getWidth();
 
@@ -195,7 +188,7 @@ export class ScaleCalculator {
     this.scaleCanvas.bringToFront(this.instructionText);
   }
 
-  // Create reset button
+  // Create reset button on canvas
   createResetButton() {
     const canvasWidth = this.scaleCanvas.getWidth();
     const btnWidth = 110;
@@ -273,31 +266,17 @@ export class ScaleCalculator {
     this.scaleEndPoint = { x: imgRight, y: midY };
 
     // Create new line
-    this.line = new fabric.Line(
-      [this.scaleStartPoint.x, this.scaleStartPoint.y, this.scaleEndPoint.x, this.scaleEndPoint.y],
-      {
-        stroke: "red",
-        strokeWidth: 3,
-        strokeLineCap: "round",
-        selectable: false,
-        evented: false,
-      }
-    );
+    const { x: x1, y: y1 } = this.scaleStartPoint;
+    const { x: x2, y: y2 } = this.scaleEndPoint;
 
+    this.line = this.createMeasurementLine(x1, y1, x2, y2);
     this.scaleCanvas.add(this.line);
 
     // Update distance text position
-    this.distanceText.set({
-      left: (this.scaleStartPoint.x + this.scaleEndPoint.x) / 2,
-      top: midY - 30,
-    });
-    this.distanceText.setCoords();
+    this.positionDistanceText(x1, y1, x2, y2);
 
     // Bring UI elements to front
-    this.scaleCanvas.bringToFront(this.distanceText);
-    this.scaleCanvas.bringToFront(this.instructionText);
-    this.scaleCanvas.bringToFront(this.resetButton);
-    this.scaleCanvas.requestRenderAll();
+    this.bringUIElementsToFront();
   }
 
   // Setup canvas interaction handlers
@@ -315,6 +294,41 @@ export class ScaleCalculator {
     }
   }
 
+  // Bring UI elements to front and render
+  bringUIElementsToFront() {
+    this.scaleCanvas.bringToFront(this.distanceText);
+    this.scaleCanvas.bringToFront(this.instructionText);
+    this.scaleCanvas.bringToFront(this.resetButton);
+    this.scaleCanvas.requestRenderAll();
+  }
+
+  // Create a measurement line
+  createMeasurementLine(startX, startY, endX, endY) {
+    return new fabric.Line([startX, startY, endX, endY], {
+      stroke: "red",
+      strokeWidth: 3,
+      strokeLineCap: "round",
+      selectable: false,
+      evented: false,
+    });
+  }
+
+  // Calculate pixel distance between two points
+  calculatePixelDistance(startPoint, endPoint) {
+    if (startPoint && endPoint) {
+      return Math.hypot(endPoint.x - startPoint.x, endPoint.y - startPoint.y);
+    }
+    return null;
+  }
+
+  // Position distance text at the center of a line
+  positionDistanceText(startX, startY, endX, endY) {
+    const midX = (startX + endX) / 2;
+    const midY = (startY + endY) / 2;
+    this.distanceText.set({ left: midX, top: midY - 30 });
+    this.distanceText.setCoords();
+  }
+
   // Handle distance input change
   handleDistanceChange(event) {
     if (this.distanceText) {
@@ -326,12 +340,12 @@ export class ScaleCalculator {
     }
   }
 
-  // Handle mouse down on canvas
+  // Handle mouse down on canvas to start measurement
   handleMouseDown(event) {
     const pointer = this.scaleCanvas.getPointer(event.e || event);
     const point = this.clampPointToImageBounds(pointer);
 
-    // If no start point or both points exist, start new measurement
+    // Start new measurement if none exists or both points are set
     if (!this.scaleStartPoint || (this.scaleStartPoint && this.scaleEndPoint)) {
       this.clearExistingLines();
       this.scaleStartPoint = point;
@@ -339,12 +353,12 @@ export class ScaleCalculator {
       this.isDragging = true;
       this.hasMoved = false;
     } else {
-      // Complete the measurement
+      // Complete measurement
       this.finalizeLine(point);
     }
   }
 
-  // Handle mouse move on canvas
+  // Handle mouse move on canvas for preview
   handleMouseMove(event) {
     if (!this.scaleStartPoint || this.scaleEndPoint) return;
 
@@ -362,7 +376,7 @@ export class ScaleCalculator {
     this.updatePreviewLine(pointer);
   }
 
-  // Handle mouse up on canvas
+  // Handle mouse up on canvas to finish dragging
   handleMouseUp(event) {
     if (!this.isDragging) return;
     this.isDragging = false;
@@ -373,7 +387,7 @@ export class ScaleCalculator {
     }
   }
 
-  // Clear existing measurement lines
+  // Clear existing measurement lines from canvas
   clearExistingLines() {
     if (this.line) {
       this.scaleCanvas.remove(this.line);
@@ -393,32 +407,24 @@ export class ScaleCalculator {
       this.scaleCanvas.remove(this.tempLine);
     }
 
-    this.tempLine = new fabric.Line(
-      [this.scaleStartPoint.x, this.scaleStartPoint.y, clampedPointer.x, clampedPointer.y],
-      {
-        stroke: "red",
-        strokeWidth: 3,
-        strokeDashArray: [6, 6],
-        evented: false,
-      }
-    );
+    const points = [this.scaleStartPoint.x, this.scaleStartPoint.y, clampedPointer.x, clampedPointer.y];
+    this.tempLine = new fabric.Line(points, {
+      stroke: "red",
+      strokeWidth: 3,
+      strokeDashArray: [6, 6],
+      evented: false,
+    });
 
     this.scaleCanvas.add(this.tempLine);
 
     // Update distance text position
-    const midX = (this.scaleStartPoint.x + clampedPointer.x) / 2;
-    const midY = (this.scaleStartPoint.y + clampedPointer.y) / 2;
-    this.distanceText.set({ left: midX, top: midY - 30 });
-    this.distanceText.setCoords();
+    this.positionDistanceText(this.scaleStartPoint.x, this.scaleStartPoint.y, clampedPointer.x, clampedPointer.y);
 
     // Bring UI elements to front
-    this.scaleCanvas.bringToFront(this.distanceText);
-    this.scaleCanvas.bringToFront(this.instructionText);
-    this.scaleCanvas.bringToFront(this.resetButton);
-    this.scaleCanvas.requestRenderAll();
+    this.bringUIElementsToFront();
   }
 
-  // Finalize the measurement line
+  // Finalize measurement line
   finalizeLine(endPoint) {
     const clampedEnd = this.clampPointToImageBounds(endPoint);
 
@@ -436,30 +442,14 @@ export class ScaleCalculator {
     }
 
     // Create final line
-    this.line = new fabric.Line(
-      [this.scaleStartPoint.x, this.scaleStartPoint.y, clampedEnd.x, clampedEnd.y],
-      {
-        stroke: "red",
-        strokeWidth: 3,
-        strokeLineCap: "round",
-        selectable: false,
-        evented: false,
-      }
-    );
-
+    this.line = this.createMeasurementLine(this.scaleStartPoint.x, this.scaleStartPoint.y, clampedEnd.x, clampedEnd.y);
     this.scaleCanvas.add(this.line);
 
     // Update distance text position
-    const midX = (this.scaleStartPoint.x + clampedEnd.x) / 2;
-    const midY = (this.scaleStartPoint.y + clampedEnd.y) / 2;
-    this.distanceText.set({ left: midX, top: midY - 30 });
-    this.distanceText.setCoords();
+    this.positionDistanceText(this.scaleStartPoint.x, this.scaleStartPoint.y, clampedEnd.x, clampedEnd.y);
 
     // Bring UI elements to front
-    this.scaleCanvas.bringToFront(this.distanceText);
-    this.scaleCanvas.bringToFront(this.instructionText);
-    this.scaleCanvas.bringToFront(this.resetButton);
-    this.scaleCanvas.requestRenderAll();
+    this.bringUIElementsToFront();
   }
 
   // Clamp point to image bounds
@@ -477,7 +467,7 @@ export class ScaleCalculator {
     };
   }
 
-  // Handle back button
+  // Handle back button and return to crop modal
   handleBack() {
     bootstrap.Modal.getInstance(this.elements.scaleModal)?.hide();
     this.cleanup();
@@ -487,14 +477,14 @@ export class ScaleCalculator {
       const restored = this.manager.cropper.restoreCropModal();
       if (!restored) {
         const cropModal = document.getElementById("cropModal");
-        this.normalizeBackdrops();
+        this.manager.normalizeBackdrops();
         this.manager.showModal(cropModal);
         this.manager.updateStepIndicators(2);
       }
     }, 200);
   }
 
-  // Handle finish button - apply scale and create background
+  // Handle finish button and apply scale to background
   handleFinish() {
     if (!this.scaleCanvas || !this.backgroundImage) return;
 
@@ -506,13 +496,8 @@ export class ScaleCalculator {
     }
 
     // Calculate pixels per meter
-    let pixelDistance = null;
-    if (this.scaleStartPoint && this.scaleEndPoint) {
-      pixelDistance = Math.hypot(
-        this.scaleEndPoint.x - this.scaleStartPoint.x,
-        this.scaleEndPoint.y - this.scaleEndPoint.y
-      );
-    } else if (this.line) {
+    let pixelDistance = this.calculatePixelDistance(this.scaleStartPoint, this.scaleEndPoint);
+    if (!pixelDistance && this.line) {
       pixelDistance = Math.hypot(this.line.x2 - this.line.x1, this.line.y2 - this.line.y1);
     }
 
@@ -534,9 +519,11 @@ export class ScaleCalculator {
     let effectiveScaledPixelWidth = scaledPixelWidth;
 
     if (this.manager.changeScaleMode) {
-      const mainBg = this.fabricCanvas
-        .getObjects()
-        .find((o) => o.type === "image" && (o.isBackground || (!o.selectable && !o.evented)));
+      const mainBg = this.fabricCanvas.getObjects().find((o) => {
+        const isImage = o.type === "image";
+        const isBg = o.isBackground || (!o.selectable && !o.evented);
+        return isImage && isBg;
+      });
       if (mainBg) {
         effectiveScaledPixelWidth = (mainBg.width || 0) * (mainBg.scaleX || 1);
       }
@@ -573,7 +560,6 @@ export class ScaleCalculator {
 
     if (isChangeScaleMode) {
       this.updateExistingMeasurements();
-      // Manager will clear changeScaleMode after it processes the new scale
     }
   }
 
@@ -582,13 +568,12 @@ export class ScaleCalculator {
     const objects = this.fabricCanvas.getObjects();
 
     // Update measurement lines
-    const measurementGroups = objects.filter(
-      (obj) =>
-        obj.type === "group" &&
-        obj._objects?.length === 2 &&
-        obj._objects.some((x) => x.type === "line") &&
-        obj._objects.some((x) => x.type === "i-text")
-    );
+    const measurementGroups = objects.filter((obj) => {
+      if (obj.type !== "group" || obj._objects?.length !== 2) return false;
+      const hasLine = obj._objects.some((x) => x.type === "line");
+      const hasText = obj._objects.some((x) => x.type === "i-text");
+      return hasLine && hasText;
+    });
 
     measurementGroups.forEach((group) => {
       try {
@@ -612,9 +597,7 @@ export class ScaleCalculator {
     });
 
     // Update camera coverage areas
-    const cameras = objects.filter(
-      (obj) => obj.type === "group" && obj.deviceType && obj.coverageConfig
-    );
+    const cameras = objects.filter((obj) => obj.type === "group" && obj.deviceType && obj.coverageConfig);
 
     cameras.forEach((camera) => {
       try {
@@ -630,10 +613,7 @@ export class ScaleCalculator {
     this.updatePolygonLabels(objects);
 
     // Update connection distance labels
-    if (
-      window.topologyManager &&
-      typeof window.topologyManager.updateConnectionLabelsForScaleChange === "function"
-    ) {
+    if (window.topologyManager && typeof window.topologyManager.updateConnectionLabelsForScaleChange === "function") {
       window.topologyManager.updateConnectionLabelsForScaleChange(this.pixelsPerMeter);
     }
 
@@ -643,10 +623,11 @@ export class ScaleCalculator {
   // Update polygon area and volume labels
   updatePolygonLabels(objects) {
     try {
-      const polygons = objects.filter(
-        (obj) =>
-          obj.type === "polygon" && (obj.class === "zone-polygon" || obj.class === "room-polygon")
-      );
+      const polygons = objects.filter((obj) => {
+        const isPolygon = obj.type === "polygon";
+        const isZoneOrRoom = obj.class === "zone-polygon" || obj.class === "room-polygon";
+        return isPolygon && isZoneOrRoom;
+      });
 
       const calculateArea = (points, ppm) => {
         let area = 0;
@@ -682,7 +663,7 @@ export class ScaleCalculator {
     }
   }
 
-  // Cleanup resources
+  // Cleanup resources and references
   cleanup() {
     if (this.scaleCanvas) {
       this.scaleCanvas.clear();

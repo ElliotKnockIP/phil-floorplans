@@ -4,7 +4,9 @@ import { applyLabelPosition } from "../devices/device-label-utils.js";
 export function updateSliderTrack(slider, value, min, max) {
   if (!slider) return;
   const percentage = ((value - min) / (max - min)) * 100;
-  slider.style.background = `linear-gradient(to right, var(--orange-ip2, #f8794b) ${percentage}%, #e9ecef ${percentage}%)`;
+  const orange = "var(--orange-ip2, #f8794b)";
+  const gray = "#e9ecef";
+  slider.style.background = `linear-gradient(to right, ${orange} ${percentage}%, ${gray} ${percentage}%)`;
 }
 
 // Prevents event propagation for specified events on an element
@@ -24,7 +26,7 @@ export function preventEventPropagation(element, events = ["click", "keydown"]) 
 
 // Synchronizes slider and input elements, with optional callback
 export function createSliderInputSync(slider, input, callback, options = {}) {
-  const { min = 0, max = 100, step = 1, precision = 0, format } = options;
+  const { min = 0, max = 100, step = 1, precision = 0, format, suffix = "" } = options;
 
   if (slider) {
     slider.addEventListener("input", () => {
@@ -36,7 +38,7 @@ export function createSliderInputSync(slider, input, callback, options = {}) {
             input.value = precision > 0 ? value.toFixed(precision) : value;
           }
         } else {
-          input.textContent = format ? format(value) : (value * 100).toFixed(0) + "%";
+          input.textContent = format ? format(value) : (precision > 0 ? value.toFixed(precision) : value) + suffix;
         }
       }
       updateSliderTrack(slider, value, slider.min || min, slider.max || max);
@@ -221,7 +223,14 @@ export function isPointInPolygon(point, polygon) {
   const vertices = polygon.points;
   let inside = false;
   for (let i = 0, j = vertices.length - 1; i < vertices.length; j = i++) {
-    if (vertices[i].y > point.y !== vertices[j].y > point.y && point.x < ((vertices[j].x - vertices[i].x) * (point.y - vertices[i].y)) / (vertices[j].y - vertices[i].y) + vertices[i].x) {
+    const xi = vertices[i].x,
+      yi = vertices[i].y;
+    const xj = vertices[j].x,
+      yj = vertices[j].y;
+
+    const intersect = yi > point.y !== yj > point.y && point.x < ((xj - xi) * (point.y - yi)) / (yj - yi) + xi;
+
+    if (intersect) {
       inside = !inside;
     }
   }
@@ -272,9 +281,7 @@ export function getHexFromFill(fill) {
   return "#ffffff";
 }
 
-// === Polygon utility functions ===
-
-// Get devices in a polygon
+// Polygon utility functions
 export function getDevicesInPolygon(polygon, fabricCanvas, typeOrIsZone = true) {
   const devices = [];
   const allObjects = fabricCanvas.getObjects();
@@ -303,22 +310,45 @@ export function getDevicesInPolygon(polygon, fabricCanvas, typeOrIsZone = true) 
       if (isPointInPolygon(deviceCenter, polygon)) {
         let info = "";
         if (isZone && window.rooms && window.rooms.length > 0) {
-          const deviceInRoom = window.rooms.find((room) => room.polygon && isPointInPolygon(deviceCenter, room.polygon));
+          const deviceInRoom = window.rooms.find((room) => {
+            return room.polygon && isPointInPolygon(deviceCenter, room.polygon);
+          });
           if (deviceInRoom) {
-            info = ` (in ${deviceInRoom.polygon.roomName || deviceInRoom.roomName || "Room"})`;
+            const roomName = deviceInRoom.polygon.roomName || deviceInRoom.roomName || "Room";
+            info = ` (in ${roomName})`;
           }
         } else if (!isZone && window.zones && window.zones.length > 0) {
-          const deviceInZone = window.zones.find((zone) => zone.polygon && isPointInPolygon(deviceCenter, zone.polygon));
+          const deviceInZone = window.zones.find((zone) => {
+            return zone.polygon && isPointInPolygon(deviceCenter, zone.polygon);
+          });
           if (deviceInZone) {
-            info = ` (in ${deviceInZone.polygon.zoneName || "Zone"})`;
+            const zoneName = deviceInZone.polygon.zoneName || "Zone";
+            info = ` (in ${zoneName})`;
           }
         }
-        devices.push({ type: "device", name: obj.textObject ? obj.textObject.text : obj.deviceType.replace(".png", "").replace("-", " "), deviceType: obj.deviceType, object: obj, info });
+
+        const deviceName = obj.textObject ? obj.textObject.text : obj.deviceType.replace(".png", "").replace("-", " ");
+
+        devices.push({
+          type: "device",
+          name: deviceName,
+          deviceType: obj.deviceType,
+          object: obj,
+          info,
+        });
       }
     } else if (["rect", "circle", "triangle"].includes(obj.type) || (obj.type === "image" && obj.isUploadedImage)) {
       const objCenter = obj.getCenterPoint();
       if (isPointInPolygon(objCenter, polygon)) {
-        devices.push({ type: "object", name: obj.type === "image" ? "Uploaded Image" : obj.type.charAt(0).toUpperCase() + obj.type.slice(1), deviceType: obj.type, object: obj, info: "" });
+        const objectName = obj.type === "image" ? "Uploaded Image" : obj.type.charAt(0).toUpperCase() + obj.type.slice(1);
+
+        devices.push({
+          type: "object",
+          name: objectName,
+          deviceType: obj.type,
+          object: obj,
+          info: "",
+        });
       }
     }
   });
@@ -333,13 +363,19 @@ export function updateDevicesList(container, polygon, fabricCanvas, typeOrIsZone
   const typeName = typeof typeOrIsZone === "string" ? typeOrIsZone : typeOrIsZone ? "zone" : "room";
   const devices = getDevicesInPolygon(polygon, fabricCanvas, typeOrIsZone);
   if (devices.length === 0) {
-    container.innerHTML = '<span class="text-muted">No ' + (typeOrIsZone === "risk" ? "access points" : "devices") + " in this " + typeName + "</span>";
+    const emptyText = typeOrIsZone === "risk" ? "access points" : "devices";
+    container.innerHTML = `<span class="text-muted">No ${emptyText} in this ${typeName}</span>`;
   } else {
     const deviceNames = devices.map((d) => d.name + d.info);
     const deviceCountMap = {};
     deviceNames.forEach((name) => (deviceCountMap[name] = (deviceCountMap[name] || 0) + 1));
     container.innerHTML = Object.entries(deviceCountMap)
-      .map(([name, count]) => `<div class="text-dark d-flex align-items-center gap-2"><span class="badge bg-orange">${count}</span><span>${name}</span></div>`)
+      .map(([name, count]) => {
+        return `<div class="text-dark d-flex align-items-center gap-2">
+          <span class="badge bg-orange">${count}</span>
+          <span>${name}</span>
+        </div>`;
+      })
       .join("");
   }
 }
@@ -382,20 +418,36 @@ export function updatePolygonText(polygon, textObject, canvas, toggles, name, no
 }
 
 // Update polygon color
-export function updatePolygonColor(polygon, textObject, color, isZone = true) {
+export function updatePolygonColor(polygon, textObject, color, type = "zone") {
   if (!polygon || !textObject) return;
-  const r = parseInt(color.slice(1, 3), 16);
-  const g = parseInt(color.slice(3, 5), 16);
-  const b = parseInt(color.slice(5, 7), 16);
-  if (isZone) {
-    const fillColor = `rgba(${r}, ${g}, ${b}, 0.2)`;
-    const strokeColor = `rgba(${r}, ${g}, ${b}, 1)`;
-    setMultipleObjectProperties(polygon, { fill: fillColor, stroke: strokeColor });
-    setMultipleObjectProperties(textObject, { fill: strokeColor, cursorColor: strokeColor });
+
+  // Helper to convert hex to rgba
+  const hexToRgba = (hex, alpha) => {
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+  };
+
+  let fillColor, strokeColor;
+
+  if (type === "zone") {
+    fillColor = hexToRgba(color, 0.2);
+    strokeColor = hexToRgba(color, 1);
+  } else if (type === "safety") {
+    fillColor = hexToRgba(color, 0.3);
+    strokeColor = color;
+  } else if (type === "risk") {
+    fillColor = hexToRgba(color, 0.35);
+    strokeColor = color;
   } else {
-    setMultipleObjectProperties(polygon, { stroke: color });
-    setMultipleObjectProperties(textObject, { fill: color, cursorColor: color });
+    // Room or other
+    fillColor = "transparent";
+    strokeColor = color;
   }
+
+  setMultipleObjectProperties(polygon, { fill: fillColor, stroke: strokeColor });
+  setMultipleObjectProperties(textObject, { fill: strokeColor, cursorColor: strokeColor });
 }
 
 // Utility: warning text
@@ -416,7 +468,13 @@ export function updateWarningText(targetEl, height) {
 export function setTextVisibility(textObject, visible, canvas = null) {
   if (!textObject) return;
 
-  const targetCanvas = canvas || textObject.canvas;
+  let targetCanvas = canvas || textObject.canvas;
+
+  // If object was removed from canvas, try to get canvas from parent group
+  if (!targetCanvas && textObject._parentGroup) {
+    targetCanvas = textObject._parentGroup.canvas;
+  }
+
   if (!targetCanvas) return;
 
   // Don't manage visibility for text device labels - they should never be visible
@@ -429,10 +487,16 @@ export function setTextVisibility(textObject, visible, canvas = null) {
   if (visible) {
     if (!targetCanvas.getObjects().includes(textObject)) {
       targetCanvas.add(textObject);
-      textObject.bringToFront();
     }
     textObject.set({ visible: true });
     textObject._isHidden = false;
+
+    // Ensure position is correct when re-adding
+    if (textObject._parentGroup) {
+      applyLabelPosition(textObject._parentGroup);
+    }
+
+    textObject.bringToFront();
   } else {
     if (targetCanvas.getObjects().includes(textObject)) {
       targetCanvas.remove(textObject);
@@ -454,12 +518,7 @@ export function updateTextPosition(group, textObject) {
   applyLabelPosition(group);
 }
 
-// ============================================================================
-// PANEL BASE UTILITIES - Common functionality for device property panels
-// ============================================================================
-
-// Creates a base panel object with common state management
-// Returns an object with currentGroup and helper methods
+// Common functionality for device property panels
 export function createPanelBase() {
   const base = {
     currentGroup: null,
@@ -490,12 +549,7 @@ export function createPanelBase() {
   return base;
 }
 
-// ============================================================================
-// INPUT BINDING UTILITIES - Bind inputs/selects to device properties
-// ============================================================================
-
-// Binds an input element to a device property with common event handling
-// This eliminates the need to duplicate input binding code across panels
+// Bind inputs and selects to device properties
 export function bindInputToProperty(inputEl, propName, getCurrentGroup, options = {}) {
   if (!inputEl) return;
 

@@ -1,8 +1,8 @@
-// Handles touch drag-drop for devices and pinch-to-zoom/pan for Fabric canvas
+// Handle touch interactions for mobile devices
 import { DeviceFactory } from "../devices/DeviceFactory.js";
 
 (function () {
-  // Waits until window.fabricCanvas is available
+  // Wait for the Fabric canvas to be initialized
   function waitForCanvas(maxWaitMs = 5000) {
     return new Promise((resolve, reject) => {
       const start = Date.now();
@@ -15,7 +15,7 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
     });
   }
 
-  // Creates device on canvas at client coordinates
+  // Create a device on the canvas at specific touch coordinates
   function createDeviceOnCanvas(fabricCanvas, imgSrc, clientX, clientY, options = {}) {
     const canvasElement = fabricCanvas.getElement();
     const rect = canvasElement.getBoundingClientRect();
@@ -31,13 +31,14 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
     DeviceFactory.createDevice(fabricCanvas, imgSrc, canvasX, canvasY, options);
   }
 
-  // Setup touch-based device dragging from sidebar
+  // Enable touch-based drag and drop for devices from the sidebar
   function setupDeviceTouchDrag(fabricCanvas) {
     const deviceItems = document.querySelectorAll("#add-devices-submenu .device-item");
     if (!deviceItems.length) return;
 
     let dragState = null;
 
+    // Finalize the drag operation and place the device if over the canvas
     function endDrag(commitEvent) {
       if (!dragState) return;
       const { ghost } = dragState;
@@ -48,11 +49,7 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
         const canvasRect = canvasElement.getBoundingClientRect();
         const x = commitEvent.changedTouches[0].clientX;
         const y = commitEvent.changedTouches[0].clientY;
-        const overCanvas =
-          x >= canvasRect.left &&
-          x <= canvasRect.right &&
-          y >= canvasRect.top &&
-          y <= canvasRect.bottom;
+        const overCanvas = x >= canvasRect.left && x <= canvasRect.right && y >= canvasRect.top && y <= canvasRect.bottom;
         if (overCanvas) {
           createDeviceOnCanvas(fabricCanvas, dragState.imgSrc, x, y, dragState.options || {});
         }
@@ -63,6 +60,7 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
       document.removeEventListener("touchcancel", onEnd, { passive: false });
     }
 
+    // Update the position of the ghost preview during touch movement
     function onMove(e) {
       if (!dragState) return;
       const t = e.touches[0];
@@ -70,13 +68,14 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
       dragState.lastY = t.clientY;
       const ghost = dragState.ghost;
       if (ghost) {
-        ghost.style.transform = `translate(${dragState.lastX - dragState.offsetX}px, ${
-          dragState.lastY - dragState.offsetY
-        }px)`;
+        const tx = dragState.lastX - dragState.offsetX;
+        const ty = dragState.lastY - dragState.offsetY;
+        ghost.style.transform = `translate(${tx}px, ${ty}px)`;
       }
       e.preventDefault();
     }
 
+    // Handle the end of a touch drag operation
     function onEnd(e) {
       e.preventDefault();
       endDrag(e);
@@ -95,14 +94,11 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
           const dragOptions = isCustom
             ? {
                 isCamera: deviceItem.dataset.isCamera === "1",
-                deviceType:
-                  deviceItem.dataset.isCamera === "1"
-                    ? "custom-camera-icon.png"
-                    : "custom-device-icon.png",
+                deviceType: deviceItem.dataset.isCamera === "1" ? "custom-camera-icon.png" : "custom-device-icon.png",
               }
             : {};
 
-          // Create a floating ghost preview under finger
+          // Create a floating ghost preview element
           const ghost = document.createElement("div");
           Object.assign(ghost.style, {
             position: "fixed",
@@ -139,7 +135,7 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
     });
   }
 
-  // Setup pinch-to-zoom and one-finger panning
+  // Enable pinch-to-zoom and touch panning on the canvas
   function setupCanvasTouchGestures(fabricCanvas) {
     const canvasEl = fabricCanvas.getElement();
     const container = canvasEl.parentElement;
@@ -152,7 +148,6 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
     let lastX = 0;
     let lastY = 0;
 
-    // Long press variables
     let longPressTimer = null;
     let longPressTarget = null;
     let longPressStartX = 0;
@@ -164,12 +159,14 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
     let pinchStartDist = 0;
     let pinchStartZoom = 1;
 
+    // Calculate distance between two touch points
     const getTouchDist = (t1, t2) => {
       const dx = t2.clientX - t1.clientX;
       const dy = t2.clientY - t1.clientY;
       return Math.hypot(dx, dy);
     };
 
+    // Start timer to detect a long press for context menus
     const startLongPressTimer = (touch) => {
       if (longPressTimer) clearTimeout(longPressTimer);
       longPressTarget = null;
@@ -178,20 +175,15 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
 
       longPressTimer = setTimeout(() => {
         try {
-          const pointer = fabricCanvas.getPointer(
-            { clientX: touch.clientX, clientY: touch.clientY },
-            true
-          );
+          const pointer = fabricCanvas.getPointer({ clientX: touch.clientX, clientY: touch.clientY }, true);
           longPressTarget = fabricCanvas.findTarget({
             clientX: touch.clientX,
             clientY: touch.clientY,
           });
 
-          if (
-            longPressTarget &&
-            window._fabricContextMenu &&
-            typeof window._fabricContextMenu.showMenu === "function"
-          ) {
+          const hasMenu = window._fabricContextMenu && typeof window._fabricContextMenu.showMenu === "function";
+
+          if (longPressTarget && hasMenu) {
             window._fabricContextMenu.showMenu(longPressTarget, touch.clientX, touch.clientY);
           }
         } catch (err) {
@@ -200,6 +192,7 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
       }, LONG_PRESS_DURATION);
     };
 
+    // Cancel the long press timer
     const cancelLongPressTimer = () => {
       if (longPressTimer) {
         clearTimeout(longPressTimer);
@@ -208,12 +201,14 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
       }
     };
 
+    // Check if the touch has moved beyond the tolerance threshold
     const isTouchMoved = (touch) => {
       const dx = Math.abs(touch.clientX - longPressStartX);
       const dy = Math.abs(touch.clientY - longPressStartY);
       return dx > LONG_PRESS_TOLERANCE || dy > LONG_PRESS_TOLERANCE;
     };
 
+    // Handle touch start events for panning, zooming, and long press
     container.addEventListener(
       "touchstart",
       (e) => {
@@ -244,6 +239,7 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
       { passive: false }
     );
 
+    // Handle touch move events for panning and zooming
     container.addEventListener(
       "touchmove",
       (e) => {
@@ -289,6 +285,7 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
       { passive: false }
     );
 
+    // Handle touch end events
     container.addEventListener(
       "touchend",
       (e) => {
@@ -303,6 +300,7 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
       { passive: false }
     );
 
+    // Handle touch cancel events
     container.addEventListener(
       "touchcancel",
       (e) => {
@@ -315,6 +313,7 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
     );
   }
 
+  // Initialize mobile compatibility features
   function init() {
     waitForCanvas()
       .then((fabricCanvas) => {
@@ -328,6 +327,7 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
       .catch((err) => console.warn("Mobile compatibility skipped:", err));
   }
 
+  // Run initialization when the DOM is ready
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", init);
   } else {

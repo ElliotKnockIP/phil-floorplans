@@ -1,4 +1,4 @@
-// Handles undo/redo functionality with command pattern
+// Handles undo/redo functionality using the command pattern
 class CanvasUndoSystem {
   constructor(fabricCanvas) {
     this.fabricCanvas = fabricCanvas;
@@ -13,7 +13,7 @@ class CanvasUndoSystem {
     this.updateButtonState();
   }
 
-  // Notifies layer UI that items may have changed
+  // Notify layer UI that items have changed
   static notifyLayersItemsChanged() {
     try {
       const evt = new Event("layers:items-changed");
@@ -23,7 +23,7 @@ class CanvasUndoSystem {
     }
   }
 
-  // Base command class
+  // Base command class for undoable actions
   static Command = class {
     execute() {
       throw new Error("Execute method must be implemented");
@@ -33,7 +33,7 @@ class CanvasUndoSystem {
     }
   };
 
-  // Add object command
+  // Command for adding objects to the canvas
   static AddCommand = class extends CanvasUndoSystem.Command {
     constructor(canvas, object, relatedObjects = []) {
       super();
@@ -42,6 +42,7 @@ class CanvasUndoSystem {
       this.relatedObjects = relatedObjects;
     }
 
+    // Add object and its related components back to canvas
     execute() {
       this.canvas.add(this.object);
       this.relatedObjects.forEach((obj) => this.canvas.add(obj));
@@ -85,7 +86,7 @@ class CanvasUndoSystem {
         // Non-fatal; continue
       }
 
-      // Recreate missing device label
+      // Recreate missing device label if needed
       if (this.object && this.object.type === "group" && this.object.deviceType) {
         const existingRef = !!this.object.textObject;
         const onCanvas = existingRef && this.canvas.getObjects().includes(this.object.textObject);
@@ -130,8 +131,11 @@ class CanvasUndoSystem {
         }
       }
 
-      // Recreate camera coverage
-      if (this.object && this.object.type === "group" && this.object.deviceType && this.object.coverageConfig && window.addCameraCoverage) {
+      // Recreate camera coverage area and icons
+      const isCameraGroup = this.object && this.object.type === "group" && this.object.deviceType;
+      const hasCoverage = this.object && this.object.coverageConfig && window.addCameraCoverage;
+
+      if (isCameraGroup && hasCoverage) {
         setTimeout(() => {
           try {
             ["coverageArea", "leftResizeIcon", "rightResizeIcon", "rotateResizeIcon"].forEach((prop) => {
@@ -154,6 +158,7 @@ class CanvasUndoSystem {
       CanvasUndoSystem.notifyLayersItemsChanged();
     }
 
+    // Remove object and its related components from canvas
     undo() {
       this.canvas.remove(this.object);
       this.relatedObjects.forEach((obj) => this.canvas.remove(obj));
@@ -162,6 +167,7 @@ class CanvasUndoSystem {
       CanvasUndoSystem.notifyLayersItemsChanged();
     }
 
+    // Clean up global references and associated objects
     performCleanup() {
       // Clean up devices
       if (this.object.type === "group" && this.object.deviceType) {
@@ -203,7 +209,7 @@ class CanvasUndoSystem {
     }
   };
 
-  // Remove object command
+  // Command for removing objects from the canvas
   static RemoveCommand = class extends CanvasUndoSystem.Command {
     constructor(canvas, object, relatedObjects = []) {
       super();
@@ -213,6 +219,7 @@ class CanvasUndoSystem {
       this.storeObjectData();
     }
 
+    // Store object properties for restoration
     storeObjectData() {
       // Store device data
       if (this.object.type === "group" && this.object.deviceType) {
@@ -230,7 +237,7 @@ class CanvasUndoSystem {
           sensorSize: this.object.sensorSize,
           resolution: this.object.resolution,
           coverageConfig: this.object.coverageConfig ? { ...this.object.coverageConfig } : null,
-          labelHidden: this.object.labelHidden !== undefined ? this.object.labelHidden : this.object.textObject ? !!this.object.textObject._isHidden : false,
+          labelHidden: this.getLabelHiddenState(),
         };
       }
 
@@ -243,6 +250,18 @@ class CanvasUndoSystem {
       }
     }
 
+    // Helper to determine if label is hidden
+    getLabelHiddenState() {
+      if (this.object.labelHidden !== undefined) {
+        return this.object.labelHidden;
+      }
+      if (this.object.textObject) {
+        return !!this.object.textObject._isHidden;
+      }
+      return false;
+    }
+
+    // Remove object and its related components from canvas
     execute() {
       this.canvas.remove(this.object);
       this.relatedObjects.forEach((obj) => this.canvas.remove(obj));
@@ -251,6 +270,7 @@ class CanvasUndoSystem {
       CanvasUndoSystem.notifyLayersItemsChanged();
     }
 
+    // Restore object and its related components to canvas
     undo() {
       this.canvas.add(this.object);
       this.relatedObjects.forEach((obj) => this.canvas.add(obj));
@@ -259,8 +279,8 @@ class CanvasUndoSystem {
       CanvasUndoSystem.notifyLayersItemsChanged();
     }
 
+    // Clean up global references and associated objects
     performCleanup() {
-      // Same cleanup as AddCommand
       if (this.object.type === "group" && this.object.deviceType) {
         ["coverageArea", "leftResizeIcon", "rightResizeIcon", "rotateResizeIcon"].forEach((prop) => {
           if (this.object[prop]) this.canvas.remove(this.object[prop]);
@@ -297,6 +317,7 @@ class CanvasUndoSystem {
       }
     }
 
+    // Restore object properties and global references
     restoreObjectData() {
       if (this.deviceData && this.object.type === "group") {
         Object.assign(this.object, this.deviceData);
@@ -373,7 +394,7 @@ class CanvasUndoSystem {
     }
   };
 
-  // Multiple commands wrapper
+  // Wrapper for executing multiple commands as a single action
   static MultipleCommand = class extends CanvasUndoSystem.Command {
     constructor(commands) {
       super();
@@ -391,7 +412,7 @@ class CanvasUndoSystem {
     }
   };
 
-  // Core undo/redo functionality
+  // Execute a command and add it to the undo stack
   executeCommand(command) {
     if (this.isExecutingCommand) return;
 
@@ -406,6 +427,7 @@ class CanvasUndoSystem {
     }
   }
 
+  // Add a command to the undo stack and manage stack size
   addToStack(command) {
     this.undoStack.push(command);
     if (this.undoStack.length > this.maxStackSize) {
@@ -414,6 +436,7 @@ class CanvasUndoSystem {
     this.updateButtonState();
   }
 
+  // Undo the last command
   undo() {
     if (this.undoStack.length === 0 || this.isExecutingCommand) return;
 
@@ -431,6 +454,7 @@ class CanvasUndoSystem {
     }
   }
 
+  // Redo the last undone command
   redo() {
     if (this.redoStack.length === 0 || this.isExecutingCommand) return;
 
@@ -448,10 +472,12 @@ class CanvasUndoSystem {
     }
   }
 
+  // Recalculate coverage areas for all devices on canvas
   recalculateAllCoverage() {
     setTimeout(() => {
       this.fabricCanvas.getObjects().forEach((obj) => {
         if (obj.type === "group" && obj.deviceType && obj.coverageConfig && obj.createOrUpdateCoverageArea) {
+          obj.lastCoverageState = null;
           obj.createOrUpdateCoverageArea();
         }
       });
@@ -459,7 +485,7 @@ class CanvasUndoSystem {
     }, 100);
   }
 
-  // Button state management
+  // Update UI state of undo/redo buttons
   updateButtonState() {
     const updateButton = (btnId, stack) => {
       const btn = document.getElementById(btnId);
@@ -470,14 +496,17 @@ class CanvasUndoSystem {
 
       const isEmpty = stack.length === 0;
       btn.disabled = isEmpty;
-      img.style.filter = isEmpty ? "brightness(0) saturate(100%) invert(42%) sepia(0%) saturate(0%) hue-rotate(0deg) brightness(96%) contrast(89%)" : "brightness(0) saturate(100%) invert(1)";
+
+      const disabledFilter = "brightness(0) saturate(100%) invert(42%) sepia(0%) saturate(0%) " + "hue-rotate(0deg) brightness(96%) contrast(89%)";
+      const enabledFilter = "brightness(0) saturate(100%) invert(1)";
+      img.style.filter = isEmpty ? disabledFilter : enabledFilter;
     };
 
     updateButton("undo-btn", this.undoStack);
     updateButton("redo-btn", this.redoStack);
   }
 
-  // Object tracking
+  // Track objects added to canvas to create undo commands
   setupObjectAddedTracking() {
     this.fabricCanvas.off("object:added");
     this.fabricCanvas.on("object:added", (e) => {
@@ -494,6 +523,7 @@ class CanvasUndoSystem {
     });
   }
 
+  // Determine if an object should be ignored by the undo system
   shouldSkipObject(obj) {
     // Skip temporary objects during wall drawing
     if (obj.type === "line" && (obj.strokeDashArray || obj.evented === false)) return true;
@@ -505,6 +535,7 @@ class CanvasUndoSystem {
     return false;
   }
 
+  // Identify objects created during drawing modes
   isDrawingModeObject(obj) {
     // Measurement groups
     if (obj.type === "group" && obj._objects) {
@@ -518,6 +549,7 @@ class CanvasUndoSystem {
     return false;
   }
 
+  // Create a compound command for multiple drawing objects
   createDrawingCommand(objects) {
     if (!objects || objects.length === 0) return null;
     const commands = objects.map((obj) => {
@@ -527,7 +559,7 @@ class CanvasUndoSystem {
     return new CanvasUndoSystem.MultipleCommand(commands);
   }
 
-  // Event handlers
+  // Setup event listeners for UI and keyboard shortcuts
   setupEventHandlers() {
     // Undo/Redo buttons
     const undoBtn = document.getElementById("undo-btn");
@@ -587,7 +619,7 @@ class CanvasUndoSystem {
     this.setupObjectAddedTracking();
   }
 
-  // Deletion handling
+  // Handle deletion of objects with undo support
   handleDeletion(activeObject) {
     this.fabricCanvas.discardActiveObject();
 
@@ -598,7 +630,11 @@ class CanvasUndoSystem {
 
       connectedCircles.forEach((circle) => {
         if (!circle) return;
-        const otherLines = this.fabricCanvas.getObjects().filter((obj) => obj.type === "line" && obj !== activeObject && obj.stroke === "red" && (obj.startCircle === circle || obj.endCircle === circle));
+        const otherLines = this.fabricCanvas.getObjects().filter((obj) => {
+          const isWall = obj.type === "line" && obj.stroke === "red";
+          const isConnected = obj.startCircle === circle || obj.endCircle === circle;
+          return isWall && obj !== activeObject && isConnected;
+        });
         if (otherLines.length === 0) {
           relatedObjects.push(circle);
         }
@@ -608,7 +644,11 @@ class CanvasUndoSystem {
       this.executeCommand(command);
     } else if (activeObject.type === "circle" && activeObject.isWallCircle) {
       // Wall circle deletion
-      const connectedLines = this.fabricCanvas.getObjects().filter((obj) => obj.type === "line" && obj.stroke === "red" && (obj.startCircle === activeObject || obj.endCircle === activeObject));
+      const connectedLines = this.fabricCanvas.getObjects().filter((obj) => {
+        const isWall = obj.type === "line" && obj.stroke === "red";
+        const isConnected = obj.startCircle === activeObject || obj.endCircle === activeObject;
+        return isWall && isConnected;
+      });
 
       const allObjectsToDelete = [activeObject, ...connectedLines];
       const orphanedCircles = [];
@@ -616,7 +656,12 @@ class CanvasUndoSystem {
       connectedLines.forEach((line) => {
         const otherCircle = line.startCircle === activeObject ? line.endCircle : line.startCircle;
         if (otherCircle && !orphanedCircles.includes(otherCircle)) {
-          const remainingConnections = this.fabricCanvas.getObjects().filter((obj) => obj.type === "line" && obj.stroke === "red" && !connectedLines.includes(obj) && (obj.startCircle === otherCircle || obj.endCircle === otherCircle));
+          const remainingConnections = this.fabricCanvas.getObjects().filter((obj) => {
+            const isWall = obj.type === "line" && obj.stroke === "red";
+            const isNotCurrent = !connectedLines.includes(obj);
+            const isConnected = obj.startCircle === otherCircle || obj.endCircle === otherCircle;
+            return isWall && isNotCurrent && isConnected;
+          });
           if (remainingConnections.length === 0) {
             orphanedCircles.push(otherCircle);
           }
@@ -635,7 +680,7 @@ class CanvasUndoSystem {
     }
   }
 
-  // Find related objects
+  // Find objects related to a target object (e.g., labels for devices)
   findRelatedObjects(obj) {
     const related = [];
 
@@ -644,7 +689,11 @@ class CanvasUndoSystem {
       if (obj.textObject) {
         related.push(obj.textObject);
       } else {
-        const deviceText = this.fabricCanvas.getObjects().find((textObj) => textObj.type === "i-text" && (textObj.isDeviceLabel || textObj.deviceId === obj.id));
+        const deviceText = this.fabricCanvas.getObjects().find((textObj) => {
+          const isLabel = textObj.type === "i-text" && textObj.isDeviceLabel;
+          const isMatch = textObj.deviceId === obj.id;
+          return isLabel || isMatch;
+        });
         if (deviceText) related.push(deviceText);
       }
     }
@@ -654,7 +703,11 @@ class CanvasUndoSystem {
       if (obj.associatedText) {
         related.push(obj.associatedText);
       } else {
-        const zoneText = this.fabricCanvas.getObjects().find((textObj) => textObj.type === "i-text" && textObj.class === "zone-text" && textObj.associatedPolygon === obj);
+        const zoneText = this.fabricCanvas.getObjects().find((textObj) => {
+          const isZoneText = textObj.type === "i-text" && textObj.class === "zone-text";
+          const isMatch = textObj.associatedPolygon === obj;
+          return isZoneText && isMatch;
+        });
         if (zoneText) related.push(zoneText);
       }
     }
@@ -667,13 +720,14 @@ class CanvasUndoSystem {
     return related;
   }
 
-  // Utility methods
+  // Clear undo and redo stacks
   clear() {
     this.undoStack = [];
     this.redoStack = [];
     this.updateButtonState();
   }
 
+  // Reset the undo system state
   reset() {
     this.undoStack = [];
     this.redoStack = [];
@@ -683,6 +737,7 @@ class CanvasUndoSystem {
     if (undoBtn) undoBtn.disabled = true;
   }
 
+  // Reinitialize the undo system
   reinitialize() {
     this.fabricCanvas.off("object:added");
     this.undoStack = [];
@@ -692,6 +747,7 @@ class CanvasUndoSystem {
     if (undoBtn) undoBtn.disabled = true;
   }
 
+  // Enable object tracking for undo commands
   enableTracking() {
     this.isExecutingCommand = false;
     this.setupObjectAddedTracking();
@@ -699,7 +755,7 @@ class CanvasUndoSystem {
   }
 }
 
-// Export for use
+// Initialize undo system and expose to global scope
 export function initializeUndo(fabricCanvas) {
   const undoSystem = new CanvasUndoSystem(fabricCanvas);
   window.undoSystem = undoSystem;

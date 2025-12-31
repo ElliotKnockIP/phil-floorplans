@@ -1,4 +1,4 @@
-// Utility functions for geometric calculations.
+// Utility functions for geometric calculations
 
 // Calculate distance between two points
 export function distance(p1, p2) {
@@ -15,7 +15,7 @@ export function pathMidpoint(points) {
   if (points.length === 0) return { x: 0, y: 0 };
   if (points.length === 1) return points[0];
 
-  // Calculate segment lengths and total
+  // Calculate segment lengths and total path length
   const lengths = [];
   let total = 0;
   for (let i = 0; i < points.length - 1; i++) {
@@ -24,7 +24,7 @@ export function pathMidpoint(points) {
     total += len;
   }
 
-  // Find the point at half the total length
+  // Find the point at half the total length by iterating through segments
   let accumulated = 0;
   const target = total / 2;
   for (let i = 0; i < lengths.length; i++) {
@@ -46,8 +46,10 @@ export function distanceToSegment(point, segStart, segEnd) {
   const dy = segEnd.y - segStart.y;
   const lengthSq = dx * dx + dy * dy;
 
+  // Handle zero-length segments
   if (lengthSq === 0) return distance(point, segStart);
 
+  // Project point onto the line segment and clamp to segment ends
   const t = Math.max(0, Math.min(1, ((point.x - segStart.x) * dx + (point.y - segStart.y) * dy) / lengthSq));
 
   return distance(point, {
@@ -56,7 +58,7 @@ export function distanceToSegment(point, segStart, segEnd) {
   });
 }
 
-// Find the best index to insert a new point into a path
+// Find the best index to insert a new point into a path based on proximity
 export function findInsertIndex(points, newPoint) {
   let minDist = Infinity;
   let bestIdx = 0;
@@ -70,7 +72,7 @@ export function findInsertIndex(points, newPoint) {
   return bestIdx;
 }
 
-// Calculate total path length
+// Calculate total path length by summing all segments
 export function pathLength(points) {
   let total = 0;
   for (let i = 0; i < points.length - 1; i++) {
@@ -93,6 +95,7 @@ export function positionOnPath(points, ratio) {
 
   if (total === 0) return points[0];
 
+  // Find the segment containing the target length
   const targetLen = ratio * total;
   let accumulated = 0;
   for (let i = 0; i < lengths.length; i++) {
@@ -121,7 +124,7 @@ export function ratioOnPath(points, point) {
   }
   if (total === 0) return 0;
 
-  // Find closest segment
+  // Find closest segment and calculate ratio along the entire path
   let minDist = Infinity;
   let closestRatio = 0;
 
@@ -135,7 +138,8 @@ export function ratioOnPath(points, point) {
       const segLen = lengths[i];
 
       if (segLen > 0) {
-        const ratioAlongSeg = Math.max(0, Math.min(1, ((point.x - points[i].x) * dx + (point.y - points[i].y) * dy) / (segLen * segLen)));
+        const dotProduct = (point.x - points[i].x) * dx + (point.y - points[i].y) * dy;
+        const ratioAlongSeg = Math.max(0, Math.min(1, dotProduct / (segLen * segLen)));
 
         let lengthBefore = 0;
         for (let j = 0; j < i; j++) lengthBefore += lengths[j];
@@ -146,7 +150,7 @@ export function ratioOnPath(points, point) {
   return Math.max(0, Math.min(1, closestRatio));
 }
 
-// Clamp a point to stay within bounds
+// Clamp a point to stay within specified bounds
 export function clampToBounds(point, bounds) {
   return {
     x: Math.max(bounds.minX, Math.min(bounds.maxX, point.x)),
@@ -154,7 +158,7 @@ export function clampToBounds(point, bounds) {
   };
 }
 
-// Calculate bounding box containing all points
+// Calculate bounding box containing all points in a set
 export function computeBounds(points) {
   if (!points.length) return { minX: 0, minY: 0, maxX: 1, maxY: 1 };
 

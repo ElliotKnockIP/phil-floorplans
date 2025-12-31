@@ -2,12 +2,7 @@ import { Connection } from "./connections/Connection.js";
 import { ConnectionRenderer } from "./connections/ConnectionRenderer.js";
 import { findInsertIndex, ratioOnPath, positionOnPath } from "./network-utils.js";
 import { serializeConnections, deserializeConnections } from "../save/network-save.js";
-import {
-  CATEGORY_LABELS,
-  getDeviceCategory,
-  isPanelDevice,
-  areCategoriesCompatible,
-} from "../devices/categories/device-types.js";
+import { CATEGORY_LABELS, getDeviceCategory, isPanelDevice, areCategoriesCompatible } from "../devices/categories/device-types.js";
 
 // Re-export for external consumers
 export { CATEGORY_LABELS };
@@ -22,6 +17,7 @@ export const DEFAULT_STYLES = {
 
 // Manages network connections between devices on the canvas.
 export class NetworkManager {
+  // Initialize network manager with canvas and renderer
   constructor(fabricCanvas) {
     this.fabricCanvas = fabricCanvas;
     this.connections = new Map();
@@ -40,11 +36,13 @@ export class NetworkManager {
     this.init();
   }
 
+  // Start the manager and index existing devices
   init() {
     this.setupCanvasEvents();
     this.indexExistingDevices();
   }
 
+  // Set up all canvas event listeners for network interactions
   setupCanvasEvents() {
     const canvas = this.fabricCanvas;
 
@@ -115,6 +113,7 @@ export class NetworkManager {
     });
   }
 
+  // Index all devices currently on the canvas
   indexExistingDevices() {
     this.fabricCanvas.getObjects().forEach((obj) => {
       if (this.isDevice(obj)) this.indexDevice(obj);
@@ -126,6 +125,7 @@ export class NetworkManager {
     return obj?.type === "group" && obj?.deviceType;
   }
 
+  // Get or generate a unique ID for a device
   getDeviceId(device) {
     if (!device) return undefined;
     if (device.id) return device.id;
@@ -136,26 +136,29 @@ export class NetworkManager {
     return newId;
   }
 
+  // Get the center coordinates of a device
   getDeviceCenter(device) {
     const c = device.getCenterPoint?.() || { x: device.left, y: device.top };
     return { x: c.x, y: c.y };
   }
 
+  // Create a normalized ID for a connection between two devices
   makeNormalizedConnectionId(device1, device2) {
     return Connection.normalizeId(this.getDeviceId(device1), this.getDeviceId(device2));
   }
 
+  // Find a device object on the canvas by its ID
   findDeviceById(deviceId) {
-    return this.fabricCanvas
-      .getObjects()
-      .find((obj) => this.isDevice(obj) && this.getDeviceId(obj) === deviceId);
+    return this.fabricCanvas.getObjects().find((obj) => this.isDevice(obj) && this.getDeviceId(obj) === deviceId);
   }
 
+  // Add a device to the internal index
   indexDevice(device) {
     const id = this.getDeviceId(device);
     if (id) this.deviceIndex.set(id, device);
   }
 
+  // Set up movement tracking for a device to update its connections
   attachTrackingForDevice(device) {
     if (!device || this.trackedDevices.has(device)) return;
 
@@ -226,9 +229,7 @@ export class NetworkManager {
     this.indexDevice(device2);
     this.renderConnection(conn);
 
-    document.dispatchEvent(
-      new CustomEvent("topology:connection-created", { detail: { connection: conn } })
-    );
+    document.dispatchEvent(new CustomEvent("topology:connection-created", { detail: { connection: conn } }));
     return conn;
   }
 
@@ -254,6 +255,7 @@ export class NetworkManager {
     this.fabricCanvas.requestRenderAll();
   }
 
+  // Remove all connections associated with a specific device
   removeConnectionsForDevice(device) {
     const deviceId = this.getDeviceId(device);
     const toRemove = [];
@@ -263,18 +265,10 @@ export class NetworkManager {
     toRemove.forEach((id) => this.removeConnection(id));
   }
 
+  // Clear all network connections and related UI elements from the canvas
   clearAllConnections() {
     this.suppressAllRemovalHandling = true;
-    const toRemove = this.fabricCanvas
-      .getObjects()
-      .filter(
-        (obj) =>
-          obj.isConnectionSegment ||
-          obj.isNetworkSplitPoint ||
-          obj.isSegmentDistanceLabel ||
-          obj.isConnectionCustomLabel ||
-          obj.isChannelLabel
-      );
+    const toRemove = this.fabricCanvas.getObjects().filter((obj) => obj.isConnectionSegment || obj.isNetworkSplitPoint || obj.isSegmentDistanceLabel || obj.isConnectionCustomLabel || obj.isChannelLabel);
     toRemove.forEach((obj) => this.fabricCanvas.remove(obj));
     this.suppressAllRemovalHandling = false;
 
@@ -284,6 +278,7 @@ export class NetworkManager {
     this.fabricCanvas.requestRenderAll();
   }
 
+  // Render a connection on the canvas using the renderer
   renderConnection(conn) {
     this.renderer.render(conn, {
       getDeviceCenter: (d) => this.getDeviceCenter(d),
@@ -294,6 +289,7 @@ export class NetworkManager {
     this.bringDevicesToFront();
   }
 
+  // Update all connections for a device when it moves or changes
   updateDeviceConnections(device) {
     const deviceId = this.getDeviceId(device);
     this.connections.forEach((conn) => {
@@ -326,15 +322,13 @@ export class NetworkManager {
     this.renderConnection(conn);
   }
 
+  // Remove a split point from a connection
   removeSplitPoint(splitObj) {
     if (!splitObj?.connectionId) return;
     const conn = this.connections.get(splitObj.connectionId);
     if (!conn) return;
 
-    const idx =
-      typeof splitObj.nodeIndex === "number"
-        ? splitObj.nodeIndex
-        : conn.findClosestNodeIndex({ x: splitObj.left, y: splitObj.top });
+    const idx = typeof splitObj.nodeIndex === "number" ? splitObj.nodeIndex : conn.findClosestNodeIndex({ x: splitObj.left, y: splitObj.top });
 
     if (idx > -1) {
       conn.removeNode(idx);
@@ -342,7 +336,7 @@ export class NetworkManager {
     }
   }
 
-  // Determine if split points should be shown
+  // Determine if split points should be shown for a specific connection
   shouldShowSplitPoints(connectionId) {
     if (!this.activeHighlight) return false;
     if (this.activeHighlight.type === "all") return true;
@@ -354,11 +348,13 @@ export class NetworkManager {
     return false;
   }
 
+  // Highlight a specific connection on the canvas
   highlightConnection(connectionId) {
     this.renderer.clearHighlights(this.connections);
     this.renderer.highlightConnection(connectionId);
   }
 
+  // Highlight all connections associated with a specific device
   highlightDeviceConnections(device) {
     this.renderer.clearHighlights(this.connections);
     const deviceId = this.getDeviceId(device);
@@ -370,6 +366,7 @@ export class NetworkManager {
     });
   }
 
+  // Ensure devices and split points are always rendered on top of connection lines
   bringDevicesToFront() {
     this.fabricCanvas
       .getObjects()
@@ -408,14 +405,19 @@ export class NetworkManager {
     conn.properties.channel = channels.length + 1;
     conn.properties.panelDeviceId = panelId;
     channels.push(conn.id);
+
+    // Rebuild topology if it's currently open
+    if (window.topologyBuilderAPI?.rebuild) {
+      window.topologyBuilderAPI.rebuild();
+    }
   }
 
+  // Get channel and panel information for a specific device
   getDeviceChannelInfo(device) {
     const deviceId = this.getDeviceId(device);
     for (const conn of this.connections.values()) {
       if (conn.involvesDevice(deviceId) && conn.properties.channel) {
-        const panelDevice =
-          conn.properties.panelDeviceId === conn.device1Id ? conn.device1 : conn.device2;
+        const panelDevice = conn.properties.panelDeviceId === conn.device1Id ? conn.device1 : conn.device2;
         return {
           channel: conn.properties.channel,
           panelDeviceId: conn.properties.panelDeviceId,
@@ -426,6 +428,19 @@ export class NetworkManager {
     return null;
   }
 
+  // Get a list of all channel numbers assigned to a device
+  getAllDeviceChannels(device) {
+    const deviceId = this.getDeviceId(device);
+    const channels = [];
+    for (const conn of this.connections.values()) {
+      if (conn.involvesDevice(deviceId) && conn.properties.channel) {
+        channels.push(conn.properties.channel);
+      }
+    }
+    return channels.sort((a, b) => a - b);
+  }
+
+  // Get all connections and their channel info for a panel device
   getPanelConnections(panelDevice) {
     const panelId = this.getDeviceId(panelDevice);
     const result = [];
@@ -449,6 +464,7 @@ export class NetworkManager {
     return areCategoriesCompatible(catA, catB);
   }
 
+  // Dispatch an event when a connection is blocked due to incompatible categories
   emitConnectionBlocked(catA, catB) {
     const labelA = CATEGORY_LABELS[catA] || "Device";
     const labelB = CATEGORY_LABELS[catB] || "Device";
@@ -475,9 +491,7 @@ export class NetworkManager {
     } else if (target.isConnectionCustomLabel && target.customTextId) {
       const conn = this.connections.get(target.connectionId);
       if (conn?.properties.customTextLabels) {
-        conn.properties.customTextLabels = conn.properties.customTextLabels.filter(
-          (l) => l.id !== target.customTextId
-        );
+        conn.properties.customTextLabels = conn.properties.customTextLabels.filter((l) => l.id !== target.customTextId);
       }
     } else if (this.isDevice(target)) {
       this.removeConnectionsForDevice(target);
@@ -494,6 +508,7 @@ export class NetworkManager {
     }
   }
 
+  // Update all connection labels when the canvas scale changes
   updateLabelsForScaleChange(newPixelsPerMeter) {
     if (!newPixelsPerMeter || newPixelsPerMeter <= 0) return;
     this.connections.forEach((conn) => this.renderConnection(conn));
@@ -504,12 +519,13 @@ export class NetworkManager {
   splitConnection = (segment, pointer) => this.addSplitPoint(segment, pointer);
   updateConnectionLabelsForScaleChange = (ppm) => this.updateLabelsForScaleChange(ppm);
 
-  // Path position calculations
+  // Calculate the ratio (0-1) of a point along a connection path
   calculatePositionRatioOnPath(connection, point) {
     const path = connection.getPath((d) => this.getDeviceCenter(d));
     return ratioOnPath(path, point);
   }
 
+  // Get the coordinates of a point at a specific ratio (0-1) along a connection path
   getPositionFromPathRatio(connection, ratio) {
     const path = connection.getPath((d) => this.getDeviceCenter(d));
     return positionOnPath(path, ratio);
@@ -520,6 +536,7 @@ export class NetworkManager {
     return serializeConnections(this.connections, (d) => this.getDeviceId(d));
   }
 
+  // Load connections from serialized data
   loadConnectionsData(data) {
     return deserializeConnections(
       data,
@@ -528,10 +545,9 @@ export class NetworkManager {
     );
   }
 
+  // Remove old connection lines that are no longer used
   removeLegacyConnectionLines() {
-    const legacy = this.fabricCanvas
-      .getObjects()
-      .filter((obj) => obj.isConnectionLine && !obj.isConnectionSegment);
+    const legacy = this.fabricCanvas.getObjects().filter((obj) => obj.isConnectionLine && !obj.isConnectionSegment);
     legacy.forEach((obj) => this.fabricCanvas.remove(obj));
   }
 }

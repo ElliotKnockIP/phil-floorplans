@@ -1,11 +1,5 @@
 // Line class handles drawing lines, connections, and arrows on the canvas
-import {
-  closeSidebar,
-  startTool,
-  stopCurrentTool,
-  setupDeletion,
-  registerToolCleanup,
-} from "./drawing-utils.js";
+import { closeSidebar, startTool, stopCurrentTool, setupDeletion, registerToolCleanup } from "./drawing-utils.js";
 
 export class Line {
   constructor(fabricCanvas) {
@@ -21,10 +15,12 @@ export class Line {
     const connectionBtn = document.getElementById("add-connection-btn");
     const arrowBtn = document.getElementById("add-arrow-btn");
 
-    setupDeletion(
-      this.fabricCanvas,
-      (obj) => obj.type === "line" || obj.type === "arrow" || (obj.type === "group" && obj.isArrow)
-    );
+    // Configure deletion for lines and arrows
+    setupDeletion(this.fabricCanvas, (obj) => {
+      const isLineOrArrow = obj.type === "line" || obj.type === "arrow";
+      const isArrowGroup = obj.type === "group" && obj.isArrow;
+      return isLineOrArrow || isArrowGroup;
+    });
 
     if (lineBtn) {
       lineBtn.addEventListener("click", () => {
@@ -68,6 +64,7 @@ export class Line {
       });
     }
 
+    // Expose cleanup function globally
     window.cleanupLinesTempObjects = () => this.cleanupTempObjects();
   }
 
@@ -119,8 +116,10 @@ export class Line {
     const pointer = this.fabricCanvas.getPointer(e.e);
 
     if (!this.startPoint) {
+      // Set start point on first click
       this.startPoint = { x: pointer.x, y: pointer.y };
     } else {
+      // Create final line on second click
       if (this.tempObject) this.fabricCanvas.remove(this.tempObject);
 
       const line = new fabric.Line([this.startPoint.x, this.startPoint.y, pointer.x, pointer.y], {
@@ -134,12 +133,14 @@ export class Line {
         isConnectionLine: dashed,
       });
 
+      // Handle undo/redo state
       const wasExecuting = window.undoSystem ? window.undoSystem.isExecutingCommand : false;
       if (window.undoSystem) window.undoSystem.isExecutingCommand = true;
 
       this.fabricCanvas.add(line);
       this.fabricCanvas.setActiveObject(line);
 
+      // Add to undo stack
       if (window.undoSystem) {
         window.undoSystem.isExecutingCommand = wasExecuting;
         const command = new window.UndoCommands.AddCommand(this.fabricCanvas, line, []);
@@ -160,16 +161,14 @@ export class Line {
 
     if (this.tempObject) this.fabricCanvas.remove(this.tempObject);
 
-    this.tempObject = new fabric.Line(
-      [this.startPoint.x, this.startPoint.y, pointer.x, pointer.y],
-      {
-        stroke: color,
-        strokeWidth: 3,
-        strokeDashArray: [5, 5],
-        selectable: false,
-        evented: false,
-      }
-    );
+    // Create dashed preview line
+    this.tempObject = new fabric.Line([this.startPoint.x, this.startPoint.y, pointer.x, pointer.y], {
+      stroke: color,
+      strokeWidth: 3,
+      strokeDashArray: [5, 5],
+      selectable: false,
+      evented: false,
+    });
 
     this.fabricCanvas.add(this.tempObject);
     this.fabricCanvas.requestRenderAll();
@@ -183,18 +182,22 @@ export class Line {
     const pointer = this.fabricCanvas.getPointer(e.e);
 
     if (!this.startPoint) {
+      // Set start point on first click
       this.startPoint = { x: pointer.x, y: pointer.y };
     } else {
+      // Create final arrow on second click
       if (this.tempObject) this.fabricCanvas.remove(this.tempObject);
 
       const arrow = this.createArrow(this.startPoint, pointer);
 
+      // Handle undo/redo state
       const wasExecuting = window.undoSystem ? window.undoSystem.isExecutingCommand : false;
       if (window.undoSystem) window.undoSystem.isExecutingCommand = true;
 
       this.fabricCanvas.add(arrow);
       this.fabricCanvas.setActiveObject(arrow);
 
+      // Add to undo stack
       if (window.undoSystem) {
         window.undoSystem.isExecutingCommand = wasExecuting;
         const command = new window.UndoCommands.AddCommand(this.fabricCanvas, arrow, []);
@@ -215,6 +218,7 @@ export class Line {
 
     if (this.tempObject) this.fabricCanvas.remove(this.tempObject);
 
+    // Create arrow preview
     this.tempObject = this.createArrow(this.startPoint, pointer, true);
     this.fabricCanvas.add(this.tempObject);
     this.fabricCanvas.requestRenderAll();
@@ -226,6 +230,7 @@ export class Line {
     const dy = end.y - start.y;
     const angle = Math.atan2(dy, dx);
 
+    // Create the line part of the arrow
     const line = new fabric.Line([start.x, start.y, end.x, end.y], {
       stroke: "blue",
       strokeWidth: isPreview ? 3 : 2,
@@ -234,6 +239,7 @@ export class Line {
       evented: !isPreview,
     });
 
+    // Create the triangle head of the arrow
     const arrowHead = new fabric.Triangle({
       left: end.x,
       top: end.y,
@@ -247,6 +253,7 @@ export class Line {
       evented: false,
     });
 
+    // Group line and head together
     const group = new fabric.Group([line, arrowHead], {
       selectable: !isPreview,
       hasControls: false,
@@ -259,6 +266,7 @@ export class Line {
   }
 }
 
+// Helper function to initialize line tools
 export function setupLineTools(fabricCanvas) {
   new Line(fabricCanvas);
 }

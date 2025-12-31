@@ -1,17 +1,9 @@
-import {
-  closeSidebar,
-  setDefaultCursor,
-  setupDeletion,
-  applyStandardStyling,
-} from "./drawing-utils.js";
+import { closeSidebar, setDefaultCursor, setupDeletion, applyStandardStyling } from "./drawing-utils.js";
 
-// Sets up image upload tool
+// Sets up image upload tool and deletion logic
 export function setupImageUploadTool(fabricCanvas) {
   const button = document.getElementById("upload-image-btn");
-  setupDeletion(
-    fabricCanvas,
-    (obj) => obj.type === "image" && obj.isUploadedImage && !obj.isLocked
-  );
+  setupDeletion(fabricCanvas, (obj) => obj.type === "image" && obj.isUploadedImage && !obj.isLocked);
 
   setupImageLockUnlock(fabricCanvas);
 
@@ -78,6 +70,7 @@ function setupImageLockUnlock(fabricCanvas) {
     cursorStyle: "pointer",
     sizeX: 40,
     sizeY: 40,
+    // Toggles lock state on mouse up
     mouseUpHandler: function (eventData, transform) {
       const target = transform.target;
       if (target && target.type === "image" && target.isUploadedImage) {
@@ -85,6 +78,7 @@ function setupImageLockUnlock(fabricCanvas) {
       }
       return true;
     },
+    // Renders the lock/unlock icon
     render: function (ctx, left, top, styleOverride, fabricObject) {
       if (!fabricObject.isUploadedImage) return;
 
@@ -111,6 +105,7 @@ function setupImageLockUnlock(fabricCanvas) {
 
       ctx.restore();
     },
+    // Determines if the lock control should be visible
     getVisibility: function (fabricObject) {
       return fabricObject.isUploadedImage && fabricCanvas.getActiveObject() === fabricObject;
     },

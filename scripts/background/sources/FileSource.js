@@ -1,24 +1,23 @@
-// File Source Handler - Handles file uploads and PDF conversion
-// Manages image and PDF file selection and processing
+// File Source Handler handles file uploads and PDF conversion
 
 export class FileSourceHandler {
   constructor(manager) {
     this.manager = manager;
 
-    // File inputs
+    // File input elements
     this.fileInputs = {
       image: null,
       pdf: null,
     };
   }
 
-  // Setup file input elements
+  // Setup file input elements for images and PDFs
   setupFileInputs() {
     this.fileInputs.image = this.createFileInput("image/*", (event) => this.handleImageFile(event));
     this.fileInputs.pdf = this.createFileInput(".pdf", (event) => this.handlePdfFile(event));
   }
 
-  // Create a file input element
+  // Create a hidden file input element
   createFileInput(accept, handler) {
     const input = document.createElement("input");
     input.type = "file";
@@ -29,13 +28,13 @@ export class FileSourceHandler {
     return input;
   }
 
-  // Reset file inputs
+  // Reset file input values
   resetFileInputs() {
     if (this.fileInputs.image) this.fileInputs.image.value = "";
     if (this.fileInputs.pdf) this.fileInputs.pdf.value = "";
   }
 
-  // Handle image file selection
+  // Handle image file selection and pass to manager
   handleImageFile(event) {
     const file = event.target.files[0];
     if (!file || !file.type.startsWith("image/")) {
@@ -47,7 +46,7 @@ export class FileSourceHandler {
     this.manager.processFile("file", url);
   }
 
-  // Handle PDF file selection
+  // Handle PDF file selection and start conversion
   async handlePdfFile(event) {
     const file = event.target.files[0];
     if (!file || file.type !== "application/pdf") {
@@ -59,7 +58,7 @@ export class FileSourceHandler {
     await this.convertPdfToImage(file);
   }
 
-  // Convert PDF to image
+  // Convert first page of PDF to image using PDF.js
   async convertPdfToImage(file) {
     try {
       if (!window.pdfjsLib) {

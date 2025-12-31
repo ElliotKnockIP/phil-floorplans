@@ -14,20 +14,42 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="hotspot-severity-select">Severity</label>
-        <select class="form-control form-control-sm" id="hotspot-severity-select">
-          <option value="">Select...</option>
-          <option value="low">Low</option>
-          <option value="medium">Medium</option>
-          <option value="high">High</option>
-          <option value="critical">Critical</option>
-          <option value="na">N/A</option>
-        </select>
+        <label class="form-label" for="hotspot-risk-assessment-input">Risk Assessment</label>
+        <textarea class="form-control form-control-sm" id="hotspot-risk-assessment-input" rows="2" placeholder="Describe the risk for this hotspot"></textarea>
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="hotspot-notes-input">Notes</label>
-        <textarea class="form-control form-control-sm" id="hotspot-notes-input" rows="3"></textarea>
+        <div class="d-flex gap-2">
+          <div class="flex-fill">
+            <label class="form-label" for="hotspot-likelihood-select">Likelihood</label>
+            <select class="form-control form-control-sm" id="hotspot-likelihood-select">
+              <option value="">Select...</option>
+              <option value="very-low">Very Low</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="very-high">Very High</option>
+              <option value="na">N/A</option>
+            </select>
+          </div>
+          <div class="flex-fill">
+            <label class="form-label" for="hotspot-severity-select">Severity</label>
+            <select class="form-control form-control-sm" id="hotspot-severity-select">
+              <option value="">Select...</option>
+              <option value="very-low">Very Low</option>
+              <option value="low">Low</option>
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="very-high">Very High</option>
+              <option value="na">N/A</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="hotspot-control-measures-input">Control Measures</label>
+        <textarea class="form-control form-control-sm" id="hotspot-control-measures-input" rows="3" placeholder="Enter control measures for this hotspot"></textarea>
       </div>
 
       <div class="form-group">
@@ -42,7 +64,7 @@
           <div class="colour-icon" data-color="#ffffff" style="background-color: #ffffff"></div>
           <div class="colour-picker-icon">
             <input type="color" id="hotspot-fill-color-picker" />
-            <span class="color-picker-emoji">🎨</span>
+            <span class="color-picker-emoji"><img src="./images/icons/colour-palette.svg" alt="Colour Palette" /></span>
           </div>
         </div>
       </div>
@@ -59,7 +81,7 @@
           <div class="colour-icon" data-color="#808080" style="background-color: #808080"></div>
           <div class="colour-picker-icon">
             <input type="color" id="hotspot-stroke-color-picker" />
-            <span class="color-picker-emoji">🎨</span>
+            <span class="color-picker-emoji"><img src="./images/icons/colour-palette.svg" alt="Colour Palette" /></span>
           </div>
         </div>
       </div>

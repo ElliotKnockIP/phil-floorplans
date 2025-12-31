@@ -21,6 +21,7 @@ export function setCrosshairCursor(fabricCanvas) {
   fabricCanvas.defaultCursor = "crosshair";
   fabricCanvas.hoverCursor = "crosshair";
   fabricCanvas.selection = false;
+  // Disable selection for all objects except background
   fabricCanvas.getObjects().forEach((obj) => {
     if (!obj.isBackground) obj.set({ selectable: false });
   });
@@ -32,6 +33,7 @@ export function setDefaultCursor(fabricCanvas) {
   fabricCanvas.defaultCursor = "move";
   fabricCanvas.hoverCursor = "default";
   fabricCanvas.selection = true;
+  // Re-enable selection for non-background objects
   fabricCanvas.getObjects().forEach((obj) => {
     if (!obj.isBackground && !obj.isWallCircle && !obj.isDeviceLabel) {
       obj.set({ selectable: true });
@@ -91,6 +93,7 @@ export function startTool(fabricCanvas, toolName, clickHandler, moveHandler = nu
   fabricCanvas.on("mouse:down", clickHandler);
   if (moveHandler) fabricCanvas.on("mouse:move", moveHandler);
 
+  // Handle escape and enter keys during tool use
   keyHandler = (e) => {
     if (e.key === "Escape") {
       e.preventDefault();
@@ -126,7 +129,10 @@ export function stopCurrentTool() {
   // Remove focus from buttons and focus canvas
   try {
     const activeEl = document.activeElement;
-    if (activeEl && (activeEl.tagName === "BUTTON" || (activeEl.getAttribute && activeEl.getAttribute("role") === "button"))) {
+    const isButton = activeEl && activeEl.tagName === "BUTTON";
+    const isRoleButton = activeEl && activeEl.getAttribute && activeEl.getAttribute("role") === "button";
+
+    if (isButton || isRoleButton) {
       try {
         activeEl.blur();
       } catch (e) {}
@@ -147,6 +153,7 @@ export function stopCurrentTool() {
   hideDrawingPopup();
   setDefaultCursor(currentCanvas);
 
+  // Unbind event listeners
   currentCanvas.off("mouse:down", currentTool.clickHandler);
   if (currentTool.moveHandler) {
     currentCanvas.off("mouse:move", currentTool.moveHandler);
@@ -216,6 +223,7 @@ export function handleObjectDeletion(fabricCanvas, activeObject) {
   if (activeObject.type === "polygon" && activeObject.class === "zone-polygon") {
     return deleteZone(fabricCanvas, activeObject);
   }
+  // Handle zone text deletion by deleting associated polygon
   if (activeObject.type === "i-text" && activeObject.class === "zone-text") {
     const associatedPolygon = activeObject.associatedPolygon;
     if (associatedPolygon) {
@@ -228,6 +236,7 @@ export function handleObjectDeletion(fabricCanvas, activeObject) {
   if (activeObject.type === "polygon" && activeObject.class === "room-polygon") {
     return deleteRoom(fabricCanvas, activeObject);
   }
+  // Handle room text deletion by deleting associated polygon
   if (activeObject.type === "i-text" && activeObject.class === "room-text") {
     const associatedPolygon = activeObject.associatedPolygon;
     if (associatedPolygon) {
@@ -240,6 +249,7 @@ export function handleObjectDeletion(fabricCanvas, activeObject) {
   if (activeObject.type === "polygon" && activeObject.class === "risk-polygon") {
     return deleteRisk(fabricCanvas, activeObject);
   }
+  // Handle risk text deletion by deleting associated polygon
   if (activeObject.type === "i-text" && activeObject.class === "risk-text") {
     const associatedPolygon = activeObject.associatedPolygon;
     if (associatedPolygon) {
@@ -252,6 +262,7 @@ export function handleObjectDeletion(fabricCanvas, activeObject) {
   if (activeObject.type === "polygon" && activeObject.class === "safety-polygon") {
     return deleteSafety(fabricCanvas, activeObject);
   }
+  // Handle safety text deletion by deleting associated polygon
   if (activeObject.type === "i-text" && activeObject.class === "safety-text") {
     const associatedPolygon = activeObject.associatedPolygon;
     if (associatedPolygon) {
@@ -269,10 +280,15 @@ export function handleObjectDeletion(fabricCanvas, activeObject) {
   }
 
   // Handle building fronts and arrows
-  if (activeObject.type === "group" && (activeObject.groupType === "buildingFront" || activeObject.isBuildingFront || (activeObject._objects && activeObject._objects.length === 2 && activeObject._objects.some((subObj) => subObj.type === "triangle") && activeObject._objects.some((subObj) => subObj.type === "text")))) {
+  const isBuildingFront = activeObject.type === "group" && (activeObject.groupType === "buildingFront" || activeObject.isBuildingFront || (activeObject._objects && activeObject._objects.length === 2 && activeObject._objects.some((subObj) => subObj.type === "triangle") && activeObject._objects.some((subObj) => subObj.type === "text")));
+  if (isBuildingFront) {
     return removeObject(fabricCanvas, activeObject);
   }
-  if (activeObject.type === "group" && (activeObject.isArrow || activeObject.type === "arrow" || activeObject.groupType === "buildingFront")) {
+
+  const isArrow = activeObject.isArrow || activeObject.type === "arrow";
+  const isSpecialGroup = activeObject.type === "group" && (isArrow || activeObject.groupType === "buildingFront");
+
+  if (isSpecialGroup) {
     return removeObject(fabricCanvas, activeObject);
   }
 
@@ -283,7 +299,9 @@ export function handleObjectDeletion(fabricCanvas, activeObject) {
 
   // Handle basic shapes
   if (activeObject.type === "circle" || activeObject.type === "rect" || activeObject.type === "triangle") {
-    if (activeObject.type === "circle" && activeObject.fill === "#f8794b" && activeObject.radius < 30 && !activeObject.isWallCircle) {
+    // Prevent deletion of small orange circles used for snapping
+    const isSmallOrange = activeObject.fill === "#f8794b" && activeObject.radius < 30;
+    if (activeObject.type === "circle" && isSmallOrange && !activeObject.isWallCircle) {
       return false;
     }
     return removeObject(fabricCanvas, activeObject);
@@ -298,7 +316,9 @@ export function handleObjectDeletion(fabricCanvas, activeObject) {
 
   // Handle lines
   if (activeObject.type === "line") {
-    if (activeObject.stroke !== "red" && activeObject.stroke !== "grey" && activeObject.stroke !== "blue" && !activeObject.deviceType && !activeObject.isResizeIcon && !activeObject.isNetworkConnection && !activeObject.isConnectionSegment) {
+    const isSpecialLine = activeObject.stroke === "red" || activeObject.stroke === "grey" || activeObject.stroke === "blue" || activeObject.deviceType || activeObject.isResizeIcon || activeObject.isNetworkConnection || activeObject.isConnectionSegment;
+
+    if (!isSpecialLine) {
       return removeObject(fabricCanvas, activeObject);
     }
   }
@@ -319,7 +339,8 @@ export function handleObjectDeletion(fabricCanvas, activeObject) {
   }
 
   // Handle drawing objects
-  if (window.drawingSerializer && window.drawingSerializer.isDrawingObject && window.drawingSerializer.isDrawingObject(activeObject)) {
+  const isDrawingObj = window.drawingSerializer?.isDrawingObject?.(activeObject);
+  if (isDrawingObj) {
     return removeObject(fabricCanvas, activeObject);
   }
 
@@ -328,11 +349,16 @@ export function handleObjectDeletion(fabricCanvas, activeObject) {
 
 // Deletes a zone and its text
 function deleteZone(fabricCanvas, zoneToDelete) {
-  const zoneIndex = window.zones ? window.zones.findIndex((zone) => zone.polygon === zoneToDelete || zone.text === zoneToDelete) : -1;
+  const zoneIndex = window.zones
+    ? window.zones.findIndex((zone) => {
+        return zone.polygon === zoneToDelete || zone.text === zoneToDelete;
+      })
+    : -1;
   if (zoneIndex === -1) return false;
 
   const zone = window.zones[zoneIndex];
 
+  // Remove polygon and text from canvas
   [zone.polygon, zone.text].forEach((obj) => {
     if (obj) {
       obj.off();
@@ -340,11 +366,13 @@ function deleteZone(fabricCanvas, zoneToDelete) {
     }
   });
 
+  // Remove from global zones array
   window.zones.splice(zoneIndex, 1);
 
   fabricCanvas.discardActiveObject();
   window.hideDeviceProperties?.();
   fabricCanvas.requestRenderAll();
+  // Notify layers panel of changes
   try {
     document.dispatchEvent(new Event("layers:items-changed"));
   } catch (e) {}
@@ -353,11 +381,16 @@ function deleteZone(fabricCanvas, zoneToDelete) {
 
 // Deletes a room and its text
 function deleteRoom(fabricCanvas, roomToDelete) {
-  const roomIndex = window.rooms ? window.rooms.findIndex((room) => room.polygon === roomToDelete || room.text === roomToDelete) : -1;
+  const roomIndex = window.rooms
+    ? window.rooms.findIndex((room) => {
+        return room.polygon === roomToDelete || room.text === roomToDelete;
+      })
+    : -1;
   if (roomIndex === -1) return false;
 
   const room = window.rooms[roomIndex];
 
+  // Remove polygon and text from canvas
   [room.polygon, room.text].forEach((obj) => {
     if (obj) {
       obj.off();
@@ -365,11 +398,13 @@ function deleteRoom(fabricCanvas, roomToDelete) {
     }
   });
 
+  // Remove from global rooms array
   window.rooms.splice(roomIndex, 1);
 
   fabricCanvas.discardActiveObject();
   window.hideDeviceProperties?.();
   fabricCanvas.requestRenderAll();
+  // Notify layers panel of changes
   try {
     document.dispatchEvent(new Event("layers:items-changed"));
   } catch (e) {}
@@ -378,11 +413,16 @@ function deleteRoom(fabricCanvas, roomToDelete) {
 
 // Deletes a risk and its text
 function deleteRisk(fabricCanvas, riskToDelete) {
-  const riskIndex = window.risks ? window.risks.findIndex((risk) => risk.polygon === riskToDelete || risk.text === riskToDelete) : -1;
+  const riskIndex = window.risks
+    ? window.risks.findIndex((risk) => {
+        return risk.polygon === riskToDelete || risk.text === riskToDelete;
+      })
+    : -1;
   if (riskIndex === -1) return false;
 
   const risk = window.risks[riskIndex];
 
+  // Remove polygon and text from canvas
   [risk.polygon, risk.text].forEach((obj) => {
     if (obj) {
       obj.off();
@@ -390,11 +430,13 @@ function deleteRisk(fabricCanvas, riskToDelete) {
     }
   });
 
+  // Remove from global risks array
   window.risks.splice(riskIndex, 1);
 
   fabricCanvas.discardActiveObject();
   window.hideDeviceProperties?.();
   fabricCanvas.requestRenderAll();
+  // Notify layers panel of changes
   try {
     document.dispatchEvent(new Event("layers:items-changed"));
   } catch (e) {}
@@ -403,11 +445,15 @@ function deleteRisk(fabricCanvas, riskToDelete) {
 
 // Deletes a safety zone and its text
 function deleteSafety(fabricCanvas, safetyToDelete) {
-  const safetyIndex = window.safetyZones ? window.safetyZones.findIndex((safety) => safety.polygon === safetyToDelete || safety.text === safetyToDelete) : -1;
+  const safetyZones = window.safetyZones || [];
+  const safetyIndex = safetyZones.findIndex((safety) => {
+    return safety.polygon === safetyToDelete || safety.text === safetyToDelete;
+  });
   if (safetyIndex === -1) return false;
 
   const safety = window.safetyZones[safetyIndex];
 
+  // Remove polygon and text from canvas
   [safety.polygon, safety.text].forEach((obj) => {
     if (obj) {
       obj.off();
@@ -415,11 +461,13 @@ function deleteSafety(fabricCanvas, safetyToDelete) {
     }
   });
 
+  // Remove from global safety zones array
   window.safetyZones.splice(safetyIndex, 1);
 
   fabricCanvas.discardActiveObject();
   window.hideDeviceProperties?.();
   fabricCanvas.requestRenderAll();
+  // Notify layers panel of changes
   try {
     document.dispatchEvent(new Event("layers:items-changed"));
   } catch (e) {}
@@ -469,7 +517,9 @@ function findOrphanedCircles(fabricCanvas, connectedLines, deletedCircle) {
   connectedLines.forEach((line) => {
     const otherCircle = line.startCircle === deletedCircle ? line.endCircle : line.startCircle;
     if (otherCircle && !orphanedCircles.includes(otherCircle)) {
-      const remainingConnections = fabricCanvas.getObjects().filter((obj) => obj.type === "line" && obj.stroke === "red" && !connectedLines.includes(obj) && (obj.startCircle === otherCircle || obj.endCircle === otherCircle));
+      const remainingConnections = fabricCanvas.getObjects().filter((obj) => {
+        return obj.type === "line" && obj.stroke === "red" && !connectedLines.includes(obj) && (obj.startCircle === otherCircle || obj.endCircle === otherCircle);
+      });
       if (remainingConnections.length === 0) {
         orphanedCircles.push(otherCircle);
       }
@@ -481,7 +531,9 @@ function findOrphanedCircles(fabricCanvas, connectedLines, deletedCircle) {
 
 // Deletes a wall circle and all connected lines
 function deleteWallCircle(fabricCanvas, circle) {
-  const connectedLines = fabricCanvas.getObjects().filter((obj) => obj.type === "line" && obj.stroke === "red" && (obj.startCircle === circle || obj.endCircle === circle));
+  const connectedLines = fabricCanvas.getObjects().filter((obj) => {
+    return obj.type === "line" && obj.stroke === "red" && (obj.startCircle === circle || obj.endCircle === circle);
+  });
 
   const allObjectsToDelete = [circle, ...connectedLines];
   const orphanedCircles = findOrphanedCircles(fabricCanvas, connectedLines, circle);
@@ -634,13 +686,19 @@ export function setupDeletion(fabricCanvas, condition = () => true) {
   try {
     const fnSource = condition.toString();
     const exists = window._deletionConditions.some((c) => c._fnSource === fnSource);
-    if (!exists) window._deletionConditions.push({ fn: condition, _fnSource: fnSource });
+    // Store condition if it doesn't already exist
+    if (!exists) {
+      window._deletionConditions.push({ fn: condition, _fnSource: fnSource });
+    }
   } catch (err) {
-    if (!window._deletionConditions.includes(condition)) window._deletionConditions.push({ fn: condition, _fnSource: null });
+    if (!window._deletionConditions.includes(condition)) {
+      window._deletionConditions.push({ fn: condition, _fnSource: null });
+    }
   }
 
   if (!window._deletionHandler) {
     window._deletionHandler = (e) => {
+      // Don't delete if a tool is active
       if (currentTool) return;
 
       // Don't delete if an input field is focused
@@ -653,6 +711,7 @@ export function setupDeletion(fabricCanvas, condition = () => true) {
         const active = fabricCanvas.getActiveObject();
         if (!active) return;
 
+        // Check if any registered condition allows deletion
         const allowed = window._deletionConditions.some(({ fn }) => {
           try {
             return !!fn(active);
@@ -684,6 +743,7 @@ export function setupColorPicker(fabricCanvas) {
   fabricCanvas.on("selection:updated", updateColorPicker);
   fabricCanvas.on("selection:cleared", () => (picker.value = "#ffffff"));
 
+  // Updates the color picker value based on selected object
   function updateColorPicker(e) {
     const obj = e.selected[0];
     if (!obj) return;
@@ -691,6 +751,7 @@ export function setupColorPicker(fabricCanvas) {
     let color = "#000000";
 
     try {
+      // Handle network connection colors
       if (obj.isConnectionSegment || obj.isNetworkSplitPoint) {
         const tm = window.topologyManager;
         if (tm && obj.connectionId && tm.connections && tm.connections.get) {
@@ -706,7 +767,10 @@ export function setupColorPicker(fabricCanvas) {
       }
     } catch (_) {}
 
-    if (obj.type === "arrow" || (obj.type === "group" && obj._objects?.some((subObj) => subObj.type === "line" || subObj.type === "triangle"))) {
+    // Handle group colors (arrows, etc)
+    const isArrowGroup = obj.type === "arrow" || (obj.type === "group" && obj._objects?.some((subObj) => subObj.type === "line" || subObj.type === "triangle"));
+
+    if (isArrowGroup) {
       const lineOrTriangle = obj._objects.find((subObj) => subObj.type === "line" || subObj.type === "triangle");
       if (lineOrTriangle && (lineOrTriangle.fill || lineOrTriangle.stroke)) {
         color = lineOrTriangle.fill || lineOrTriangle.stroke;
@@ -721,6 +785,7 @@ export function setupColorPicker(fabricCanvas) {
     picker.value = color;
   }
 
+  // Apply color changes to selected object
   picker.addEventListener("input", () => {
     const active = fabricCanvas.getActiveObject();
     if (!active) return;
@@ -728,6 +793,7 @@ export function setupColorPicker(fabricCanvas) {
     const newColor = picker.value;
 
     try {
+      // Update network connection color
       if (active.isConnectionSegment || active.isNetworkSplitPoint) {
         const tm = window.topologyManager;
         if (tm && active.connectionId && tm.connections && tm.connections.get) {
@@ -745,7 +811,14 @@ export function setupColorPicker(fabricCanvas) {
 
     if (active.type === "i-text") {
       active.set({ fill: newColor });
-    } else if (active.type === "arrow" || (active.type === "group" && active._objects?.some((subObj) => subObj.type === "line" || subObj.type === "triangle"))) {
+    } else if (
+      active.type === "arrow" ||
+      (active.type === "group" &&
+        active._objects?.some((s) => {
+          return s.type === "line" || s.type === "triangle";
+        }))
+    ) {
+      // Update all sub-objects in a group
       active._objects.forEach((subObj) => {
         if (subObj.type === "line" || subObj.type === "triangle") {
           if (subObj.fill !== undefined) subObj.set({ fill: newColor });
@@ -754,11 +827,15 @@ export function setupColorPicker(fabricCanvas) {
       });
       active.dirty = true;
     } else {
+      // Update fill color while preserving alpha
       if (active.fill !== undefined) {
         const currentFill = active.fill || "rgba(0, 0, 0, 1)";
         const alpha = currentFill.match(/rgba?\(\d+,\s*\d+,\s*\d+,\s*([\d.]+)\)/)?.[1] || 1;
+        const r = parseInt(newColor.slice(1, 3), 16);
+        const g = parseInt(newColor.slice(3, 5), 16);
+        const b = parseInt(newColor.slice(5, 7), 16);
         active.set({
-          fill: `rgba(${parseInt(newColor.slice(1, 3), 16)}, ${parseInt(newColor.slice(3, 5), 16)}, ${parseInt(newColor.slice(5, 7), 16)}, ${alpha})`,
+          fill: `rgba(${r}, ${g}, ${b}, ${alpha})`,
         });
       }
       if (active.stroke !== undefined) {
@@ -802,16 +879,20 @@ export function setupTextColorPicker(fabricCanvas) {
 
   const colorIcons = Array.from(document.querySelectorAll(".drawing-text-colour .colour-icon"));
 
+  // Updates the text color picker based on selection
   function updateTextPicker(e) {
     const obj = e.selected?.[0];
     if (!obj) return;
 
     let textObj = null;
 
+    // Find text object in selection or group
     if (obj.type === "i-text" || obj.type === "textbox" || obj.type === "text") {
       textObj = obj;
     } else if (obj.type === "group") {
-      const possible = obj._objects?.find((o) => o && (o.type === "i-text" || o.type === "textbox" || o.type === "text"));
+      const possible = obj._objects?.find((o) => {
+        return o && (o.type === "i-text" || o.type === "textbox" || o.type === "text");
+      });
       if (possible) textObj = possible;
     }
 
@@ -826,6 +907,7 @@ export function setupTextColorPicker(fabricCanvas) {
     picker.value = "#000000";
   });
 
+  // Applies text color to selected object
   const applyTextColor = (hex) => {
     const active = fabricCanvas.getActiveObject();
     if (!active) return;
@@ -835,7 +917,10 @@ export function setupTextColorPicker(fabricCanvas) {
     if (active.type === "i-text" || active.type === "textbox" || active.type === "text") {
       setFill(active);
     } else if (active.type === "group") {
-      const tChild = active._objects?.find((o) => o && (o.type === "i-text" || o.type === "textbox" || o.type === "text"));
+      // Apply to text child in group
+      const tChild = active._objects?.find((o) => {
+        return o && (o.type === "i-text" || o.type === "textbox" || o.type === "text");
+      });
       if (tChild) {
         setFill(tChild);
         active.dirty = true;
@@ -848,6 +933,7 @@ export function setupTextColorPicker(fabricCanvas) {
 
   picker.addEventListener("input", () => applyTextColor(picker.value));
 
+  // Handle color icon clicks
   colorIcons.forEach((icon) => {
     const color = icon.getAttribute("data-color");
     icon.addEventListener("click", (e) => {
@@ -869,19 +955,22 @@ export function setupBackgroundColorPicker(fabricCanvas) {
 
   const colorIcons = Array.from(document.querySelectorAll(".drawing-text-background-colour .colour-icon"));
 
+  // Updates the background color picker based on selection
   function updateBackgroundPicker(e) {
     const obj = e.selected?.[0];
     if (!obj) return;
 
     let textObj = null;
 
-    // Handle network text labels
+    // Handle network text labels and standard text
     if (obj.isSegmentDistanceLabel || obj.isConnectionCustomLabel) {
       textObj = obj;
     } else if (obj.type === "i-text" || obj.type === "textbox" || obj.type === "text") {
       textObj = obj;
     } else if (obj.type === "group") {
-      const possible = obj._objects?.find((o) => o && (o.type === "i-text" || o.type === "textbox" || o.type === "text"));
+      const possible = obj._objects?.find((o) => {
+        return o && (o.type === "i-text" || o.type === "textbox" || o.type === "text");
+      });
       if (possible) textObj = possible;
     }
 
@@ -896,24 +985,29 @@ export function setupBackgroundColorPicker(fabricCanvas) {
     picker.value = "#ffffff";
   });
 
+  // Applies background color to selected object
   const applyBackgroundColor = (hex) => {
     const active = fabricCanvas.getActiveObject();
     if (!active) return;
 
     const setBackground = (t) => {
       if (t && t.set) {
+        // Use semi-transparent background for better visibility
         const rgbaColor = hexToRgba(hex, 0.8);
         t.set({ backgroundColor: rgbaColor });
       }
     };
 
-    // Handle network text labels
+    // Handle network text labels and standard text
     if (active.isSegmentDistanceLabel || active.isConnectionCustomLabel) {
       setBackground(active);
     } else if (active.type === "i-text" || active.type === "textbox" || active.type === "text") {
       setBackground(active);
     } else if (active.type === "group") {
-      const tChild = active._objects?.find((o) => o && (o.type === "i-text" || o.type === "textbox" || o.type === "text"));
+      // Apply to text child in group
+      const tChild = active._objects?.find((o) => {
+        return o && (o.type === "i-text" || o.type === "textbox" || o.type === "text");
+      });
       if (tChild) {
         setBackground(tChild);
         active.dirty = true;
@@ -926,6 +1020,7 @@ export function setupBackgroundColorPicker(fabricCanvas) {
 
   picker.addEventListener("input", () => applyBackgroundColor(picker.value));
 
+  // Handle color icon clicks
   colorIcons.forEach((icon) => {
     const color = icon.getAttribute("data-color");
     icon.addEventListener("click", (e) => {
@@ -1037,14 +1132,16 @@ export function initializeDrawingTools() {
       }
     });
 
-    // Add click handler
+    // Add click handler for tool selection
     item.addEventListener("click", function () {
-      const toolType = this.getAttribute("data-tool") || this.id.replace("-btn", "").replace("add-", "").replace("create-", "");
+      const toolAttr = this.getAttribute("data-tool");
+      const toolId = this.id.replace("-btn", "").replace("add-", "").replace("create-", "");
+      const toolType = toolAttr || toolId;
       selectTool(this, toolType);
     });
   });
 
-  // Hook main drawing colour icons
+  // Hook main drawing colour icons for selection
   document.querySelectorAll(".drawing-main-colour .colour-icon").forEach((icon) => {
     icon.addEventListener("click", function (e) {
       e.preventDefault();
@@ -1053,7 +1150,7 @@ export function initializeDrawingTools() {
     });
   });
 
-  // Hook mini color input for main drawing colour
+  // Hook mini color input for main drawing colour updates
   const colorPicker = document.querySelector("#shapes-text-color-picker");
   if (colorPicker) {
     colorPicker.addEventListener("input", function () {

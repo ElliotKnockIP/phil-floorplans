@@ -1,13 +1,8 @@
-import {
-  closeSidebar,
-  startTool,
-  stopCurrentTool,
-  registerToolCleanup,
-  setupColorPicker,
-} from "./drawing-utils.js";
+import { closeSidebar, startTool, stopCurrentTool, registerToolCleanup, setupColorPicker } from "./drawing-utils.js";
 
 if (!window.activeTitleBlocks) window.activeTitleBlocks = [];
 
+// Initializes title block tool and state
 export function setupTitleBlockTool(fabricCanvas) {
   const addTitleBlockBtn = document.getElementById("titleblock-btn");
   let isTitleBlockMode = false;
@@ -20,14 +15,23 @@ export function setupTitleBlockTool(fabricCanvas) {
     cellPadding: 12,
   };
 
+  // Helper to get active title blocks from global state
   const getActiveTitleBlocks = () => window.activeTitleBlocks || [];
-  const addToActiveTitleBlocks = (block) =>
-    (window.activeTitleBlocks = window.activeTitleBlocks || []).push(block);
-  const removeFromActiveTitleBlocks = (block) =>
-    window.activeTitleBlocks &&
-    (window.activeTitleBlocks = window.activeTitleBlocks.filter((b) => b !== block));
+
+  // Adds a title block to the tracking list
+  const addToActiveTitleBlocks = (block) => (window.activeTitleBlocks = window.activeTitleBlocks || []).push(block);
+
+  // Removes a title block from the tracking list
+  const removeFromActiveTitleBlocks = (block) => {
+    if (window.activeTitleBlocks) {
+      window.activeTitleBlocks = window.activeTitleBlocks.filter((b) => b !== block);
+    }
+  };
+
+  // Gets value from an input element
   const getValue = (id) => document.getElementById(id)?.value || "";
 
+  // Collects all client details from the UI
   const getClientDetails = () => {
     const logoImg = document.querySelector("#client-logo-preview img");
     return {
@@ -40,6 +44,7 @@ export function setupTitleBlockTool(fabricCanvas) {
     };
   };
 
+  // Creates and adds client logo image to the title block group
   const createLogo = (group, logoSrc, left, top, width, height) => {
     fabric.Image.fromURL(
       logoSrc,
@@ -71,6 +76,7 @@ export function setupTitleBlockTool(fabricCanvas) {
     );
   };
 
+  // Updates text and logo in a specific title block group
   const updateTitleBlock = (group, details) => {
     const objects = group.getObjects();
     const containerW = config.width / 3;
@@ -98,17 +104,13 @@ export function setupTitleBlockTool(fabricCanvas) {
     const existingLogo = objects.find((o) => o.isClientLogo && o.type === "image");
 
     const getLogoContainer = (obj) => {
-      // If containerBounds exists, use them directly (they're already correct)
-      // Otherwise fall back to object position
       const x = obj.containerBounds?.left ?? obj.left - config.cellPadding;
       const y = obj.containerBounds?.top ?? obj.top - config.cellPadding;
       return { x, y };
     };
 
     if (details.logoSrc) {
-      const obj =
-        placeholder ||
-        (existingLogo?._originalElement?.src !== details.logoSrc ? existingLogo : null);
+      const obj = placeholder || (existingLogo?._originalElement?.src !== details.logoSrc ? existingLogo : null);
       if (obj) {
         const { x, y } = getLogoContainer(obj);
         group.remove(obj);
@@ -132,6 +134,7 @@ export function setupTitleBlockTool(fabricCanvas) {
     fabricCanvas.requestRenderAll();
   };
 
+  // Updates all active title blocks with current client details
   const updateAllTitleBlocks = () => {
     const details = getClientDetails();
     window.activeTitleBlocks = getActiveTitleBlocks().filter((block) => {
@@ -141,9 +144,20 @@ export function setupTitleBlockTool(fabricCanvas) {
     });
   };
 
-  const createRect = (left, top, width, height, fill = "white") =>
-    new fabric.Rect({ left, top, width, height, fill, stroke: config.borderColor, strokeWidth: 1 });
+  // Creates a rectangle for the title block grid
+  const createRect = (left, top, width, height, fill = "white") => {
+    return new fabric.Rect({
+      left,
+      top,
+      width,
+      height,
+      fill,
+      stroke: config.borderColor,
+      strokeWidth: 1,
+    });
+  };
 
+  // Creates a textbox for the title block grid
   const createText = (text, left, top, width, options = {}) =>
     new fabric.Textbox(text, {
       left,
@@ -155,6 +169,7 @@ export function setupTitleBlockTool(fabricCanvas) {
       ...options,
     });
 
+  // Constructs the full title block group at specified coordinates
   const createTitleBlock = (left, top) => {
     const details = getClientDetails();
     const items = [];
@@ -235,18 +250,13 @@ export function setupTitleBlockTool(fabricCanvas) {
         );
         items.push(createRect(col.x, y + headerH, colW, contentH));
 
-        const textOpts = s.isLogo
-          ? { isClientLogo: true }
-          : { textAlign: "center", editable: !!s.editable, [s.field]: true };
-        items.push(
-          createText(
-            s.content,
-            col.x + config.cellPadding,
-            y + headerH + config.cellPadding,
-            colW - 2 * config.cellPadding,
-            textOpts
-          )
-        );
+        const textOpts = s.isLogo ? { isClientLogo: true } : { textAlign: "center", editable: !!s.editable, [s.field]: true };
+
+        const textX = col.x + config.cellPadding;
+        const textY = y + headerH + config.cellPadding;
+        const textW = colW - 2 * config.cellPadding;
+
+        items.push(createText(s.content, textX, textY, textW, textOpts));
         y += s.height;
       });
     });
@@ -286,19 +296,15 @@ export function setupTitleBlockTool(fabricCanvas) {
         const placeholder = group.getObjects().find((obj) => obj.isClientLogo);
         if (placeholder) {
           group.remove(placeholder);
-          createLogo(
-            group,
-            details.logoSrc,
-            placeholder.left - config.cellPadding,
-            placeholder.top - config.cellPadding,
-            colW,
-            logoH
-          );
+          const logoX = placeholder.left - config.cellPadding;
+          const logoY = placeholder.top - config.cellPadding;
+          createLogo(group, details.logoSrc, logoX, logoY, colW, logoH);
         }
       }, 100);
     }
   };
 
+  // Constrains logo movement within its container
   fabricCanvas.on("object:moving", (e) => {
     const obj = e.target;
     if (obj.type === "image" && obj.isClientLogo && obj.containerBounds) {
@@ -306,14 +312,13 @@ export function setupTitleBlockTool(fabricCanvas) {
       const rect = obj.getBoundingRect();
 
       if (rect.left < bounds.left) obj.set("left", obj.left + (bounds.left - rect.left));
-      if (rect.left + rect.width > bounds.right)
-        obj.set("left", obj.left - (rect.left + rect.width - bounds.right));
+      if (rect.left + rect.width > bounds.right) obj.set("left", obj.left - (rect.left + rect.width - bounds.right));
       if (rect.top < bounds.top) obj.set("top", obj.top + (bounds.top - rect.top));
-      if (rect.top + rect.height > bounds.bottom)
-        obj.set("top", obj.top - (rect.top + rect.height - bounds.bottom));
+      if (rect.top + rect.height > bounds.bottom) obj.set("top", obj.top - (rect.top + rect.height - bounds.bottom));
     }
   });
 
+  // Updates logo preview in sidebar and saves to local storage
   const updateLogoPreview = (dataUrl) => {
     const preview = document.getElementById("client-logo-preview");
     if (preview) {
@@ -325,16 +330,10 @@ export function setupTitleBlockTool(fabricCanvas) {
     }
   };
 
+  // Sets up event listeners for client detail inputs and logo upload
   const setupListeners = () => {
-    [
-      "client-date-input",
-      "client-name-test-input",
-      "address-input",
-      "report-title-input",
-      "rev-one-input",
-      "rev-two-input",
-      "rev-three-input",
-    ].forEach((id) => {
+    const inputIds = ["client-date-input", "client-name-test-input", "address-input", "report-title-input", "rev-one-input", "rev-two-input", "rev-three-input"];
+    inputIds.forEach((id) => {
       const input = document.getElementById(id);
       if (input) {
         input.addEventListener("input", updateAllTitleBlocks);
@@ -371,11 +370,13 @@ export function setupTitleBlockTool(fabricCanvas) {
     }
   };
 
+  // Handles mouse down to place title block
   const onMouseDown = (e) => {
     const p = fabricCanvas.getPointer(e.e);
     createTitleBlock(p.x - config.width / 2, p.y - config.height / 2);
   };
 
+  // Activates title block placement mode
   const startTitleBlockMode = () => {
     if (isTitleBlockMode) return;
     isTitleBlockMode = true;
@@ -384,6 +385,7 @@ export function setupTitleBlockTool(fabricCanvas) {
     startTool(fabricCanvas, "titleblock", onMouseDown);
   };
 
+  // Sets up title block button with click handler
   if (addTitleBlockBtn) {
     const newBtn = addTitleBlockBtn.cloneNode(true);
     addTitleBlockBtn.parentNode.replaceChild(newBtn, addTitleBlockBtn);
@@ -393,14 +395,15 @@ export function setupTitleBlockTool(fabricCanvas) {
     });
   }
 
-  const removalHandler = (e) =>
-    e.target?.deviceType === "title-block" && removeFromActiveTitleBlocks(e.target);
+  // Handles removal of title blocks from tracking
+  const removalHandler = (e) => e.target?.deviceType === "title-block" && removeFromActiveTitleBlocks(e.target);
   fabricCanvas.off("object:removed", removalHandler);
   fabricCanvas.on("object:removed", removalHandler);
 
   setupColorPicker(fabricCanvas);
   setupListeners();
 
+  // Cleanup function for title block tool
   const cleanup = () => {
     fabricCanvas.off("object:moving");
     fabricCanvas.off("object:removed", removalHandler);

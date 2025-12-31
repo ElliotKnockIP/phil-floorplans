@@ -1,41 +1,33 @@
-// ============================================================================
-// CAMERA DIAGRAM - Side view diagram rendering
-// ============================================================================
-
-// Draws the side view diagram
+// Renders a side-view diagram of camera coverage on a 2D canvas
 export function drawSideView(canvas, height, tilt, distance, deadZone, fov) {
   if (!canvas) return;
   const context = canvas.getContext("2d");
   const width = canvas.width;
   const canvasHeight = canvas.height;
 
-  // Clear canvas
+  // Clear the canvas before redrawing
   context.clearRect(0, 0, width, canvasHeight);
 
-  // Settings for drawing
   const margin = 40;
   const groundY = canvasHeight - margin;
 
-  // Calculate ranges
+  // Calculate the horizontal range to display in the diagram
   const backDistance = deadZone && deadZone < 0 ? Math.abs(deadZone) : 0;
   const forwardDistance = Math.max(distance || 0, deadZone > 0 ? deadZone : 0, 10);
 
-  // Total meters to show
   const totalMeters = backDistance + forwardDistance;
   const maxDistanceShown = Math.max(totalMeters * 1.2, 30);
 
-  // The full width between margins to draw
   const availableWidth = width - 2 * margin;
   const scaleX = availableWidth / maxDistanceShown;
 
-  // Position camera to accommodate back distance
+  // Position the camera horizontally based on the dead zone
   const cameraX = margin + 40 + backDistance * scaleX;
 
-  // Limit vertical scale to keep camera visible but not too small
-  const maxHeightShown = Math.max(height * 1.5, 6); // Show at least 6m height
+  const maxHeightShown = Math.max(height * 1.5, 6);
   const scaleY = (canvasHeight - 2 * margin) / maxHeightShown;
 
-  // Draw ground
+  // Draw the ground line
   context.beginPath();
   context.moveTo(margin, groundY);
   context.lineTo(width - margin, groundY);
@@ -43,7 +35,7 @@ export function drawSideView(canvas, height, tilt, distance, deadZone, fov) {
   context.lineWidth = 2;
   context.stroke();
 
-  // Draw camera pole
+  // Draw the vertical pole representing camera height
   const cameraY = groundY - height * scaleY;
 
   context.beginPath();
@@ -53,20 +45,19 @@ export function drawSideView(canvas, height, tilt, distance, deadZone, fov) {
   context.lineWidth = 1;
   context.stroke();
 
-  // Height label on pole
+  // Add height label text next to the pole
   context.fillStyle = "#333";
   context.font = "11px Arial";
   context.fontWeight = "500";
   context.textAlign = "center";
   context.fillText(`${height.toFixed(2)}m`, cameraX - 18, groundY - (height * scaleY) / 2);
 
-  // Draw camera icon (simplified)
+  // Draw the camera body and lens with rotation
   context.save();
   context.translate(cameraX, cameraY);
   context.rotate((tilt * Math.PI) / 180);
 
-  // Camera body (rectangle)
-  context.fillStyle = "#f8794b"; // Orange
+  context.fillStyle = "#f8794b";
   context.beginPath();
   context.rect(-8, -4, 16, 8);
   context.fill();
@@ -74,27 +65,22 @@ export function drawSideView(canvas, height, tilt, distance, deadZone, fov) {
   context.lineWidth = 1;
   context.stroke();
 
-  // Lens (circle at the front)
   context.fillStyle = "#ea6036";
   context.beginPath();
   context.arc(8, 0, 3, 0, Math.PI * 2);
   context.fill();
   context.restore();
 
-  // Calculate lens position for FOV rays
-  // The lens is at position (8, 0) relative to camera center when not rotated
+  // Calculate the starting point for FOV rays at the lens
   const lensOffsetX = 8 * Math.cos((tilt * Math.PI) / 180);
   const lensOffsetY = 8 * Math.sin((tilt * Math.PI) / 180);
   const lensX = cameraX + lensOffsetX;
   const lensY = cameraY + lensOffsetY;
 
-  // Draw FOV Cone
   const halfFov = (fov || 60) / 2;
 
-  // Bottom ray (closest point on ground)
+  // Calculate angles for the top and bottom boundaries of the FOV
   const bottomRayAngleRad = ((tilt + halfFov) * Math.PI) / 180;
-
-  // Top ray (furthest point)
   const topRayAngleRad = ((tilt - halfFov) * Math.PI) / 180;
 
   const bottomDirX = Math.cos(bottomRayAngleRad);
@@ -104,12 +90,11 @@ export function drawSideView(canvas, height, tilt, distance, deadZone, fov) {
 
   const deltaY = groundY - lensY;
   let bottomPoint = null;
+
+  // Determine where the bottom ray hits the ground or canvas edge
   if (bottomDirY > 0.001) {
     const tGround = deltaY / bottomDirY;
-    bottomPoint = {
-      x: lensX + bottomDirX * tGround,
-      y: groundY,
-    };
+    bottomPoint = { x: lensX + bottomDirX * tGround, y: groundY };
   }
 
   if (!bottomPoint) {
@@ -117,10 +102,7 @@ export function drawSideView(canvas, height, tilt, distance, deadZone, fov) {
     if (Math.abs(bottomDirX) > 0.001) {
       const tEdge = (targetX - lensX) / bottomDirX;
       if (tEdge > 0) {
-        bottomPoint = {
-          x: targetX,
-          y: lensY + bottomDirY * tEdge,
-        };
+        bottomPoint = { x: targetX, y: lensY + bottomDirY * tEdge };
       }
     }
   }
@@ -131,6 +113,8 @@ export function drawSideView(canvas, height, tilt, distance, deadZone, fov) {
 
   let topGroundPoint = null;
   let topGroundMeters = null;
+
+  // Determine where the top ray hits the ground
   if (topDirY > 0.001) {
     const tGround = deltaY / topDirY;
     if (tGround > 0) {
@@ -140,27 +124,22 @@ export function drawSideView(canvas, height, tilt, distance, deadZone, fov) {
     }
   }
 
-  // Calculate the top ray endpoint - extend it fully to show accurate FOV
   let topPoint;
 
-  // First check if the top ray hits the ground
+  // Calculate the endpoint for the top ray, extending to canvas edge if needed
   if (topGroundPoint && topGroundPoint.x <= width - margin) {
     topPoint = topGroundPoint;
   } else {
-    // Ray doesn't hit ground within canvas, extend it to edge of canvas
-    // Project the ray as far as needed to reach canvas edge
-    const maxProjectionDistance = maxDistanceShown * 2; // Allow ray to extend far
+    const maxProjectionDistance = maxDistanceShown * 2;
     const projectedX = lensX + topDirX * maxProjectionDistance;
     const projectedY = lensY + topDirY * maxProjectionDistance;
 
-    // Find where ray intersects canvas boundaries
     const rightEdge = width - margin;
     const topEdge = margin;
 
     let finalX = projectedX;
     let finalY = projectedY;
 
-    // Check intersection with right edge
     if (topDirX > 0.001) {
       const tRight = (rightEdge - lensX) / topDirX;
       if (tRight > 0) {
@@ -172,7 +151,6 @@ export function drawSideView(canvas, height, tilt, distance, deadZone, fov) {
       }
     }
 
-    // Check intersection with top edge if ray goes upward
     if (topDirY < -0.001 && Math.abs(topDirX) > 0.001) {
       const tTop = (topEdge - lensY) / topDirY;
       if (tTop > 0) {
@@ -187,47 +165,38 @@ export function drawSideView(canvas, height, tilt, distance, deadZone, fov) {
     topPoint = { x: finalX, y: Math.max(topEdge, Math.min(finalY, groundY)) };
   }
 
-  // Draw rays
+  // Draw dashed lines representing the FOV boundaries
   context.beginPath();
   context.setLineDash([4, 4]);
-  context.strokeStyle = "#4a90e2"; // Blue for FOV rays
+  context.strokeStyle = "#4a90e2";
   context.lineWidth = 1.5;
 
-  // Bottom ray
   context.moveTo(lensX, lensY);
   context.lineTo(bottomPoint.x, bottomPoint.y);
 
-  // Top ray
   context.moveTo(lensX, lensY);
   context.lineTo(topPoint.x, topPoint.y);
   context.stroke();
   context.setLineDash([]);
 
-  // Draw measurements
   context.fillStyle = "#333";
   context.font = "11px Arial";
   context.fontWeight = "500";
   context.textAlign = "center";
 
-  // Dead zone label
-  const bottomDistanceMeters =
-    typeof deadZone === "number" && !Number.isNaN(deadZone)
-      ? deadZone
-      : (bottomPoint.x - cameraX) / scaleX;
+  const isDeadZoneValid = typeof deadZone === "number" && !Number.isNaN(deadZone);
+  const bottomDistanceMeters = isDeadZoneValid ? deadZone : (bottomPoint.x - cameraX) / scaleX;
 
-  // Draw positive dead zone (forward)
+  // Draw the dead zone measurement indicator if applicable
   if (bottomDistanceMeters > 0.05) {
     const deadZoneMeters = bottomDistanceMeters;
     const deadZoneStartX = cameraX;
-    const deadZoneEndX = bottomPoint.x; // Extend to where bottom ray hits ground
+    const deadZoneEndX = bottomPoint.x;
 
     if (deadZoneEndX < width - margin + 1) {
-      context.fillStyle = "#e74c3c"; // Red for dead zone
-      context.fillText(
-        `Dead: ${deadZoneMeters.toFixed(2)}m`,
-        deadZoneStartX + (deadZoneEndX - deadZoneStartX) / 2,
-        groundY + 15
-      );
+      context.fillStyle = "#e74c3c";
+      const textX = deadZoneStartX + (deadZoneEndX - deadZoneStartX) / 2;
+      context.fillText(`Dead: ${deadZoneMeters.toFixed(2)}m`, textX, groundY + 15);
       context.beginPath();
       context.moveTo(deadZoneStartX, groundY + 5);
       context.lineTo(deadZoneEndX, groundY + 5);
@@ -235,21 +204,15 @@ export function drawSideView(canvas, height, tilt, distance, deadZone, fov) {
       context.lineWidth = 2;
       context.stroke();
     }
-  }
-  // Draw negative dead zone (backward)
-  else if (bottomDistanceMeters < -0.05) {
+  } else if (bottomDistanceMeters < -0.05) {
+    // Draw backward coverage measurement for cameras looking behind the pole
     const absDist = Math.abs(bottomDistanceMeters);
-    const backStartX = bottomPoint.x; // Extend to where bottom ray hits ground
+    const backStartX = bottomPoint.x;
     const backEndX = cameraX;
 
-    // Draw backward measurement (on lower line to avoid overlap)
     if (backStartX > margin - 1) {
-      context.fillStyle = "#9b59b6"; // Purple for backward
-      context.fillText(
-        `Back: ${absDist.toFixed(2)}m`,
-        backStartX + (backEndX - backStartX) / 2,
-        groundY + 15
-      );
+      context.fillStyle = "#9b59b6";
+      context.fillText(`Back: ${absDist.toFixed(2)}m`, backStartX + (backEndX - backStartX) / 2, groundY + 15);
       context.beginPath();
       context.moveTo(backStartX, groundY + 5);
       context.lineTo(backEndX, groundY + 5);
@@ -258,18 +221,15 @@ export function drawSideView(canvas, height, tilt, distance, deadZone, fov) {
       context.stroke();
     }
 
-    // Also draw forward measurement if split coverage (on higher line)
+    // Draw forward coverage measurement if the camera has split coverage
     const forwardDist = distance;
     if (forwardDist > 0.05 && topGroundPoint) {
       const rangeStartX = cameraX;
-      const rangeEndX = topGroundPoint.x; // Extend to where top ray hits ground
+      const rangeEndX = topGroundPoint.x;
       if (rangeEndX < width - margin + 1) {
-        context.fillStyle = "#27ae60"; // Green for forward coverage
-        context.fillText(
-          `Range: ${forwardDist.toFixed(2)}m`,
-          rangeStartX + (rangeEndX - rangeStartX) / 2,
-          groundY + 30
-        );
+        context.fillStyle = "#27ae60";
+        const textX = rangeStartX + (rangeEndX - rangeStartX) / 2;
+        context.fillText(`Range: ${forwardDist.toFixed(2)}m`, textX, groundY + 30);
         context.beginPath();
         context.moveTo(rangeStartX, groundY + 20);
         context.lineTo(rangeEndX, groundY + 20);

@@ -2,6 +2,7 @@ import { distance, pathLength } from "../network-utils.js";
 
 // Connection data and behavior between two devices.
 export class Connection {
+  // Initialize connection between two devices with optional type
   constructor(device1, device2, type = "network") {
     this.device1 = device1;
     this.device2 = device2;

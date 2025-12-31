@@ -1,4 +1,4 @@
-// CustomIcons class manages custom icon creation and management
+// Manages custom icon creation and storage
 export class CustomIcons {
   constructor() {
     this.storageKey = "customIconsV1";
@@ -25,7 +25,7 @@ export class CustomIcons {
     }
   }
 
-  // Save custom icons to local storage
+  // Save custom icons list to local storage
   saveIcons(list) {
     try {
       localStorage.setItem(this.storageKey, JSON.stringify(list));
@@ -34,12 +34,12 @@ export class CustomIcons {
     }
   }
 
-  // Generate unique ID
+  // Generate a unique ID for a new icon
   generateId() {
     return "ci_" + Math.random().toString(36).slice(2) + Date.now().toString(36);
   }
 
-  // Convert file to data URL
+  // Convert a file object to a data URL string
   readFileAsDataUrl(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
@@ -49,7 +49,7 @@ export class CustomIcons {
     });
   }
 
-  // Create device item element for icon list
+  // Create the HTML element for a device icon in the sidebar
   createDeviceItem(icon, section = "custom") {
     const wrapper = document.createElement("div");
     wrapper.className = "device-wrapper";
@@ -72,7 +72,7 @@ export class CustomIcons {
     iconBox.appendChild(img);
     item.appendChild(iconBox);
 
-    // Delete button
+    // Create and setup the delete button for the icon
     const delBtn = document.createElement("button");
     delBtn.type = "button";
     delBtn.className = "device-delete-btn";
@@ -105,17 +105,17 @@ export class CustomIcons {
     return wrapper;
   }
 
-  // Render icons in rows
+  // Render a list of icons into rows within a container
   renderIconsInRows(icons, containerId, className = "device-row", section = "custom") {
     const container = document.getElementById(containerId);
     if (!container) return;
 
-    // Clear existing rows
+    // Remove existing rows before re-rendering
     const existingRows = container.querySelectorAll(`.${className}`);
     existingRows.forEach((row) => row.remove());
 
     if (!icons.length) {
-      // Show empty message for custom section only
+      // Show empty message if no icons exist in the custom section
       if (section === "custom") {
         const empty = document.createElement("div");
         empty.className = "text-muted p-2";
@@ -127,6 +127,7 @@ export class CustomIcons {
 
     let rowEl = null;
     icons.forEach((icon, idx) => {
+      // Create a new row every 3 items
       if (idx % 3 === 0) {
         rowEl = document.createElement("div");
         rowEl.className = className;
@@ -136,7 +137,7 @@ export class CustomIcons {
     });
   }
 
-  // Render custom icons list
+  // Render the main custom icons list
   renderList() {
     const icons = this.loadIcons();
     const customIcons = icons.filter((icon) => icon.sections?.includes("custom"));
@@ -144,7 +145,7 @@ export class CustomIcons {
     this.setupDragHandlers();
   }
 
-  // Render custom icons in device sections
+  // Render custom icons into their respective category sections
   renderCustomIconsInSections() {
     const icons = this.loadIcons();
     const sections = {
@@ -154,7 +155,7 @@ export class CustomIcons {
       fire: document.getElementById("fire-collapse"),
     };
 
-    // Clear existing custom icons from sections
+    // Clear existing custom rows from category containers
     Object.values(sections).forEach((container) => {
       if (container) {
         const customRows = container.querySelectorAll(".custom-device-row");
@@ -162,7 +163,7 @@ export class CustomIcons {
       }
     });
 
-    // Group icons by section
+    // Group icons by their assigned sections
     const sectionIcons = {};
     icons.forEach((icon) => {
       icon.sections?.forEach((sec) => {
@@ -173,7 +174,7 @@ export class CustomIcons {
       });
     });
 
-    // Render in each section
+    // Render icons into each category container
     Object.entries(sections).forEach(([sec, container]) => {
       if (container && sectionIcons[sec]) {
         this.renderIconsInRows(sectionIcons[sec], container.id, "device-row custom-device-row", sec);
@@ -182,13 +183,13 @@ export class CustomIcons {
     this.setupDragHandlers();
   }
 
-  // Render all sections
+  // Render all icon sections and categories
   renderAllSections() {
     this.renderList();
     this.renderCustomIconsInSections();
   }
 
-  // Setup modal buttons
+  // Setup event listeners for modal buttons
   setupButtons() {
     const addBtn = document.getElementById("add-custom-icon-btn");
     const saveBtn = document.getElementById("save-custom-icon-btn");
@@ -196,13 +197,16 @@ export class CustomIcons {
     if (addBtn) {
       addBtn.addEventListener("click", () => {
         const modal = bootstrap.Modal.getOrCreateInstance(document.getElementById("custom-icon-modal"));
-        // Reset form
+        // Reset all form inputs to default state
         const inputs = ["custom-icon-file", "custom-icon-name", "custom-icon-is-camera", "custom-icon-cctv", "custom-icon-access", "custom-icon-intruder", "custom-icon-fire"];
         inputs.forEach((id) => {
           const el = document.getElementById(id);
           if (el) {
-            if (el.type === "checkbox") el.checked = id === "custom-icon-custom";
-            else el.value = "";
+            if (el.type === "checkbox") {
+              el.checked = id === "custom-icon-custom";
+            } else {
+              el.value = "";
+            }
           }
         });
         modal.show();
@@ -215,12 +219,14 @@ export class CustomIcons {
         const name = document.getElementById("custom-icon-name");
         const isCam = document.getElementById("custom-icon-is-camera");
 
+        // Validate that a file was selected
         if (!file?.files?.[0]) {
           alert("Please choose an image file");
           return;
         }
 
         const f = file.files[0];
+        // Ensure file is a supported image type
         if (!/^image\/(png|jpeg)$/.test(f.type)) {
           alert("Only PNG or JPG images are supported");
           return;
@@ -228,11 +234,14 @@ export class CustomIcons {
 
         const dataUrl = await this.readFileAsDataUrl(f);
         const sections = [];
-        ["custom-icon-cctv", "custom-icon-access", "custom-icon-intruder", "custom-icon-fire", "custom-icon-custom"].forEach((id) => {
+        // Collect selected categories for the new icon
+        const iconIds = ["custom-icon-cctv", "custom-icon-access", "custom-icon-intruder", "custom-icon-fire", "custom-icon-custom"];
+        iconIds.forEach((id) => {
           const el = document.getElementById(id);
           if (el?.checked) sections.push(id.replace("custom-icon-", ""));
         });
 
+        // Create the new icon entry object
         const entry = {
           id: this.generateId(),
           name: name?.value.trim() || f.name.replace(/\.[^.]+$/, ""),
@@ -253,7 +262,7 @@ export class CustomIcons {
     }
   }
 
-  // Setup drag handlers
+  // Setup drag and drop event listeners for icons
   setupDragHandlers() {
     const items = document.querySelectorAll("#custom-icons-list .device-item, .custom-device-row .device-item");
     items.forEach((item) => {
@@ -265,6 +274,7 @@ export class CustomIcons {
           name: item.dataset.name || "Custom Icon",
         };
 
+        // Set drag data payload
         try {
           e.dataTransfer.setData("application/json", JSON.stringify(payload));
         } catch (_) {}
@@ -277,7 +287,7 @@ export class CustomIcons {
     });
   }
 
-  // Patch drop handler to support custom icons
+  // Patch the global drop handler to support custom icon data
   patchDropHandler() {
     window.__getCustomDropPayload = function (dataTransfer) {
       try {
@@ -290,7 +300,7 @@ export class CustomIcons {
     };
   }
 
-  // Initialize the custom icons system
+  // Initialize the custom icons system and setup listeners
   init() {
     const initialize = () => {
       this.renderAllSections();
@@ -298,6 +308,7 @@ export class CustomIcons {
       this.patchDropHandler();
     };
 
+    // Wait for HTML includes to load if necessary
     if (document.getElementById("save-custom-icon-btn")) {
       initialize();
     } else {
@@ -306,5 +317,5 @@ export class CustomIcons {
   }
 }
 
-// Initialize custom icons
+// Create instance of CustomIcons
 new CustomIcons();
