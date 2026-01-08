@@ -136,6 +136,13 @@
           <input type="text" class="form-control" id="safety-label-input" placeholder="Enter safety area name" />
         </div>
 
+        <div class="mb-3">
+          <button type="button" class="btn btn-sm w-100 text-white" id="safety-open-risk-modal-btn" data-bs-toggle="modal" data-bs-target="#safety-assessment-modal" style="background-color: #f8794b; font-weight: 600; padding: 8px">
+            <img src="./images/icons/risk-assessment.svg" alt="Safety Risk Icon" style="width: 16px; height: 16px; margin-right: 6px; filter: brightness(0) invert(1);" />
+            Open Safety Risk Modal
+          </button>
+        </div>
+
         <div class="mb-3" style="display: flex; flex-direction: column; flex: 1">
           <span class="form-label">Risk Assessments:</span>
           <div id="safety-sub-details-list" class="mb-2" style="overflow-y: auto; max-height: calc(100vh - 400px)"></div>

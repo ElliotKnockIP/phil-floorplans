@@ -18,6 +18,8 @@ export class PopoverBase {
     this.lastOpenedTs = 0;
     this.isDragging = false;
     this.wasVisibleBeforeDrag = false;
+    this.clickedOnObject = false;
+    this.lastClickedTarget = null;
 
     // Drag state
     this.dragOffset = { x: 0, y: 0 };
@@ -246,13 +248,35 @@ export class PopoverBase {
       });
     }
 
+    // Reset object click flag when clicking outside canvas
+    document.addEventListener("mousedown", (e) => {
+      const fabricCanvas = window.fabricCanvas;
+      const upperCanvas = fabricCanvas && fabricCanvas.upperCanvasEl;
+      if (upperCanvas && e.target !== upperCanvas) {
+        this.clickedOnObject = false;
+        this.lastClickedTarget = null;
+      }
+    });
+
     // Close when clicking outside
     document.addEventListener("click", (e) => {
       if (this.popover.style.display !== "block") return;
       if (Date.now() - this.lastOpenedTs < 150) return;
 
+      // Don't close if clicking on a modal or inside a modal
+      const isModalClick = e.target.closest(".modal") || e.target.closest(".modal-backdrop") || 
+                          e.target.hasAttribute("data-bs-toggle") && e.target.getAttribute("data-bs-toggle") === "modal";
+      if (isModalClick) return;
+
       const shouldPrevent = this.options.shouldPreventClose ? this.options.shouldPreventClose(e) : false;
       if (!this.popover.contains(e.target) && e.target !== this.popover && !shouldPrevent) {
+        // If the click originated on a fabric object, only ignore if it's our current target
+        if (this.clickedOnObject) {
+          const isSameTarget = this.lastClickedTarget === this.currentTarget;
+          this.clickedOnObject = false;
+          this.lastClickedTarget = null;
+          if (isSameTarget) return;
+        }
         this.closePopover();
       }
     });
@@ -284,45 +308,72 @@ export class PopoverBase {
 
   // Hooks into canvas events for hiding during movement
   hookCanvasEvents() {
-    window.addEventListener("load", () => {
-      setTimeout(() => {
-        const fabricCanvas = window.fabricCanvas;
-        if (!fabricCanvas) return;
+    const setupEvents = () => {
+      const fabricCanvas = window.fabricCanvas;
+      if (!fabricCanvas) return false;
 
-        fabricCanvas.on("object:moving", () => {
-          if (!this.isDragging) {
-            this.isDragging = true;
-            this.hidePopoverForDrag();
-          }
-        });
+      // Prevent attaching listeners multiple times
+      if (this._canvasEventsHooked) return true;
 
-        fabricCanvas.on("object:modified", () => {
-          if (this.isDragging) {
-            this.isDragging = false;
-            setTimeout(() => this.showPopoverAfterDrag(), 50);
-          }
-        });
+      fabricCanvas.on("mouse:down", (e) => {
+        this.clickedOnObject = !!e.target;
+        this.lastClickedTarget = e.target;
+      });
 
-        fabricCanvas.on("mouse:up", () => {
-          if (this.isDragging) {
-            this.isDragging = false;
-            setTimeout(() => this.showPopoverAfterDrag(), 50);
-          }
-        });
+      fabricCanvas.on("object:moving", () => {
+        if (!this.isDragging) {
+          this.isDragging = true;
+          this.hidePopoverForDrag();
+        }
+      });
 
-        fabricCanvas.on("mouse:wheel", () => {
-          if (this.popover.style.display === "block" && this.currentTarget && !this.isDragging) {
-            this.positionPopover();
-          }
-        });
+      fabricCanvas.on("object:modified", () => {
+        if (this.isDragging) {
+          this.isDragging = false;
+          setTimeout(() => this.showPopoverAfterDrag(), 50);
+        }
+      });
 
-        fabricCanvas.on("after:render", () => {
-          if (this.popover.style.display === "block" && this.currentTarget && !this.isDragging) {
-            this.positionPopover();
-          }
-        });
+      fabricCanvas.on("mouse:up", () => {
+        if (this.isDragging) {
+          this.isDragging = false;
+          setTimeout(() => this.showPopoverAfterDrag(), 50);
+        }
+      });
+
+      fabricCanvas.on("mouse:wheel", () => {
+        if (this.popover.style.display === "block" && this.currentTarget && !this.isDragging) {
+          this.positionPopover();
+        }
+      });
+
+      fabricCanvas.on("after:render", () => {
+        if (this.popover.style.display === "block" && this.currentTarget && !this.isDragging) {
+          this.positionPopover();
+        }
+      });
+
+      this._canvasEventsHooked = true;
+      return true;
+    };
+
+    // Try immediately
+    if (!setupEvents()) {
+      // Retry on window load if not yet loaded
+      if (document.readyState !== "complete") {
+        window.addEventListener("load", () => setTimeout(setupEvents, 200));
+      }
+
+      // Poll until canvas is available (fallback for async init)
+      const maxAttempts = 50;
+      let attempts = 0;
+      const interval = setInterval(() => {
+        attempts++;
+        if (setupEvents() || attempts >= maxAttempts) {
+          clearInterval(interval);
+        }
       }, 200);
-    });
+    }
   }
 
   // Installs intercepts for global property functions

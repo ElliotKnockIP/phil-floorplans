@@ -22,8 +22,8 @@ export function setCrosshairCursor(fabricCanvas) {
   fabricCanvas.hoverCursor = "crosshair";
   fabricCanvas.selection = false;
   // Disable selection for all objects except background
-  fabricCanvas.getObjects().forEach((obj) => {
-    if (!obj.isBackground) obj.set({ selectable: false });
+  fabricCanvas.getObjects().forEach((object) => {
+    if (!object.isBackground) object.set({ selectable: false });
   });
   fabricCanvas.requestRenderAll();
 }
@@ -34,9 +34,9 @@ export function setDefaultCursor(fabricCanvas) {
   fabricCanvas.hoverCursor = "default";
   fabricCanvas.selection = true;
   // Re-enable selection for non-background objects
-  fabricCanvas.getObjects().forEach((obj) => {
-    if (!obj.isBackground && !obj.isWallCircle && !obj.isDeviceLabel) {
-      obj.set({ selectable: true });
+  fabricCanvas.getObjects().forEach((object) => {
+    if (!object.isBackground && !object.isWallCircle && !object.isDeviceLabel) {
+      object.set({ selectable: true });
     }
   });
   fabricCanvas.requestRenderAll();
@@ -71,10 +71,10 @@ export function getStandardObjectStyle() {
 }
 
 // Applies standard styling to an object
-export function applyStandardStyling(obj) {
+export function applyStandardStyling(object) {
   const standardStyle = getStandardObjectStyle();
-  obj.set(standardStyle);
-  return obj;
+  object.set(standardStyle);
+  return object;
 }
 
 // Starts a drawing tool with mouse and keyboard handlers
@@ -94,10 +94,10 @@ export function startTool(fabricCanvas, toolName, clickHandler, moveHandler = nu
   if (moveHandler) fabricCanvas.on("mouse:move", moveHandler);
 
   // Handle escape and enter keys during tool use
-  keyHandler = (e) => {
-    if (e.key === "Escape") {
-      e.preventDefault();
-      e.stopPropagation();
+  keyHandler = (event) => {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      event.stopPropagation();
 
       if (toolCleanupFunction) {
         toolCleanupFunction();
@@ -107,10 +107,10 @@ export function startTool(fabricCanvas, toolName, clickHandler, moveHandler = nu
       return false;
     }
 
-    if (e.key === "Enter") {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation();
+    if (event.key === "Enter") {
+      event.preventDefault();
+      event.stopPropagation();
+      event.stopImmediatePropagation();
       return false;
     }
   };
@@ -128,25 +128,25 @@ export function stopCurrentTool() {
 
   // Remove focus from buttons and focus canvas
   try {
-    const activeEl = document.activeElement;
-    const isButton = activeEl && activeEl.tagName === "BUTTON";
-    const isRoleButton = activeEl && activeEl.getAttribute && activeEl.getAttribute("role") === "button";
+    const activeElement = document.activeElement;
+    const isButton = activeElement && activeElement.tagName === "BUTTON";
+    const isRoleButton = activeElement && activeElement.getAttribute && activeElement.getAttribute("role") === "button";
 
     if (isButton || isRoleButton) {
       try {
-        activeEl.blur();
-      } catch (e) {}
+        activeElement.blur();
+      } catch (err) {}
     }
-    const canvasEl = currentCanvas && (currentCanvas.upperCanvasEl || currentCanvas.lowerCanvasEl);
-    if (canvasEl) {
-      if (!canvasEl.hasAttribute || !canvasEl.hasAttribute("tabindex")) {
-        canvasEl.setAttribute("tabindex", "-1");
+    const canvasElement = currentCanvas && (currentCanvas.upperCanvasEl || currentCanvas.lowerCanvasEl);
+    if (canvasElement) {
+      if (!canvasElement.hasAttribute || !canvasElement.hasAttribute("tabindex")) {
+        canvasElement.setAttribute("tabindex", "-1");
       }
       try {
-        canvasEl.style.outline = "none";
-        canvasEl.style.boxShadow = "none";
+        canvasElement.style.outline = "none";
+        canvasElement.style.boxShadow = "none";
       } catch (err) {}
-      canvasEl.focus && canvasEl.focus();
+      canvasElement.focus && canvasElement.focus();
     }
   } catch (err) {}
 
@@ -173,12 +173,12 @@ export function stopCurrentTool() {
 
 // Sets up the escape button in the drawing popup
 function setupPopupButtons() {
-  const escBtn = document.getElementById("drawing-esc-btn");
+  const escapeButton = document.getElementById("drawing-esc-btn");
 
-  if (escBtn) {
-    escBtn.onclick = (e) => {
-      e.preventDefault();
-      e.stopPropagation();
+  if (escapeButton) {
+    escapeButton.onclick = (event) => {
+      event.preventDefault();
+      event.stopPropagation();
 
       if (toolCleanupFunction) {
         toolCleanupFunction();
@@ -195,7 +195,7 @@ function canDeleteObject(activeObject, fabricCanvas) {
 
   // Don't delete while editing text
   if (activeObject.type === "i-text" && activeObject.isEditing) return false;
-  if (fabricCanvas.getObjects().some((obj) => obj.type === "i-text" && obj.isEditing)) return false;
+  if (fabricCanvas.getObjects().some((object) => object.type === "i-text" && object.isEditing)) return false;
 
   // Don't delete protected objects
   if (activeObject.type === "group" && activeObject.deviceType) return false;
@@ -208,8 +208,8 @@ function canDeleteObject(activeObject, fabricCanvas) {
 }
 
 // Removes an object from canvas
-function removeObject(fabricCanvas, obj) {
-  fabricCanvas.remove(obj);
+function removeObject(fabricCanvas, object) {
+  fabricCanvas.remove(object);
   fabricCanvas.discardActiveObject();
   fabricCanvas.requestRenderAll();
   return true;
@@ -280,7 +280,7 @@ export function handleObjectDeletion(fabricCanvas, activeObject) {
   }
 
   // Handle building fronts and arrows
-  const isBuildingFront = activeObject.type === "group" && (activeObject.groupType === "buildingFront" || activeObject.isBuildingFront || (activeObject._objects && activeObject._objects.length === 2 && activeObject._objects.some((subObj) => subObj.type === "triangle") && activeObject._objects.some((subObj) => subObj.type === "text")));
+  const isBuildingFront = activeObject.type === "group" && (activeObject.groupType === "buildingFront" || activeObject.isBuildingFront || (activeObject._objects && activeObject._objects.length === 2 && activeObject._objects.some((subObject) => subObject.type === "triangle") && activeObject._objects.some((subObject) => subObject.type === "text")));
   if (isBuildingFront) {
     return removeObject(fabricCanvas, activeObject);
   }

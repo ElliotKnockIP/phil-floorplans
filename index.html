@@ -13,7 +13,7 @@
   <body>
     <!-- HTML Loader Script - must be before other scripts -->
     <script type="module">
-      import { initHTMLLoader } from "./scripts/html-loader.js";
+      import { initHTMLLoader } from "./scripts/config/html-loader.js";
       // Wait for DOM to be ready before initializing HTML loader
       if (document.readyState === "loading") {
         document.addEventListener("DOMContentLoaded", initHTMLLoader);
@@ -92,7 +92,7 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <!-- Google Maps JS API - loaded dynamically -->
     <script type="module">
-      import { GOOGLE_MAPS_API_KEY } from "./config-loader.js";
+      import { GOOGLE_MAPS_API_KEY } from "./scripts/config/config-loader.js";
       const script = document.createElement("script");
       script.src = `https://maps.googleapis.com/maps/api/js?key=${GOOGLE_MAPS_API_KEY}&loading=async&libraries=places`;
       document.head.appendChild(script);

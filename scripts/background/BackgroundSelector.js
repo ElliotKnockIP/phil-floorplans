@@ -3,7 +3,7 @@
 import { FileSourceHandler } from "./sources/FileSource.js";
 import { MapSourceHandler } from "./sources/MapSource.js";
 import { CustomSourceHandler } from "./sources/CustomSource.js";
-import { GOOGLE_MAPS_API_KEY } from "../../config-loader.js";
+import { GOOGLE_MAPS_API_KEY } from "../config/config-loader.js";
 
 export class BackgroundSelector {
   constructor(fabricCanvas, manager) {

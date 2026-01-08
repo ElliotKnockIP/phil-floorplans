@@ -6,10 +6,12 @@ export class TextDevices {
     this.init();
   }
 
-  // Load text devices from local storage
+  // Load text devices from storage
+  // NEED TO DO: Replace with database
   loadTextDevices() {
     try {
-      const raw = localStorage.getItem(this.storageKey);
+      if (!this._memoryStore) this._memoryStore = {};
+      const raw = this._memoryStore[this.storageKey];
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       return Array.isArray(parsed)
@@ -26,10 +28,13 @@ export class TextDevices {
     }
   }
 
-  // Save text devices list to local storage
+  // Save text devices list to storage
+  // NEED TO DO: Replace with database
   saveTextDevices(list) {
     try {
-      localStorage.setItem(this.storageKey, JSON.stringify(list));
+      if (!this._memoryStore) this._memoryStore = {};
+      this._memoryStore[this.storageKey] = JSON.stringify(list);
+      console.log("[DB Placeholder] Would save text devices");
     } catch (e) {
       console.error("Failed to save text devices:", e);
     }

@@ -220,6 +220,8 @@ class CameraDeviceSerializer {
           aspectRatioMode: group.coverageConfig.aspectRatioMode || false,
           cameraHeight: group.coverageConfig.cameraHeight,
           cameraTilt: group.coverageConfig.cameraTilt,
+          cameraFov: group.coverageConfig.cameraFov,
+          doriEnabled: group.coverageConfig.doriEnabled,
           sideFOV: group.coverageConfig.sideFOV,
           verticalFOV: group.coverageConfig.verticalFOV,
           minRange: group.coverageConfig.minRange,
@@ -641,25 +643,26 @@ class CameraDeviceSerializer {
   }
 
   // Saves all devices to browser storage
+  // NEED TO DO: Replace with database
   saveToLocalStorage(key = "cameraDevicesData") {
     try {
       const data = this.serializeCameraDevices();
-      localStorage.setItem(key, JSON.stringify(data, null, 2));
+      console.log("[DB Placeholder] Would save devices with key:", key);
       return true;
     } catch (error) {
-      console.error("Error saving to localStorage:", error);
+      console.error("Error preparing device data:", error);
       return false;
     }
   }
 
   // Loads all devices from browser storage
+  // NEED TO DO: Replace with database
   async loadFromLocalStorage(key = "cameraDevicesData") {
     try {
-      const jsonString = localStorage.getItem(key);
-      if (!jsonString) return false;
-      return await this.loadCameraDevices(JSON.parse(jsonString));
+      console.log("[DB Placeholder] Would load devices with key:", key);
+      return false; // No data stored locally
     } catch (error) {
-      console.error("Error loading from localStorage:", error);
+      console.error("Error loading device data:", error);
       return false;
     }
   }

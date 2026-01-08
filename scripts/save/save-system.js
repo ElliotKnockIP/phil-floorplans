@@ -58,8 +58,8 @@ class SaveSystem {
       let topologyData;
       try {
         topologyData = this.serializeTopologyData();
-      } catch (e) {
-        console.error("Error serializing topology data:", e);
+      } catch (error) {
+        console.error("Error serializing topology data:", error);
         // Fallback to empty topology data if serialization fails
         topologyData = {
           connections: [],
@@ -69,23 +69,23 @@ class SaveSystem {
 
       // Temporarily strip managed and drawing objects to serialize clean background
       const allObjects = this.fabricCanvas.getObjects();
-      const managedObjects = allObjects.filter((obj) => ObjectTypeUtils.isManagedObject(obj));
-      const drawingObjects = allObjects.filter((obj) => this.drawingSerializer.isDrawingObject(obj));
+      const managedObjects = allObjects.filter((object) => ObjectTypeUtils.isManagedObject(object));
+      const drawingObjects = allObjects.filter((object) => this.drawingSerializer.isDrawingObject(object));
       const objectsToRemove = [...new Set([...managedObjects, ...drawingObjects])];
       const coverageStates = new Map();
-      allObjects.forEach((obj) => {
-        if (ObjectTypeUtils.isDevice(obj) && obj.coverageArea) {
-          coverageStates.set(obj.id || obj, { visible: obj.coverageArea.visible });
-          obj.coverageArea.set({ visible: true });
+      allObjects.forEach((object) => {
+        if (ObjectTypeUtils.isDevice(object) && object.coverageArea) {
+          coverageStates.set(object.id || object, { visible: object.coverageArea.visible });
+          object.coverageArea.set({ visible: true });
         }
       });
-      objectsToRemove.forEach((obj) => this.fabricCanvas.remove(obj));
+      objectsToRemove.forEach((object) => this.fabricCanvas.remove(object));
       const canvasData = this.fabricCanvas.toJSON(["class", "associatedText", "pixelsPerMeter", "isBackground"]);
-      objectsToRemove.forEach((obj) => this.fabricCanvas.add(obj));
-      allObjects.forEach((obj) => {
-        if (ObjectTypeUtils.isDevice(obj) && obj.coverageArea) {
-          const saved = coverageStates.get(obj.id || obj);
-          if (saved) obj.coverageArea.set({ visible: saved.visible });
+      objectsToRemove.forEach((object) => this.fabricCanvas.add(object));
+      allObjects.forEach((object) => {
+        if (ObjectTypeUtils.isDevice(object) && object.coverageArea) {
+          const savedVisibility = coverageStates.get(object.id || object);
+          if (savedVisibility) object.coverageArea.set({ visible: savedVisibility.visible });
         }
       });
 
@@ -119,8 +119,8 @@ class SaveSystem {
       // Validate that projectData can be serialized before attempting download
       try {
         JSON.stringify(projectData);
-      } catch (e) {
-        console.error("Project data contains non-serializable content:", e);
+      } catch (error) {
+        console.error("Project data contains non-serializable content:", error);
         NotificationSystem.show("Error: Project contains data that cannot be saved. Check console for details.", false);
         return false;
       }
@@ -161,18 +161,18 @@ class SaveSystem {
   }
 
   // Loads a saved project from a JSON file
-  async loadProject(file) {
+  async loadProject(projectFile) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = async (e) => {
+      reader.onload = async (event) => {
         try {
           window.isLoadingProject = true;
-          const projectData = JSON.parse(e.target.result);
+          const projectData = JSON.parse(event.target.result);
           if (window.undoSystem) window.undoSystem.reinitialize();
 
           // Clear current canvas
           this.fabricCanvas.clear();
-          this.fabricCanvas.getObjects().forEach((obj) => this.fabricCanvas.remove(obj));
+          this.fabricCanvas.getObjects().forEach((object) => this.fabricCanvas.remove(object));
           this.fabricCanvas.renderAll();
           window.zones = [];
           window.rooms = [];

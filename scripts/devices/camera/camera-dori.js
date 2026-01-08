@@ -107,8 +107,16 @@ export function createDoriZones(cameraIcon, fabricCanvas, commonProps) {
     zones.sort((a, b) => b.dist - a.dist);
 
     zones.forEach((zone) => {
+      // Calculate ground distance from slant range (DORI distance) accounting for height
+      const cameraHeight = cameraIcon.coverageConfig.cameraHeight || 3;
+      let groundDist = 0;
+      
+      if (zone.dist > cameraHeight) {
+        groundDist = Math.sqrt(Math.pow(zone.dist, 2) - Math.pow(cameraHeight, 2));
+      }
+
       // Clip zone to the maximum camera range
-      const radiusMeters = Math.min(zone.dist, maxRange);
+      const radiusMeters = Math.min(groundDist, maxRange);
       if (radiusMeters <= 0.1) return;
 
       const radiusPixels = radiusMeters * pixelsPerMeter;

@@ -318,14 +318,13 @@ export function setupTitleBlockTool(fabricCanvas) {
     }
   });
 
-  // Updates logo preview in sidebar and saves to local storage
+  // Updates logo preview in sidebar
+  // NEED TO DO: Replace with database for logo persistence
   const updateLogoPreview = (dataUrl) => {
     const preview = document.getElementById("client-logo-preview");
     if (preview) {
       preview.innerHTML = `<img src="${dataUrl}" alt="Client Logo" style="max-width: 100%; max-height: 100px;">`;
-      try {
-        localStorage.setItem("clientLogoDataUrl", dataUrl);
-      } catch (_) {}
+      console.log("[DB Placeholder] Would save client logo");
       setTimeout(updateAllTitleBlocks, 100);
     }
   };
@@ -356,17 +355,7 @@ export function setupTitleBlockTool(fabricCanvas) {
     if (logoPreview) {
       new MutationObserver(() => {
         setTimeout(updateAllTitleBlocks, 100);
-        try {
-          const img = logoPreview.querySelector("img");
-          if (img?.src) localStorage.setItem("clientLogoDataUrl", img.src);
-          else localStorage.removeItem("clientLogoDataUrl");
-        } catch (_) {}
       }).observe(logoPreview, { childList: true, subtree: true });
-
-      try {
-        const saved = localStorage.getItem("clientLogoDataUrl");
-        if (saved && !logoPreview.querySelector("img")) updateLogoPreview(saved);
-      } catch (_) {}
     }
   };
 
@@ -374,6 +363,9 @@ export function setupTitleBlockTool(fabricCanvas) {
   const onMouseDown = (e) => {
     const p = fabricCanvas.getPointer(e.e);
     createTitleBlock(p.x - config.width / 2, p.y - config.height / 2);
+
+    // Allow re-entering title block mode after a placement
+    isTitleBlockMode = false;
   };
 
   // Activates title block placement mode

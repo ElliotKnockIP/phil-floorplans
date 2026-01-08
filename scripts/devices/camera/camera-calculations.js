@@ -150,7 +150,8 @@ export function calculateCameraPhysics(activeObject) {
   let maxDist = 10000;
   const topAngleDeg = tilt - halfFov;
 
-  if (topAngleDeg > 0) {
+  // If top ray is aiming below horizon (angle > 0), calc intersection
+  if (topAngleDeg > 0.1) {
     maxDist = height / Math.tan((topAngleDeg * Math.PI) / 180);
   }
 
@@ -159,13 +160,23 @@ export function calculateCameraPhysics(activeObject) {
   const bottomRayAngleRad = (bottomRayAngleDeg * Math.PI) / 180;
 
   let minRange = 0;
-  const tanVal = Math.tan(bottomRayAngleRad);
-
-  if (Math.abs(tanVal) < 1e-10) {
-    minRange = tanVal >= 0 ? 10000 : -10000;
+  
+  // If bottom ray is above horizon (looking at sky), no ground coverage
+  if (bottomRayAngleDeg <= 0) {
+      minRange = 10000; // Effectively infinity / no coverage
   } else {
-    minRange = height / tanVal;
+      const tanVal = Math.tan(bottomRayAngleRad);
+      // Avoid division by zero or negative tan (looking backwards/behind)
+      if (Math.abs(tanVal) < 1e-10 || tanVal < 0) {
+        // If looking straight down or back, min range is effectively 0 (at pole) or undefined
+        minRange = 0; 
+      } else {
+        minRange = height / tanVal;
+      }
   }
+
+  // MinRange shouldn't be negative
+  minRange = Math.max(0, minRange);
 
   return {
     minRangeMeters: minRange,
@@ -188,18 +199,29 @@ export function applyCameraPhysics(activeObject) {
   const halfFov = fov / 2;
   const bottomRayAngleDeg = tilt + halfFov;
 
-  // Clamp dead zone to 0 if the camera is looking straight down
-  const clampedMinRangeMeters = bottomRayAngleDeg >= 90 ? 0 : minRangeMeters;
+  // Clamp dead zone to 0 if the camera is looking straight down or backwards
+  // Also ensure minRange doesn't exceed maxDist (which would mean no visible ground)
+  const clampedMinRangeMeters = (bottomRayAngleDeg >= 90 && bottomRayAngleDeg < 270) ? 0 : minRangeMeters;
 
-  activeObject.coverageConfig.minRange = clampedMinRangeMeters * pixelsPerMeter;
+  // If min range on ground is further than max visible distance (e.g. looking at sky/horizon), 
+  const validMinRange = Math.min(clampedMinRangeMeters, maxDistMeters);
+
+  activeObject.coverageConfig.minRange = validMinRange * pixelsPerMeter;
 
   const maxRange = activeObject.coverageConfig.maxRange || 50;
+  // Radius on screen is limited by both physics (maxDistMeters) and user setting (maxRange)
+  // But strictly, the OUTER radius is the limit. 
   const clampedRadiusMeters = Math.min(maxDistMeters, maxRange);
-
-  activeObject.coverageConfig.radius = clampedRadiusMeters * pixelsPerMeter;
+  
+  // Update radius. Ensure radius > minRange, otherwise coverage is 0
+  if (clampedRadiusMeters < validMinRange) {
+      activeObject.coverageConfig.radius = validMinRange * pixelsPerMeter; 
+  } else {
+      activeObject.coverageConfig.radius = clampedRadiusMeters * pixelsPerMeter;
+  }
 
   return {
-    minRangeMeters,
+    minRangeMeters: validMinRange,
     clampedRadiusMeters,
   };
 }

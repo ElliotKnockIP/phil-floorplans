@@ -38,29 +38,29 @@ class ProjectManager {
     // Temporarily remove managed objects to get clean canvas background
     const allObjects = this.fabricCanvas.getObjects();
     const { ObjectTypeUtils } = await import("./utils-save.js");
-    const managedObjects = allObjects.filter((obj) => ObjectTypeUtils.isManagedObject(obj));
-    const drawingObjects = allObjects.filter((obj) => this.saveSystem.drawingSerializer.isDrawingObject(obj));
+    const managedObjects = allObjects.filter((object) => ObjectTypeUtils.isManagedObject(object));
+    const drawingObjects = allObjects.filter((object) => this.saveSystem.drawingSerializer.isDrawingObject(object));
     const objectsToRemove = [...new Set([...managedObjects, ...drawingObjects])];
     const coverageStates = new Map();
 
     // Save and temporarily show all coverage areas for thumbnail
-    allObjects.forEach((obj) => {
-      if (obj.deviceType && obj.coverageArea) {
-        coverageStates.set(obj.id || obj, { visible: obj.coverageArea.visible });
-        obj.coverageArea.set({ visible: true });
+    allObjects.forEach((object) => {
+      if (object.deviceType && object.coverageArea) {
+        coverageStates.set(object.id || object, { visible: object.coverageArea.visible });
+        object.coverageArea.set({ visible: true });
       }
     });
 
     // Remove objects, serialize canvas, then restore them
-    objectsToRemove.forEach((obj) => this.fabricCanvas.remove(obj));
+    objectsToRemove.forEach((object) => this.fabricCanvas.remove(object));
     const canvasData = this.fabricCanvas.toJSON(["class", "associatedText", "pixelsPerMeter", "isBackground"]);
-    objectsToRemove.forEach((obj) => this.fabricCanvas.add(obj));
+    objectsToRemove.forEach((object) => this.fabricCanvas.add(object));
 
     // Restore original coverage area visibility states
-    allObjects.forEach((obj) => {
-      if (obj.deviceType && obj.coverageArea) {
-        const saved = coverageStates.get(obj.id || obj);
-        if (saved) obj.coverageArea.set({ visible: saved.visible });
+    allObjects.forEach((object) => {
+      if (object.deviceType && object.coverageArea) {
+        const savedVisibility = coverageStates.get(object.id || object);
+        if (savedVisibility) object.coverageArea.set({ visible: savedVisibility.visible });
       }
     });
 
@@ -107,10 +107,12 @@ class ProjectManager {
     return dateObj.toLocaleDateString() + " " + dateObj.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
   }
 
-  // Safely saves to localStorage
+  // Saves data
+  // NEED TO DO: Replace with database
   safeSetItem(key, value) {
     try {
-      localStorage.setItem(key, JSON.stringify(value));
+      if (!this._memoryStore) this._memoryStore = {};
+      this._memoryStore[key] = JSON.stringify(value);
       return true;
     } catch (error) {
       return false;
@@ -130,7 +132,7 @@ class ProjectManager {
         const tempCanvas = document.createElement("canvas");
         tempCanvas.width = width;
         tempCanvas.height = height;
-        const ctx = tempCanvas.getContext("2d");
+        const context = tempCanvas.getContext("2d");
 
         // Draw canvas content scaled down
         const dataURL = canvas.toDataURL({
@@ -141,7 +143,7 @@ class ProjectManager {
 
         const img = new Image();
         img.onload = () => {
-          ctx.drawImage(img, 0, 0, width, height);
+          context.drawImage(img, 0, 0, width, height);
           resolve(tempCanvas.toDataURL("image/png"));
         };
         img.onerror = reject;
@@ -188,9 +190,11 @@ class ProjectManager {
   }
 
   // Gets all saved projects from storage
+  // NEED TO DO: Replace with database
   getProjects() {
     try {
-      const stored = localStorage.getItem(this.storageKey);
+      if (!this._memoryStore) this._memoryStore = {};
+      const stored = this._memoryStore[this.storageKey];
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
       return [];
@@ -198,9 +202,11 @@ class ProjectManager {
   }
 
   // Gets all saved templates from storage
+  // NEED TO DO: Replace with database
   getTemplates() {
     try {
-      const stored = localStorage.getItem(this.templatesKey);
+      if (!this._memoryStore) this._memoryStore = {};
+      const stored = this._memoryStore[this.templatesKey];
       return stored ? JSON.parse(stored) : [];
     } catch (error) {
       return [];
@@ -210,7 +216,7 @@ class ProjectManager {
   // Renames a project
   renameProject(projectId, newName) {
     const projects = this.getProjects();
-    const project = projects.find((p) => p.id === projectId);
+    const project = projects.find((proj) => proj.id === projectId);
 
     if (!project) {
       NotificationSystem.show("Project not found", false);
@@ -235,7 +241,7 @@ class ProjectManager {
   // Renames a template
   renameTemplate(templateId, newName) {
     const templates = this.getTemplates();
-    const template = templates.find((t) => t.id === templateId);
+    const template = templates.find((temp) => temp.id === templateId);
 
     if (!template) {
       NotificationSystem.show("Template not found", false);
@@ -260,8 +266,8 @@ class ProjectManager {
   // Deletes a project from storage
   deleteProject(projectId) {
     const projects = this.getProjects();
-    const filtered = projects.filter((p) => p.id !== projectId);
-    if (this.safeSetItem(this.storageKey, filtered)) {
+    const remainingProjects = projects.filter((project) => project.id !== projectId);
+    if (this.safeSetItem(this.storageKey, remainingProjects)) {
       NotificationSystem.show("Project deleted", true);
     }
   }
@@ -269,8 +275,8 @@ class ProjectManager {
   // Deletes a template from storage
   deleteTemplate(templateId) {
     const templates = this.getTemplates();
-    const filtered = templates.filter((t) => t.id !== templateId);
-    if (this.safeSetItem(this.templatesKey, filtered)) {
+    const remainingTemplates = templates.filter((template) => template.id !== templateId);
+    if (this.safeSetItem(this.templatesKey, remainingTemplates)) {
       NotificationSystem.show("Template deleted", true);
     }
   }
@@ -315,7 +321,7 @@ class ProjectManager {
   // Duplicates a project with new ID and copy name
   duplicateProject(projectId) {
     const projects = this.getProjects();
-    const project = projects.find((p) => p.id === projectId);
+    const project = projects.find((proj) => proj.id === projectId);
 
     if (!project) {
       NotificationSystem.show("Project not found", false);
@@ -341,7 +347,7 @@ class ProjectManager {
   // Duplicates a template with new ID and copy name
   duplicateTemplate(templateId) {
     const templates = this.getTemplates();
-    const template = templates.find((t) => t.id === templateId);
+    const template = templates.find((temp) => temp.id === templateId);
 
     if (!template) {
       NotificationSystem.show("Template not found", false);
@@ -735,29 +741,29 @@ class ProjectManager {
     // Search functionality
     const projectSearch = document.getElementById("project-search");
     if (projectSearch) {
-      projectSearch.addEventListener("input", (e) => {
-        const query = e.target.value.toLowerCase();
+      projectSearch.addEventListener("input", (event) => {
+        const query = event.target.value.toLowerCase();
         const projects = this.getProjects();
-        const filtered = projects.filter((p) => {
-          const nameMatch = p.name.toLowerCase().includes(query);
-          const descMatch = p.description && p.description.toLowerCase().includes(query);
+        const filteredProjects = projects.filter((project) => {
+          const nameMatch = project.name.toLowerCase().includes(query);
+          const descMatch = project.description && project.description.toLowerCase().includes(query);
           return nameMatch || descMatch;
         });
-        this.renderProjects(filtered, "projects-grid");
+        this.renderProjects(filteredProjects, "projects-grid");
       });
     }
 
     const templateSearch = document.getElementById("template-search");
     if (templateSearch) {
-      templateSearch.addEventListener("input", (e) => {
-        const query = e.target.value.toLowerCase();
+      templateSearch.addEventListener("input", (event) => {
+        const query = event.target.value.toLowerCase();
         const templates = this.getTemplates();
-        const filtered = templates.filter((t) => {
-          const nameMatch = t.name.toLowerCase().includes(query);
-          const descMatch = t.description && t.description.toLowerCase().includes(query);
+        const filteredTemplates = templates.filter((template) => {
+          const nameMatch = template.name.toLowerCase().includes(query);
+          const descMatch = template.description && template.description.toLowerCase().includes(query);
           return nameMatch || descMatch;
         });
-        this.renderTemplates(filtered, "templates-grid");
+        this.renderTemplates(filteredTemplates, "templates-grid");
       });
     }
 

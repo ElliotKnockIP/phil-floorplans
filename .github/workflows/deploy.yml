@@ -32,14 +32,14 @@ jobs:
             echo "ERROR: GOOGLE_MAPS_API_KEY secret is not set!"
             exit 1
           fi
-          if [ ! -f config.js ]; then
+          if [ ! -f scripts/config/config.js ]; then
             echo "ERROR: config.js file not found!"
             exit 1
           fi
           # Use pipe delimiter to avoid issues with special characters in API key
-          sed -i "s|PLACEHOLDER|${{ secrets.GOOGLE_MAPS_API_KEY }}|g" config.js
+          sed -i "s|PLACEHOLDER|${{ secrets.GOOGLE_MAPS_API_KEY }}|g" scripts/config/config.js
           # Verify replacement worked
-          if grep -q "PLACEHOLDER" config.js; then
+          if grep -q "PLACEHOLDER" scripts/config/config.js; then
             echo "ERROR: Replacement failed! PLACEHOLDER still found in config.js"
             exit 1
           fi
@@ -52,9 +52,8 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: '.'
+          path: "."
 
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4
-

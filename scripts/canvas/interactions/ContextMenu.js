@@ -38,9 +38,19 @@ export class ContextMenu {
     this.addTextBtn.innerText = "Add Text";
     this.addTextBtn.className = "context-menu-button";
 
+    this.addControlPointBtn = document.createElement("button");
+    this.addControlPointBtn.innerText = "Add Control Point";
+    this.addControlPointBtn.className = "context-menu-button";
+
+    this.deleteControlPointBtn = document.createElement("button");
+    this.deleteControlPointBtn.innerText = "Delete Control Point";
+    this.deleteControlPointBtn.className = "context-menu-button delete";
+
     this.menu.appendChild(this.copyBtn);
     this.menu.appendChild(this.splitBtn);
     this.menu.appendChild(this.addTextBtn);
+    this.menu.appendChild(this.addControlPointBtn);
+    this.menu.appendChild(this.deleteControlPointBtn);
     this.menu.appendChild(this.deleteBtn);
     document.body.appendChild(this.menu);
   }
@@ -49,6 +59,18 @@ export class ContextMenu {
   hideMenu() {
     this.menu.style.display = "none";
     this.currentTarget = null;
+  }
+
+  // Check if target is an editable polygon type
+  isEditablePolygon(target) {
+    if (target?.type !== "polygon") return false;
+    const editableClasses = ["zone-polygon", "room-polygon", "risk-polygon", "safety-polygon"];
+    return editableClasses.includes(target.class);
+  }
+
+  // Check if target is a polygon control point
+  isPolygonControlPoint(target) {
+    return target?.type === "circle" && target?.data?.polygon && target?.data?.index !== undefined;
   }
 
   // Show the context menu at specific coordinates for a target object
@@ -60,14 +82,32 @@ export class ContextMenu {
       this.copyBtn.style.display = "block";
       this.splitBtn.style.display = "none";
       this.addTextBtn.style.display = "none";
+      this.addControlPointBtn.style.display = "none";
+      this.deleteControlPointBtn.style.display = "none";
     } else if (target.type === "line" && (target.isNetworkConnection || target.isConnectionSegment)) {
       this.copyBtn.style.display = "none";
       this.splitBtn.style.display = "block";
       this.addTextBtn.style.display = "block";
+      this.addControlPointBtn.style.display = "none";
+      this.deleteControlPointBtn.style.display = "none";
+    } else if (this.isEditablePolygon(target)) {
+      this.copyBtn.style.display = "none";
+      this.splitBtn.style.display = "none";
+      this.addTextBtn.style.display = "none";
+      this.addControlPointBtn.style.display = target.editControlPoints ? "block" : "none";
+      this.deleteControlPointBtn.style.display = "none";
+    } else if (this.isPolygonControlPoint(target)) {
+      this.copyBtn.style.display = "none";
+      this.splitBtn.style.display = "none";
+      this.addTextBtn.style.display = "none";
+      this.addControlPointBtn.style.display = "none";
+      this.deleteControlPointBtn.style.display = "block";
     } else {
       this.copyBtn.style.display = "none";
       this.splitBtn.style.display = "none";
       this.addTextBtn.style.display = "none";
+      this.addControlPointBtn.style.display = "none";
+      this.deleteControlPointBtn.style.display = "none";
     }
 
     this.menu.style.left = `${x}px`;
@@ -367,6 +407,22 @@ export class ContextMenu {
       this.hideMenu();
     });
 
+    this.addControlPointBtn.addEventListener("click", () => {
+      if (!this.currentTarget || !this.isEditablePolygon(this.currentTarget)) return;
+      this.addControlPointToPolygon(this.currentTarget);
+      this.hideMenu();
+    });
+
+    this.deleteControlPointBtn.addEventListener("click", () => {
+      if (!this.currentTarget || !this.isPolygonControlPoint(this.currentTarget)) return;
+      this.deleteControlPointFromPolygon(this.currentTarget);
+      this.hideMenu();
+    });
+    this.deleteControlPointBtn.addEventListener("click", () => {
+      if (!this.currentTarget || !this.isPolygonControlPoint(this.currentTarget)) return;
+      this.deleteControlPointFromPolygon(this.currentTarget);
+      this.hideMenu();
+    });
     this.deleteBtn.addEventListener("click", () => {
       if (!this.currentTarget) return;
       this.deleteObject(this.currentTarget);
@@ -381,5 +437,39 @@ export class ContextMenu {
       },
       hideMenu: () => this.hideMenu(),
     };
+  }
+
+  // Adds a control point to a polygon at the right-click location
+  addControlPointToPolygon(target) {
+    if (!target || !this.isEditablePolygon(target)) return;
+    if (!target.editControlPoints) return; // Polygon must be in edit mode
+
+    let pointer = target.getCenterPoint();
+    if (window.lastContextMenuEvent) {
+      pointer = this.fabricCanvas.getPointer(window.lastContextMenuEvent);
+    }
+
+    if (typeof window.addPolygonControlPoint === "function") {
+      window.addPolygonControlPoint(this.fabricCanvas, target, pointer);
+    }
+  }
+
+  // Deletes a control point from a polygon
+  deleteControlPointFromPolygon(controlPoint) {
+    if (!controlPoint || !this.isPolygonControlPoint(controlPoint)) return;
+
+    const polygon = controlPoint.data.polygon;
+    const index = controlPoint.data.index;
+
+    if (!polygon || index === undefined) return;
+
+    // Ensure polygon has at least 3 points after deletion
+    if (polygon.points && polygon.points.length <= 3) {
+      return;
+    }
+
+    if (typeof window.removePolygonControlPoint === "function") {
+      window.removePolygonControlPoint(this.fabricCanvas, polygon, index);
+    }
   }
 }

@@ -96,56 +96,56 @@ export class CanvasOperations {
   }
 
   // Start panning when clicking on empty canvas space
-  handleMouseDown(opt) {
+  handleMouseDown(options) {
     this.canvas.selection = false;
-    const evt = opt.e;
-    if (evt.button === 0 && !opt.target) {
+    const event = options.e;
+    if (event.button === 0 && !options.target) {
       this.isPanning = true;
-      this.lastPosX = evt.clientX;
-      this.lastPosY = evt.clientY;
-      evt.preventDefault();
-      evt.stopPropagation();
+      this.lastPosX = event.clientX;
+      this.lastPosY = event.clientY;
+      event.preventDefault();
+      event.stopPropagation();
     }
   }
 
   // Update viewport position during panning
-  handleMouseMove(opt) {
+  handleMouseMove(options) {
     if (!this.isPanning) return;
 
-    const evt = opt.e;
-    const deltaX = evt.clientX - this.lastPosX;
-    const deltaY = evt.clientY - this.lastPosY;
-    this.lastPosX = evt.clientX;
-    this.lastPosY = evt.clientY;
+    const event = options.e;
+    const deltaX = event.clientX - this.lastPosX;
+    const deltaY = event.clientY - this.lastPosY;
+    this.lastPosX = event.clientX;
+    this.lastPosY = event.clientY;
 
-    const vpt = this.canvas.viewportTransform;
-    vpt[4] += deltaX;
-    vpt[5] += deltaY;
-    this.canvas.setViewportTransform(vpt);
+    const viewportTransform = this.canvas.viewportTransform;
+    viewportTransform[4] += deltaX;
+    viewportTransform[5] += deltaY;
+    this.canvas.setViewportTransform(viewportTransform);
     this.canvas.requestRenderAll();
 
-    evt.preventDefault();
-    evt.stopPropagation();
+    event.preventDefault();
+    event.stopPropagation();
   }
 
   // Stop panning and restore selection
-  handleMouseUp(opt) {
+  handleMouseUp(options) {
     if (this.isPanning) {
       this.isPanning = false;
       this.canvas.selection = true;
-      opt.e.preventDefault();
-      opt.e.stopPropagation();
+      options.e.preventDefault();
+      options.e.stopPropagation();
     } else {
       this.canvas.selection = true;
     }
   }
 
   // Handle zooming with mouse wheel
-  handleMouseWheel(opt) {
-    opt.e.preventDefault();
-    opt.e.stopPropagation();
+  handleMouseWheel(options) {
+    options.e.preventDefault();
+    options.e.stopPropagation();
 
-    const delta = opt.e.deltaY;
+    const delta = options.e.deltaY;
     let zoom = this.canvas.getZoom();
     const zoomFactor = 0.1;
     const minZoom = 0.25;
@@ -154,7 +154,7 @@ export class CanvasOperations {
     // Calculate new zoom level within bounds
     zoom = delta > 0 ? Math.max(minZoom, zoom - zoomFactor) : Math.min(maxZoom, zoom + zoomFactor);
 
-    const pointer = this.canvas.getPointer(opt.e, true);
+    const pointer = this.canvas.getPointer(options.e, true);
     const zoomPoint = new fabric.Point(pointer.x, pointer.y);
 
     this.canvas.zoomToPoint(zoomPoint, zoom);
@@ -168,16 +168,16 @@ export class CanvasOperations {
     if (window.hideDeviceProperties) window.hideDeviceProperties();
 
     // Clean up all objects and their associated UI elements
-    this.canvas.getObjects().forEach((obj) => {
-      if (obj.type === "group" && obj.deviceType) {
-        ["textObject", "coverageArea", "leftResizeIcon", "rightResizeIcon", "rotateResizeIcon"].forEach((prop) => {
-          if (obj[prop]) this.canvas.remove(obj[prop]);
+    this.canvas.getObjects().forEach((object) => {
+      if (object.type === "group" && object.deviceType) {
+        ["textObject", "coverageArea", "leftResizeIcon", "rightResizeIcon", "rotateResizeIcon"].forEach((property) => {
+          if (object[property]) this.canvas.remove(object[property]);
         });
       }
-      if (obj.type === "polygon" && obj.class === "zone-polygon" && obj.associatedText) {
-        this.canvas.remove(obj.associatedText);
+      if (object.type === "polygon" && object.class === "zone-polygon" && object.associatedText) {
+        this.canvas.remove(object.associatedText);
       }
-      this.canvas.remove(obj);
+      this.canvas.remove(object);
     });
 
     this.canvas.clear();
@@ -210,24 +210,24 @@ export class CanvasOperations {
       zIndex: "10",
     });
 
-    canvasContainer.addEventListener("dragover", (e) => e.preventDefault());
+    canvasContainer.addEventListener("dragover", (event) => event.preventDefault());
 
-    canvasContainer.addEventListener("drop", (e) => {
-      e.preventDefault();
+    canvasContainer.addEventListener("drop", (event) => {
+      event.preventDefault();
 
       // Get drop payload and calculate canvas coordinates
       const getPayload = window.__getCustomDropPayload;
-      const customPayload = typeof getPayload === "function" ? getPayload(e.dataTransfer) : null;
-      const imgSrc = customPayload?.dataUrl || e.dataTransfer.getData("text/plain");
-      const rect = canvasElement.getBoundingClientRect();
+      const customPayload = typeof getPayload === "function" ? getPayload(event.dataTransfer) : null;
+      const imgSrc = customPayload?.dataUrl || event.dataTransfer.getData("text/plain");
+      const boundingRect = canvasElement.getBoundingClientRect();
 
-      const clientX = e.clientX - rect.left;
-      const clientY = e.clientY - rect.top;
-      const vpt = this.canvas.viewportTransform;
+      const clientX = event.clientX - boundingRect.left;
+      const clientY = event.clientY - boundingRect.top;
+      const viewportTransform = this.canvas.viewportTransform;
       const zoom = this.canvas.getZoom();
 
-      const canvasX = (clientX - vpt[4]) / zoom;
-      const canvasY = (clientY - vpt[5]) / zoom;
+      const canvasX = (clientX - viewportTransform[4]) / zoom;
+      const canvasY = (clientY - viewportTransform[5]) / zoom;
 
       let deviceType;
       if (customPayload) {
@@ -246,7 +246,7 @@ export class CanvasOperations {
 
   // Setup keyboard shortcuts for canvas operations
   setupKeyboardShortcuts() {
-    document.addEventListener("keydown", (e) => {
+    document.addEventListener("keydown", (event) => {
       const activeElement = document.activeElement;
       const isInputFocused = activeElement && (activeElement.tagName === "INPUT" || activeElement.tagName === "TEXTAREA" || activeElement.tagName === "SELECT" || activeElement.isContentEditable);
 
@@ -254,12 +254,12 @@ export class CanvasOperations {
       if (isInputFocused) return;
 
       // Delete selected object on Delete or Backspace key
-      if ((e.key === "Delete" || e.key === "Backspace") && this.canvas.getActiveObject()) {
-        const activeObj = this.canvas.getActiveObject();
-        if (activeObj.type === "group") {
-          e.preventDefault();
-          activeObj.fire("removed");
-          this.canvas.remove(activeObj);
+      if ((event.key === "Delete" || event.key === "Backspace") && this.canvas.getActiveObject()) {
+        const activeObject = this.canvas.getActiveObject();
+        if (activeObject.type === "group") {
+          event.preventDefault();
+          activeObject.fire("removed");
+          this.canvas.remove(activeObject);
           this.canvas.discardActiveObject();
           if (typeof window.hideDeviceProperties === "function") {
             window.hideDeviceProperties();

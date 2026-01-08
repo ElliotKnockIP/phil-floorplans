@@ -9,6 +9,9 @@ export function enablePolygonEditing(fabricCanvas, polygon) {
     fabricCanvas.preserveObjectStacking = true;
   }
 
+  // Setup double-click handler for adding control points on edges
+  setupPolygonDoubleClick(fabricCanvas, polygon);
+
   // Get the transformation matrix to convert local coordinates to canvas coordinates
   const transformMatrix = polygon.calcTransformMatrix();
 
@@ -36,7 +39,7 @@ export function enablePolygonEditing(fabricCanvas, polygon) {
     });
 
     // When the control circle is moved, update the polygons shape
-    controlCircle.on("moving", (e) => {
+    controlCircle.on("moving", (event) => {
       handleControlMove(fabricCanvas, polygon, index, controlCircle);
     });
 
@@ -74,6 +77,12 @@ export function disablePolygonEditing(fabricCanvas, polygon) {
     polygon.off("moving", polygon.updateControlsHandler);
     polygon.off("modified", polygon.updateControlsHandler);
     delete polygon.updateControlsHandler;
+  }
+
+  // Remove double-click handler
+  if (polygon._dblClickHandler) {
+    polygon.off("mousedown", polygon._dblClickHandler);
+    delete polygon._dblClickHandler;
   }
 
   // Remove all control circles from the canvas
@@ -219,8 +228,8 @@ function updatePolygonTextContent(polygon, fabricCanvas) {
   if (polygon.points && polygon.points.length >= 3) {
     areaInPixels =
       Math.abs(
-        polygon.points.reduce((sum, point, i) => {
-          const nextPoint = polygon.points[(i + 1) % polygon.points.length];
+        polygon.points.reduce((sum, point, index) => {
+          const nextPoint = polygon.points[(index + 1) % polygon.points.length];
           return sum + (point.x * nextPoint.y - nextPoint.x * point.y);
         }, 0)
       ) / 2;
@@ -272,3 +281,162 @@ export function updateControlPointColors(polygon) {
     polygon.canvas.requestRenderAll();
   }
 }
+
+// Sets up double-click handler for adding control points on polygon edges
+function setupPolygonDoubleClick(fabricCanvas, polygon) {
+  if (polygon._dblClickHandler) return; // Already set up
+
+  polygon._dblClickHandler = (event) => {
+    if (event.e?.detail === 2) {
+      const pointer = fabricCanvas.getPointer(event.e);
+      addControlPointAtPosition(fabricCanvas, polygon, pointer);
+    }
+  };
+
+  polygon.on("mousedown", polygon._dblClickHandler);
+}
+
+// Removes the double-click handler from a polygon
+function removePolygonDoubleClick(polygon) {
+  if (polygon._dblClickHandler) {
+    polygon.off("mousedown", polygon._dblClickHandler);
+    delete polygon._dblClickHandler;
+  }
+}
+
+// Finds the closest edge of a polygon to a given point and returns the insertion index
+function findClosestEdgeIndex(polygon, point) {
+  if (!polygon || !polygon.points || polygon.points.length < 2) return -1;
+
+  const transformMatrix = polygon.calcTransformMatrix();
+  const points = polygon.points;
+  let minDistance = Infinity;
+  let insertIndex = -1;
+
+  for (let index = 0; index < points.length; index++) {
+    const p1 = points[index];
+    const p2 = points[(index + 1) % points.length];
+
+    // Convert to canvas coordinates
+    const localP1 = new fabric.Point(p1.x - polygon.pathOffset.x, p1.y - polygon.pathOffset.y);
+    const localP2 = new fabric.Point(p2.x - polygon.pathOffset.x, p2.y - polygon.pathOffset.y);
+    const canvasP1 = fabric.util.transformPoint(localP1, transformMatrix);
+    const canvasP2 = fabric.util.transformPoint(localP2, transformMatrix);
+
+    const distance = pointToSegmentDistance(point, canvasP1, canvasP2);
+    if (distance < minDistance) {
+      minDistance = distance;
+      insertIndex = index + 1; // Insert after this point
+    }
+  }
+
+  return minDistance < 20 ? insertIndex : -1; // Only if within 20 pixels of edge
+}
+
+// Calculates the distance from a point to a line segment
+function pointToSegmentDistance(point, segStart, segEnd) {
+  const deltaX = segEnd.x - segStart.x;
+  const deltaY = segEnd.y - segStart.y;
+  const lengthSquared = deltaX * deltaX + deltaY * deltaY;
+
+  if (lengthSquared === 0) {
+    // Segment is a point
+    return Math.sqrt((point.x - segStart.x) ** 2 + (point.y - segStart.y) ** 2);
+  }
+
+  let projectionFactor = ((point.x - segStart.x) * deltaX + (point.y - segStart.y) * deltaY) / lengthSquared;
+  projectionFactor = Math.max(0, Math.min(1, projectionFactor));
+
+  const projectedX = segStart.x + projectionFactor * deltaX;
+  const projectedY = segStart.y + projectionFactor * deltaY;
+
+  return Math.sqrt((point.x - projectedX) ** 2 + (point.y - projectedY) ** 2);
+}
+
+// Adds a new control point to a polygon at the specified canvas position
+export function addControlPointAtPosition(fabricCanvas, polygon, canvasPoint) {
+  if (!polygon || !polygon.points || !polygon.editControlPoints) return false;
+
+  const insertIndex = findClosestEdgeIndex(polygon, canvasPoint);
+  if (insertIndex < 0) return false;
+
+  // Convert canvas point to polygon local coordinates
+  const inverseMatrix = fabric.util.invertTransform(polygon.calcTransformMatrix());
+  const localPoint = fabric.util.transformPoint(new fabric.Point(canvasPoint.x, canvasPoint.y), inverseMatrix);
+
+  // Add path offset back to get the point in polygon's coordinate system
+  const newPoint = {
+    x: localPoint.x + polygon.pathOffset.x,
+    y: localPoint.y + polygon.pathOffset.y,
+  };
+
+  // Insert the new point
+  polygon.points.splice(insertIndex, 0, newPoint);
+
+  // Rebuild control points
+  rebuildControlPoints(fabricCanvas, polygon);
+
+  return true;
+}
+
+// Removes a control point from a polygon at the specified index
+export function removeControlPointAtIndex(fabricCanvas, polygon, index) {
+  if (!polygon || !polygon.points || polygon.points.length <= 3) return false; // Keep at least 3 points
+
+  polygon.points.splice(index, 1);
+  rebuildControlPoints(fabricCanvas, polygon);
+  return true;
+}
+
+// Rebuilds all control points for a polygon after points array changes
+function rebuildControlPoints(fabricCanvas, polygon) {
+  // Remove existing control points
+  if (polygon.editControlPoints) {
+    polygon.editControlPoints.forEach((control) => fabricCanvas.remove(control));
+    delete polygon.editControlPoints;
+  }
+
+  // Remove and restore double-click handler
+  removePolygonDoubleClick(polygon);
+
+  // Recalculate path offset based on new bounding box
+  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+  polygon.points.forEach((p) => {
+    if (p.x < minX) minX = p.x;
+    if (p.y < minY) minY = p.y;
+    if (p.x > maxX) maxX = p.x;
+    if (p.y > maxY) maxY = p.y;
+  });
+
+  const newWidth = maxX - minX;
+  const newHeight = maxY - minY;
+
+  polygon.set({
+    width: newWidth,
+    height: newHeight,
+    pathOffset: { x: minX + newWidth / 2, y: minY + newHeight / 2 },
+    dirty: true,
+  });
+
+  polygon.setCoords();
+
+  // Recenter associated label using actual canvas center (prevents jump after point deletion)
+  if (polygon.associatedText) {
+    const center = polygon.getCenterPoint();
+    const textLabel = polygon.associatedText;
+    textLabel.set({
+      left: center.x + (textLabel.offsetX || 0),
+      top: center.y + (textLabel.offsetY || 0),
+    });
+    textLabel.setCoords();
+    updatePolygonTextContent(polygon, fabricCanvas);
+  }
+
+  // Re-enable editing to create new control points
+  enablePolygonEditing(fabricCanvas, polygon);
+  fabricCanvas.requestRenderAll();
+}
+
+// Expose function globally for context menu
+window.addPolygonControlPoint = addControlPointAtPosition;
+window.removePolygonControlPoint = removeControlPointAtIndex;

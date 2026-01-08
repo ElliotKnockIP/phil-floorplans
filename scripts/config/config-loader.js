@@ -1,6 +1,6 @@
 let GOOGLE_MAPS_API_KEY;
 
-// Check if we're on GitHub Pages first
+// Check if on GitHub Pages first
 const hostname = window.location.hostname;
 const isGitHubPages = hostname.includes("github.io") || hostname.includes("github.com");
 
@@ -12,20 +12,12 @@ try {
 
     // Check if key is still placeholder
     if (!GOOGLE_MAPS_API_KEY || GOOGLE_MAPS_API_KEY === "PLACEHOLDER") {
-      console.error(
-        "[Config Loader] ERROR: API key is still PLACEHOLDER! The GitHub Actions workflow did not replace it."
-      );
+      console.error("[Config Loader] ERROR: API key is still PLACEHOLDER GitHub Actions workflow did not replace it.");
       throw new Error("API key not configured. Check GitHub Actions workflow.");
     }
   } else {
     // Only try to load local config when running locally
-    const isLocal =
-      hostname === "localhost" ||
-      hostname === "127.0.0.1" ||
-      hostname === "" ||
-      hostname.startsWith("192.168.") ||
-      hostname.startsWith("10.") ||
-      hostname.startsWith("172.");
+    const isLocal = hostname === "localhost" || hostname === "127.0.0.1" || hostname === "" || hostname.startsWith("192.168.") || hostname.startsWith("10.") || hostname.startsWith("172.");
 
     if (isLocal) {
       try {

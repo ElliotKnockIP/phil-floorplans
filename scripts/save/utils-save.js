@@ -242,18 +242,12 @@ export const ProjectUI = {
         logoPreview.innerHTML = "";
         logoPreview.appendChild(img);
 
-        try {
-          localStorage.setItem("clientLogoDataUrl", clientDetails.logoFile.src);
-        } catch (_) {}
         const logoChangeEvent = new CustomEvent("logoChanged", {
           detail: { src: clientDetails.logoFile.src },
         });
         logoPreview.dispatchEvent(logoChangeEvent);
       } else if (logoPreview) {
         logoPreview.innerHTML = '<span style="color: #999">No logo selected</span>';
-        try {
-          localStorage.removeItem("clientLogoDataUrl");
-        } catch (_) {}
       }
       if (typeof window.updateAllTitleBlocks === "function") setTimeout(() => window.updateAllTitleBlocks(), 100);
     } catch (error) {

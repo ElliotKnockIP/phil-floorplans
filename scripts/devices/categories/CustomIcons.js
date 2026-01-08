@@ -5,10 +5,12 @@ export class CustomIcons {
     this.init();
   }
 
-  // Load custom icons from local storage
+  // Load custom icons from storage
+  // NEED TO DO: Replace with database
   loadIcons() {
     try {
-      const raw = localStorage.getItem(this.storageKey);
+      if (!this._memoryStore) this._memoryStore = {};
+      const raw = this._memoryStore[this.storageKey];
       if (!raw) return [];
       const parsed = JSON.parse(raw);
       return Array.isArray(parsed)
@@ -25,10 +27,13 @@ export class CustomIcons {
     }
   }
 
-  // Save custom icons list to local storage
+  // Save custom icons list to storage
+  // NEED TO DO: Replace with database
   saveIcons(list) {
     try {
-      localStorage.setItem(this.storageKey, JSON.stringify(list));
+      if (!this._memoryStore) this._memoryStore = {};
+      this._memoryStore[this.storageKey] = JSON.stringify(list);
+      console.log("[DB Placeholder] Would save custom icons");
     } catch (e) {
       console.error("Failed to save custom icons:", e);
     }
