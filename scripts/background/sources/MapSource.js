@@ -12,13 +12,16 @@ export class MapSourceHandler {
       mapBackBtn: document.getElementById("map-back-btn"),
       mapNextBtn: document.getElementById("map-next-btn"),
       addressInput: document.getElementById("maps-address-input"),
-      mapTypeSelect: document.getElementById("map-type-select"),
+      mapTypeBtns: document.querySelectorAll(".map-type-btn"),
+      toggleLabelsBtn: document.getElementById("toggle-labels-btn"),
       shapeSquareBtn: document.getElementById("shape-square-btn"),
       shapeRectBtn: document.getElementById("shape-rect-btn"),
       captureOverlay: document.getElementById("map-capture-overlay"),
     };
 
     this.captureShape = "square";
+    this.mapType = "satellite";
+    this.showLabels = false;
   }
 
   // Setup event handlers for map interactions
@@ -31,9 +34,20 @@ export class MapSourceHandler {
       this.mapElements.mapNextBtn.addEventListener("click", () => this.handleMapNext());
     }
 
-    if (this.mapElements.mapTypeSelect) {
-      this.mapElements.mapTypeSelect.addEventListener("change", () => {
-        if (this.map) this.map.setMapTypeId(this.mapElements.mapTypeSelect.value);
+    if (this.mapElements.mapTypeBtns) {
+      this.mapElements.mapTypeBtns.forEach((btn) => {
+        btn.addEventListener("click", (e) => {
+          const type = e.currentTarget.dataset.type;
+          this.setMapType(type);
+        });
+      });
+    }
+
+    if (this.mapElements.toggleLabelsBtn) {
+      this.mapElements.toggleLabelsBtn.addEventListener("click", () => {
+        this.showLabels = !this.showLabels;
+        this.mapElements.toggleLabelsBtn.classList.toggle("active", this.showLabels);
+        this.applyMapStyles();
       });
     }
 
@@ -91,6 +105,7 @@ export class MapSourceHandler {
         mapTypeControl: false,
       });
 
+      this.applyMapStyles();
       this.updateCaptureFrameShape();
 
       // Add CSS for autocomplete and capture frame
@@ -170,6 +185,48 @@ export class MapSourceHandler {
     frame.classList.add(this.captureShape === "rect" ? "rect" : "square");
   }
 
+  // Set map type and update UI
+  setMapType(type) {
+    this.mapType = type;
+    this.applyMapStyles();
+
+    if (this.mapElements.mapTypeBtns) {
+      this.mapElements.mapTypeBtns.forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.type === type);
+      });
+    }
+
+    // Update modal title based on map type
+    const modalTitle = document.getElementById("mapModalLabel");
+    if (modalTitle) {
+      const typeDisplay = type.charAt(0).toUpperCase() + type.slice(1);
+      modalTitle.textContent = `Maps ${typeDisplay}`;
+    }
+  }
+
+  // Apply visual styles to the map (Labels)
+  applyMapStyles() {
+    if (!this.map) return;
+
+    const styles = [];
+
+    // Label Visibility
+    styles.push({
+      featureType: "all",
+      elementType: "labels",
+      stylers: [{ visibility: this.showLabels ? "on" : "off" }],
+    });
+
+    this.map.setOptions({ styles: styles });
+
+    // Handle map types
+    if (this.mapType === "satellite") {
+      this.map.setMapTypeId(this.showLabels ? "hybrid" : "satellite");
+    } else {
+      this.map.setMapTypeId(this.mapType);
+    }
+  }
+
   // Set capture shape and update UI
   setCaptureShape(shape) {
     this.captureShape = shape;
@@ -213,7 +270,12 @@ export class MapSourceHandler {
     try {
       const center = this.map.getCenter();
       const zoom = this.map.getZoom();
-      const mapType = this.mapElements.mapTypeSelect?.value || "satellite";
+      let mapType = this.mapType || "satellite";
+
+      // If satellite and labels are on, we captured hybrid
+      if (mapType === "satellite" && this.showLabels) {
+        mapType = "hybrid";
+      }
 
       let width = 640;
       let height = 640;
@@ -247,6 +309,12 @@ export class MapSourceHandler {
       const apiKey = this.googleMapsApiKey;
       const baseUrl = "https://maps.googleapis.com/maps/api/staticmap";
       const params = [`center=${center.lat()},${center.lng()}`, `zoom=${zoom}`, `size=${width}x${height}`, "scale=2", `maptype=${mapType}`, `key=${apiKey}`, "format=jpg", "quality=95"];
+
+      // Add styles for Labels to static map
+      if (!this.showLabels) {
+        params.push("style=feature:all|element:labels|visibility:off");
+      }
+
       const staticMapUrl = `${baseUrl}?${params.join("&")}`;
 
       // Preload image to ensure it's available
@@ -254,7 +322,7 @@ export class MapSourceHandler {
 
       // Hide map modal and start cropping
       bootstrap.Modal.getInstance(this.mapElements.mapModal)?.hide();
-      this.manager.selectSource("map");
+      this.manager.currentSource = "map";
       this.manager.cropper.startCropping(staticMapUrl);
       this.manager.updateStepIndicators(2);
     } catch (error) {

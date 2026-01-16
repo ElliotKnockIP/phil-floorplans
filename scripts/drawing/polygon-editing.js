@@ -168,6 +168,9 @@ function handleControlMove(fabricCanvas, polygon, movedIndex, movedCircle) {
     dirty: true, // Mark for re-render
   });
 
+  // Clear originalCenter to disable snapping once altered
+  polygon.originalCenter = null;
+
   // Recalculate the polygons area
   if (relativePoints.length >= 3) {
     const areaInPixels =
@@ -287,9 +290,30 @@ function setupPolygonDoubleClick(fabricCanvas, polygon) {
   if (polygon._dblClickHandler) return; // Already set up
 
   polygon._dblClickHandler = (event) => {
-    if (event.e?.detail === 2) {
-      const pointer = fabricCanvas.getPointer(event.e);
+    const nativeEvt = event.e;
+    const isTouch = nativeEvt && (nativeEvt.pointerType === "touch" || nativeEvt.touches || nativeEvt.type === "touchstart");
+
+    // Mouse double-click
+    if (nativeEvt?.detail === 2 && !isTouch) {
+      const pointer = fabricCanvas.getPointer(nativeEvt);
       addControlPointAtPosition(fabricCanvas, polygon, pointer);
+      return;
+    }
+
+    // Touch double-tap fallback
+    if (isTouch) {
+      const now = Date.now();
+      const lastTap = polygon._lastTapTs || 0;
+
+      if (now - lastTap < 350) {
+        const touch = nativeEvt.touches ? nativeEvt.touches[0] : nativeEvt.changedTouches ? nativeEvt.changedTouches[0] : nativeEvt;
+        const pointer = fabricCanvas.getPointer({ clientX: touch.clientX, clientY: touch.clientY });
+        addControlPointAtPosition(fabricCanvas, polygon, pointer);
+        polygon._lastTapTs = 0;
+        return;
+      }
+
+      polygon._lastTapTs = now;
     }
   };
 
@@ -417,6 +441,9 @@ function rebuildControlPoints(fabricCanvas, polygon) {
     pathOffset: { x: minX + newWidth / 2, y: minY + newHeight / 2 },
     dirty: true,
   });
+
+  // Clear originalCenter to disable snapping once altered
+  polygon.originalCenter = null;
 
   polygon.setCoords();
 

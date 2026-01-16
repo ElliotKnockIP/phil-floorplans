@@ -16,7 +16,6 @@ export const ObjectTypeUtils = {
       return false;
     }
     if (obj.type === "text" && obj.isDeviceLabel) return false;
-    if (obj.type === "polygon" && obj.fill?.includes("165, 155, 155")) return false;
     if (obj.isResizeIcon === true) return false;
 
     const isNetworkObj = obj.isConnectionSegment || obj.isNetworkSplitPoint || obj.isNetworkConnection || obj.isSegmentDistanceLabel || obj.isConnectionCustomLabel || obj.isChannelLabel;
@@ -24,18 +23,13 @@ export const ObjectTypeUtils = {
     if (isNetworkObj) return false;
 
     if (obj.type === "circle" && obj.radius <= 6 && !obj.isWallCircle) return false;
-    if (obj.type === "circle" && obj.fill === "#f8794b" && obj.radius < 30 && !obj.isWallCircle) {
-      return false;
-    }
     return true;
   },
   // Checks if an object is a managed object
   isManagedObject: (obj) => {
-    const isLegacyPolygon = obj.type === "polygon" && obj.fill?.includes("165, 155, 155");
-    const isLegacyCircle = obj.type === "circle" && obj.fill === "#f8794b" && obj.radius < 30 && !obj.isWallCircle;
     const isNetworkLabel = obj.isSegmentDistanceLabel || obj.isConnectionCustomLabel || obj.isChannelLabel;
 
-    return ObjectTypeUtils.isDevice(obj) || (obj.type === "text" && obj.isDeviceLabel) || isLegacyPolygon || obj.isResizeIcon === true || isLegacyCircle || obj.isCoverage === true || isNetworkLabel;
+    return ObjectTypeUtils.isDevice(obj) || (obj.type === "text" && obj.isDeviceLabel) || obj.isResizeIcon === true || obj.isCoverage === true || isNetworkLabel;
   },
   // Checks if an object is a zone object
   isZoneObject: (obj) => (obj.type === "polygon" && obj.class === "zone-polygon") || (obj.type === "i-text" && obj.class === "zone-text"),

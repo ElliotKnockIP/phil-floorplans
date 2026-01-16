@@ -17,9 +17,16 @@ export class PopoverBase {
     this.currentTarget = null;
     this.lastOpenedTs = 0;
     this.isDragging = false;
+    this.isResizing = false;
+    this.lastOwnPosition = null;
     this.wasVisibleBeforeDrag = false;
     this.clickedOnObject = false;
     this.lastClickedTarget = null;
+
+    this.resizeDirection = null;
+    this.resizeStart = null;
+    this.minWidth = options.minWidth || 280;
+    this.minHeight = options.minHeight || 240;
 
     // Drag state
     this.dragOffset = { x: 0, y: 0 };
@@ -30,6 +37,7 @@ export class PopoverBase {
     this.options = options;
 
     this.setupDragHandling();
+    this.setupResizeHandling();
     this.setupEventListeners();
     this.hookCanvasEvents();
   }
@@ -46,16 +54,6 @@ export class PopoverBase {
   // Initializes all sliders in the popover
   initializeAllSliders() {
     this.popover.querySelectorAll(".form-range, .slider").forEach((s) => this.initializeSliderAppearance(s));
-  }
-
-  // Shared position for all popovers in this session
-  getSharedPopoverPosition() {
-    return window.__sharedPopoverPosition || null;
-  }
-
-  // Sets the shared position for all popovers
-  setSharedPopoverPosition(pos) {
-    window.__sharedPopoverPosition = pos;
   }
 
   // Gets all navigation tab items
@@ -77,15 +75,27 @@ export class PopoverBase {
     if (this.options.onPanelChanged) this.options.onPanelChanged(key);
   }
 
-  // Positions the popover in the top-right corner or at shared position
+  // Positions the popover in the top-right corner or at shared position, or centers on mobile
   positionPopover() {
-    if (this.isDragging) return;
+    if (this.isDragging || this.isResizing) return;
 
-    const sharedPos = this.getSharedPopoverPosition();
-    if (sharedPos) {
-      this.popover.style.left = `${sharedPos.left}px`;
-      this.popover.style.top = `${sharedPos.top}px`;
+    // Check if we're on a mobile device (screen width <= 768px)
+    const isMobile = window.innerWidth <= 768;
+
+    if (this.lastOwnPosition && !isMobile) {
+      this.popover.style.left = `${this.lastOwnPosition.left}px`;
+      this.popover.style.top = `${this.lastOwnPosition.top}px`;
       this.popover.style.right = "auto";
+      this.popover.style.transform = "none";
+      return;
+    }
+
+    if (isMobile) {
+      // Center the popover on mobile devices
+      this.popover.style.left = "50%";
+      this.popover.style.top = "50%";
+      this.popover.style.right = "auto";
+      this.popover.style.transform = "translate(-50%, -50%)";
       return;
     }
 
@@ -98,13 +108,157 @@ export class PopoverBase {
       this.popover.style.left = `${left}px`;
       this.popover.style.top = `${top}px`;
       this.popover.style.right = "auto";
+      this.popover.style.transform = "none";
     } catch (e) {
-      // Fallback positioning
-      this.popover.style.right = `20px`;
-      this.popover.style.top = `20px`;
-      this.popover.style.left = `auto`;
+      // Check if on a mobile device for fallback positioning
+      const isMobile = window.innerWidth <= 768;
+      if (isMobile) {
+        this.popover.style.left = "50%";
+        this.popover.style.top = "50%";
+        this.popover.style.right = "auto";
+        this.popover.style.transform = "translate(-50%, -50%)";
+      } else {
+        // Fallback positioning for desktop
+        this.popover.style.right = `20px`;
+        this.popover.style.top = `20px`;
+        this.popover.style.left = `auto`;
+        this.popover.style.transform = "none";
+      }
     }
   }
+
+  // Adds resize handles and listeners for left, bottom, and bottom-left corner
+  setupResizeHandling() {
+    if (!this.popover) return;
+
+    const handles = [
+      { direction: "left", className: "left", cursor: "ew-resize" },
+      { direction: "right", className: "right", cursor: "ew-resize" },
+      { direction: "top", className: "top", cursor: "ns-resize" },
+      { direction: "bottom", className: "bottom", cursor: "ns-resize" },
+      { direction: "top-left", className: "top-left", cursor: "nwse-resize" },
+      { direction: "top-right", className: "top-right", cursor: "nesw-resize" },
+      { direction: "bottom-left", className: "bottom-left", cursor: "nesw-resize" },
+      { direction: "bottom-right", className: "bottom-right", cursor: "nwse-resize" },
+    ];
+
+    handles.forEach(({ direction, className, cursor }) => {
+      const handle = document.createElement("div");
+      handle.className = `popover-resize-handle ${className}`;
+      handle.dataset.direction = direction;
+      handle.style.cursor = cursor;
+      handle.addEventListener("mousedown", (e) => this.onResizeStart(e, direction));
+      handle.addEventListener("touchstart", (e) => this.onResizeStart(e, direction));
+      this.popover.appendChild(handle);
+    });
+
+    document.addEventListener("mousemove", (e) => this.onResizeMove(e));
+    document.addEventListener("touchmove", (e) => this.onResizeMove(e));
+    document.addEventListener("mouseup", () => this.onResizeEnd());
+    document.addEventListener("touchend", () => this.onResizeEnd());
+  }
+
+  onResizeStart(e, direction) {
+    if (this.isDragging) return;
+
+    const clientX = e.type === "touchstart" ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === "touchstart" ? e.touches[0].clientY : e.clientY;
+
+    const rect = this.popover.getBoundingClientRect();
+
+    this.resizeDirection = direction;
+    this.isResizing = true;
+    this.resizeStart = {
+      clientX,
+      clientY,
+      width: rect.width,
+      height: rect.height,
+      left: rect.left,
+      top: rect.top,
+    };
+
+    // Allow resizing beyond CSS max-height while keeping viewport bounds enforced manually
+    this.popover.style.maxHeight = `${window.innerHeight - 20}px`;
+
+    document.body.style.userSelect = "none";
+    e.preventDefault();
+    e.stopPropagation();
+  }
+
+  onResizeMove(e) {
+    if (!this.isResizing || !this.resizeStart || !this.resizeDirection) return;
+
+    const clientX = e.type === "touchmove" ? e.touches[0].clientX : e.clientX;
+    const clientY = e.type === "touchmove" ? e.touches[0].clientY : e.clientY;
+
+    const dx = clientX - this.resizeStart.clientX;
+    const dy = clientY - this.resizeStart.clientY;
+
+    const rightEdge = this.resizeStart.left + this.resizeStart.width;
+    const bottomEdge = this.resizeStart.top + this.resizeStart.height;
+
+    let newLeft = this.resizeStart.left;
+    let newWidth = this.resizeStart.width;
+    let newHeight = this.resizeStart.height;
+    let newTop = this.resizeStart.top;
+
+    const resizingLeft = this.resizeDirection.includes("left");
+    const resizingRight = this.resizeDirection.includes("right");
+    const resizingTop = this.resizeDirection.includes("top");
+    const resizingBottom = this.resizeDirection.includes("bottom");
+
+    if (resizingLeft) {
+      const proposedLeft = this.resizeStart.left + dx;
+      newLeft = Math.min(rightEdge - this.minWidth, Math.max(0, proposedLeft));
+      newWidth = rightEdge - newLeft;
+      const maxWidth = Math.max(this.minWidth, window.innerWidth - newLeft - 10);
+      newWidth = Math.min(newWidth, maxWidth);
+    }
+
+    if (resizingRight) {
+      const proposedWidth = this.resizeStart.width + dx;
+      const maxWidth = Math.max(this.minWidth, window.innerWidth - this.resizeStart.left - 10);
+      newWidth = Math.max(this.minWidth, Math.min(proposedWidth, maxWidth));
+    }
+
+    if (resizingBottom) {
+      const proposedHeight = this.resizeStart.height + dy;
+      const maxHeight = Math.max(this.minHeight, window.innerHeight - this.resizeStart.top - 10);
+      newHeight = Math.max(this.minHeight, Math.min(proposedHeight, maxHeight));
+    }
+
+    if (resizingTop) {
+      const proposedTop = this.resizeStart.top + dy;
+      newTop = Math.min(bottomEdge - this.minHeight, Math.max(0, proposedTop));
+      const maxHeight = Math.max(this.minHeight, window.innerHeight - newTop - 10);
+      newHeight = Math.min(bottomEdge - newTop, maxHeight);
+    }
+
+    this.popover.style.width = `${newWidth}px`;
+    this.popover.style.left = `${newLeft}px`;
+    this.popover.style.right = "auto";
+
+    if (resizingTop) {
+      this.popover.style.top = `${newTop}px`;
+    }
+
+    if (resizingBottom || resizingTop) {
+      this.popover.style.height = `${newHeight}px`;
+    }
+  }
+
+  onResizeEnd() {
+    if (!this.isResizing) return;
+
+    this.isResizing = false;
+    this.resizeDirection = null;
+    this.resizeStart = null;
+    document.body.style.userSelect = "";
+
+    const rect = this.popover.getBoundingClientRect();
+    this.lastOwnPosition = { left: rect.left, top: rect.top };
+  }
+
 
   // Hides popover temporarily during drag
   hidePopoverForDrag() {
@@ -119,7 +273,7 @@ export class PopoverBase {
   // Shows popover after drag if it was visible
   showPopoverAfterDrag() {
     if (this.wasVisibleBeforeDrag && this.currentTarget) {
-      this.popover.style.display = "block";
+      this.popover.style.display = "flex";
       this.positionPopover();
       this.onOpened();
     }
@@ -142,7 +296,7 @@ export class PopoverBase {
   baseOpenPopover(target, ...args) {
     this.currentTarget = target;
     this.lastOpenedTs = Date.now();
-    this.popover.style.display = "block";
+    this.popover.style.display = "flex";
     this.positionPopover();
     this.onOpened(...args);
   }
@@ -227,7 +381,7 @@ export class PopoverBase {
     document.body.style.userSelect = "";
 
     const rect = this.popover.getBoundingClientRect();
-    this.setSharedPopoverPosition({ left: rect.left, top: rect.top });
+    this.lastOwnPosition = { left: rect.left, top: rect.top };
   }
 
   // Sets up event listeners for navigation and closing
@@ -298,9 +452,9 @@ export class PopoverBase {
       const isVisible = this.popover.style.display === "block";
       const hasTarget = !!this.currentTarget;
       const isNotDragging = !this.isDragging;
-      const noSharedPos = !this.getSharedPopoverPosition();
+      const noSavedPos = !this.lastOwnPosition;
 
-      if (isVisible && hasTarget && isNotDragging && noSharedPos) {
+      if (isVisible && hasTarget && isNotDragging && noSavedPos) {
         this.positionPopover();
       }
     });

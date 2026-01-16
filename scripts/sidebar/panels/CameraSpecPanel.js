@@ -103,7 +103,7 @@ export class CameraSpecPanel {
       this.focalLengthInput.value = group?.focalLength || "";
     }
     if (this.sensorSizeInput) {
-      this.sensorSizeInput.value = group?.sensorSize || "1/3";
+      this.sensorSizeInput.value = group?.sensorSize || "";
     }
     if (this.resolutionInput) {
       this.resolutionInput.value = group?.resolution || "";
@@ -118,7 +118,7 @@ export class CameraSpecPanel {
   clearCameraSpecPanel() {
     this.currentGroup = null;
     if (this.focalLengthInput) this.focalLengthInput.value = "";
-    if (this.sensorSizeInput) this.sensorSizeInput.value = "1/3";
+    if (this.sensorSizeInput) this.sensorSizeInput.value = "";
     if (this.resolutionInput) this.resolutionInput.value = "";
     if (this.ipAddressInput) this.ipAddressInput.value = "";
     if (this.subnetInput) this.subnetInput.value = "";

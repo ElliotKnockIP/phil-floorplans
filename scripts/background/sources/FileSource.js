@@ -4,17 +4,16 @@ export class FileSourceHandler {
   constructor(manager) {
     this.manager = manager;
 
-    // File input elements
-    this.fileInputs = {
-      image: null,
-      pdf: null,
-    };
+    // File input element
+    this.fileInput = null;
   }
 
   // Setup file input elements for images and PDFs
   setupFileInputs() {
-    this.fileInputs.image = this.createFileInput("image/*", (event) => this.handleImageFile(event));
-    this.fileInputs.pdf = this.createFileInput(".pdf", (event) => this.handlePdfFile(event));
+    this.fileInput = this.createFileInput(
+      "image/jpeg, image/png, image/webp, application/pdf",
+      (event) => this.handleFileSelection(event)
+    );
   }
 
   // Create a hidden file input element
@@ -28,32 +27,36 @@ export class FileSourceHandler {
     return input;
   }
 
-  // Reset file input values
-  resetFileInputs() {
-    if (this.fileInputs.image) this.fileInputs.image.value = "";
-    if (this.fileInputs.pdf) this.fileInputs.pdf.value = "";
+  // Trigger the file upload dialog
+  triggerUpload() {
+    if (this.fileInput) {
+      this.fileInput.value = "";
+      this.fileInput.click();
+    }
+  }
+
+  // Handle file selection (Image or PDF)
+  handleFileSelection(event) {
+    const file = event.target.files[0];
+    if (!file) return;
+
+    if (file.type === "application/pdf") {
+      this.handlePdfFile(file);
+    } else if (file.type.startsWith("image/")) {
+      this.handleImageFile(file);
+    } else {
+      alert("Please select a valid image (JPG, PNG) or PDF file.");
+    }
   }
 
   // Handle image file selection and pass to manager
-  handleImageFile(event) {
-    const file = event.target.files[0];
-    if (!file || !file.type.startsWith("image/")) {
-      if (file) alert("Please select a valid image file (JPG, PNG, etc.)");
-      return;
-    }
-
+  handleImageFile(file) {
     const url = URL.createObjectURL(file);
     this.manager.processFile("file", url);
   }
 
   // Handle PDF file selection and start conversion
-  async handlePdfFile(event) {
-    const file = event.target.files[0];
-    if (!file || file.type !== "application/pdf") {
-      if (file) alert("Please select a valid PDF file");
-      return;
-    }
-
+  async handlePdfFile(file) {
     bootstrap.Modal.getInstance(document.getElementById("customModal"))?.hide();
     await this.convertPdfToImage(file);
   }

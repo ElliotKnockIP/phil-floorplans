@@ -271,7 +271,7 @@ class OptimizedDrawingObjectSerializer {
             area: p.area || 0,
             height: p.height || 2.4,
             volume: p.volume || 0,
-            polygon: DrawingUtils.extractProps(p, ["points", "fill", "stroke", "strokeWidth", "left", "top", "scaleX", "scaleY", "angle", "class", "selectable", "evented", "hasControls", "hasBorders", "hoverCursor", "perPixelTargetFind"]),
+            polygon: DrawingUtils.extractProps(p, ["points", "fill", "stroke", "strokeWidth", "strokeLineJoin", "left", "top", "scaleX", "scaleY", "angle", "class", "selectable", "evented", "hasControls", "hasBorders", "hoverCursor", "perPixelTargetFind"]),
             text: this.getTextObjectData(z.text),
           };
         } catch (e) {
@@ -300,7 +300,7 @@ class OptimizedDrawingObjectSerializer {
             height: r.height || p.height || 2.4,
             volume: r.volume || p.volume || 0,
             devices: r.devices || [],
-            polygon: DrawingUtils.extractProps(p, ["points", "fill", "stroke", "strokeWidth", "left", "top", "scaleX", "scaleY", "angle", "class", "selectable", "evented", "hasControls", "hasBorders", "hoverCursor", "perPixelTargetFind"]),
+            polygon: DrawingUtils.extractProps(p, ["points", "fill", "stroke", "strokeWidth", "strokeLineJoin", "left", "top", "scaleX", "scaleY", "angle", "class", "selectable", "evented", "hasControls", "hasBorders", "hoverCursor", "perPixelTargetFind"]),
             text: this.getTextObjectData(r.text),
           };
         } catch (e) {
@@ -326,7 +326,7 @@ class OptimizedDrawingObjectSerializer {
             riskNotes: r.riskNotes || p.riskNotes || "",
             riskColor: r.riskColor || p.stroke || "#e53935",
             devices: r.devices || [],
-            polygon: DrawingUtils.extractProps(p, ["points", "fill", "stroke", "strokeWidth", "strokeDashArray", "left", "top", "scaleX", "scaleY", "angle", "class", "selectable", "evented", "hasControls", "hasBorders", "hoverCursor", "perPixelTargetFind"]),
+            polygon: DrawingUtils.extractProps(p, ["points", "fill", "stroke", "strokeWidth", "strokeDashArray", "strokeLineJoin", "left", "top", "scaleX", "scaleY", "angle", "class", "selectable", "evented", "hasControls", "hasBorders", "hoverCursor", "perPixelTargetFind"]),
             text: this.getTextObjectData(r.text),
           };
         } catch (e) {
@@ -352,7 +352,7 @@ class OptimizedDrawingObjectSerializer {
             safetySubDetails: s.safetySubDetails || [],
             safetyColor: s.safetyColor || p.stroke || "#f9a825",
             devices: s.devices || [],
-            polygon: DrawingUtils.extractProps(p, ["points", "fill", "stroke", "strokeWidth", "strokeDashArray", "left", "top", "scaleX", "scaleY", "angle", "class", "selectable", "evented", "hasControls", "hasBorders", "hoverCursor", "perPixelTargetFind"]),
+            polygon: DrawingUtils.extractProps(p, ["points", "fill", "stroke", "strokeWidth", "strokeDashArray", "strokeLineJoin", "left", "top", "scaleX", "scaleY", "angle", "class", "selectable", "evented", "hasControls", "hasBorders", "hoverCursor", "perPixelTargetFind"]),
             text: this.getTextObjectData(s.text),
           };
         } catch (e) {
@@ -505,7 +505,12 @@ class OptimizedDrawingObjectSerializer {
             Object.assign(obj, { id: objectData.id });
             // Don't apply standard styling to connection lines - they need special properties preserved
             if (!obj.isConnectionLine) {
-              this.applyStandardStyling(obj);
+              // Ensure measurements and arrows don't get controls re-enabled
+              if (obj.isMeasurement || obj.isArrow) {
+                this.applyStandardStyling(obj, false);
+              } else {
+                this.applyStandardStyling(obj);
+              }
             }
             this.fabricCanvas.add(obj);
             resolve(obj);
@@ -830,7 +835,7 @@ class OptimizedDrawingObjectSerializer {
       selectable: td.selectable ?? false,
       evented: td.evented ?? false,
     });
-    const group = new fabric.Group([line, text], { ...props, hasControls: false });
+    const group = new fabric.Group([line, text], { ...props, hasControls: false, isMeasurement: true });
     this.applyStandardStyling(group, false);
     group.set({ borderScaleFactor: 1 });
     return group;
@@ -937,6 +942,7 @@ class OptimizedDrawingObjectSerializer {
         const polygon = new fabric.Polygon(itemData.polygon.points, {
           ...itemData.polygon,
           ...props,
+          strokeLineJoin: itemData.polygon.strokeLineJoin || "round",
           perPixelTargetFind: true,
           area: itemData.area,
           height: itemData.height,

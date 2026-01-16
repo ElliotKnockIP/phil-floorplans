@@ -416,11 +416,7 @@ export class FloorManager {
       });
       if (!belongsToDevice) this.fabricCanvas.remove(icon);
     });
-    const coverageAreas = allObjects.filter((obj) => {
-      const isCoverage = obj.isCoverage;
-      const isLegacyCoverage = obj.type === "polygon" && obj.fill?.includes("165, 155, 155");
-      return isCoverage || isLegacyCoverage;
-    });
+    const coverageAreas = allObjects.filter((obj) => obj.isCoverage === true);
     coverageAreas.forEach((area) => {
       const belongsToDevice = deviceGroups.some((device) => device.coverageArea === area);
       if (!belongsToDevice) this.fabricCanvas.remove(area);

@@ -46,9 +46,14 @@ export class ContextMenu {
     this.deleteControlPointBtn.innerText = "Delete Control Point";
     this.deleteControlPointBtn.className = "context-menu-button delete";
 
+    this.changeLengthBtn = document.createElement("button");
+    this.changeLengthBtn.innerText = "Change Length";
+    this.changeLengthBtn.className = "context-menu-button";
+
     this.menu.appendChild(this.copyBtn);
     this.menu.appendChild(this.splitBtn);
     this.menu.appendChild(this.addTextBtn);
+    this.menu.appendChild(this.changeLengthBtn);
     this.menu.appendChild(this.addControlPointBtn);
     this.menu.appendChild(this.deleteControlPointBtn);
     this.menu.appendChild(this.deleteBtn);
@@ -82,30 +87,42 @@ export class ContextMenu {
       this.copyBtn.style.display = "block";
       this.splitBtn.style.display = "none";
       this.addTextBtn.style.display = "none";
+      this.changeLengthBtn.style.display = "none";
       this.addControlPointBtn.style.display = "none";
       this.deleteControlPointBtn.style.display = "none";
     } else if (target.type === "line" && (target.isNetworkConnection || target.isConnectionSegment)) {
       this.copyBtn.style.display = "none";
       this.splitBtn.style.display = "block";
       this.addTextBtn.style.display = "block";
+      this.changeLengthBtn.style.display = "none";
+      this.addControlPointBtn.style.display = "none";
+      this.deleteControlPointBtn.style.display = "none";
+    } else if (target.isMeasurement) {
+      this.copyBtn.style.display = "none";
+      this.splitBtn.style.display = "none";
+      this.addTextBtn.style.display = "none";
+      this.changeLengthBtn.style.display = "block";
       this.addControlPointBtn.style.display = "none";
       this.deleteControlPointBtn.style.display = "none";
     } else if (this.isEditablePolygon(target)) {
       this.copyBtn.style.display = "none";
       this.splitBtn.style.display = "none";
       this.addTextBtn.style.display = "none";
+      this.changeLengthBtn.style.display = "none";
       this.addControlPointBtn.style.display = target.editControlPoints ? "block" : "none";
       this.deleteControlPointBtn.style.display = "none";
     } else if (this.isPolygonControlPoint(target)) {
       this.copyBtn.style.display = "none";
       this.splitBtn.style.display = "none";
       this.addTextBtn.style.display = "none";
+      this.changeLengthBtn.style.display = "none";
       this.addControlPointBtn.style.display = "none";
       this.deleteControlPointBtn.style.display = "block";
     } else {
       this.copyBtn.style.display = "none";
       this.splitBtn.style.display = "none";
       this.addTextBtn.style.display = "none";
+      this.changeLengthBtn.style.display = "none";
       this.addControlPointBtn.style.display = "none";
       this.deleteControlPointBtn.style.display = "none";
     }
@@ -357,6 +374,98 @@ export class ContextMenu {
     }
   }
 
+  // Change the length of a measurement line
+  changeMeasurementLength(target) {
+    if (!target || !target.isMeasurement) return;
+
+    // Detect if we have line and text
+    const objects = target.getObjects();
+    const lineObj = objects.find((o) => o.type === "line");
+    const textObj = objects.find((o) => o.type === "i-text");
+
+    if (!lineObj) return;
+
+    // Extract current value from text to show in prompt
+    // Format is "5.00 m" or "Apex: 5.00 m"
+    let currentLengthVal = "";
+    let prefix = "m";
+    if (textObj) {
+      const match = textObj.text.match(/([\d\.]+)\s*m/);
+      if (match) currentLengthVal = match[1];
+      if (textObj.text.includes("Apex:")) prefix = "Apex:";
+    }
+
+    const newLengthStr = window.prompt("Enter new length (m):", currentLengthVal);
+    if (newLengthStr === null) return;
+
+    const newLength = parseFloat(newLengthStr);
+    if (isNaN(newLength) || newLength <= 0) return;
+
+    const pixelsPerMeter = this.fabricCanvas.pixelsPerMeter || 17.5;
+    const newDistPixels = newLength * pixelsPerMeter;
+
+    // Calculate endpoints relative to group center
+    const isRight = lineObj.x2 >= lineObj.x1;
+    const isDown = lineObj.y2 >= lineObj.y1;
+
+    // lineObj.left/top are relative to group center (minX, minY)
+    const startXLocal = isRight ? lineObj.left : lineObj.left + lineObj.width;
+    const startYLocal = isDown ? lineObj.top : lineObj.top + lineObj.height;
+
+    const endXLocal = isRight ? lineObj.left + lineObj.width : lineObj.left;
+    const endYLocal = isDown ? lineObj.top + lineObj.height : lineObj.top;
+
+    // Transform local group points to absolute canvas coordinates
+    const matrix = target.calcTransformMatrix();
+    const p1 = fabric.util.transformPoint(new fabric.Point(startXLocal, startYLocal), matrix);
+    const p2 = fabric.util.transformPoint(new fabric.Point(endXLocal, endYLocal), matrix);
+
+    const dx = p2.x - p1.x;
+    const dy = p2.y - p1.y;
+    const angle = Math.atan2(dy, dx);
+
+    const newP2 = {
+      x: p1.x + Math.cos(angle) * newDistPixels,
+      y: p1.y + Math.sin(angle) * newDistPixels,
+    };
+
+    // Recreate objects
+    const color = lineObj.stroke;
+
+    this.fabricCanvas.remove(target);
+
+    const newLine = new fabric.Line([p1.x, p1.y, newP2.x, newP2.y], {
+      stroke: color,
+      strokeWidth: 3,
+    });
+
+    const midX = (p1.x + newP2.x) / 2;
+    const midY = (p1.y + newP2.y) / 2;
+
+    const newTextObj = new fabric.IText(`${prefix === "m" ? "" : prefix + " "}${newLength.toFixed(2)} m`, {
+      left: midX,
+      top: midY - 20,
+      fontSize: 16,
+      fill: "#000000",
+      fontFamily: "Poppins, sans-serif",
+      originX: "center",
+      originY: "center",
+      selectable: false,
+      evented: false,
+    });
+
+    const newGroup = new fabric.Group([newLine, newTextObj], {
+      selectable: true,
+      hasControls: false,
+      borderColor: "#f8794b",
+      isMeasurement: true,
+    });
+
+    this.fabricCanvas.add(newGroup);
+    this.fabricCanvas.setActiveObject(newGroup);
+    this.fabricCanvas.requestRenderAll();
+  }
+
   // Setup event listeners for right-click and menu interactions
   setupEventHandlers() {
     this.canvasEl.addEventListener("contextmenu", (evt) => evt.preventDefault());
@@ -404,6 +513,12 @@ export class ContextMenu {
     this.addTextBtn.addEventListener("click", () => {
       if (!this.currentTarget) return;
       this.addTextToConnection(this.currentTarget);
+      this.hideMenu();
+    });
+
+    this.changeLengthBtn.addEventListener("click", () => {
+      if (!this.currentTarget) return;
+      this.changeMeasurementLength(this.currentTarget);
       this.hideMenu();
     });
 

@@ -32,7 +32,7 @@ export class BackgroundManager {
 
   // Ensure all background modals use a static backdrop and ignore ESC
   configureBackgroundModals() {
-    const modalIds = ["customModal", "mapModal", "cropModal", "customBackgroundModal", "scaleModal"];
+    const modalIds = ["customModal", "mapModal", "osmModal", "cropModal", "customBackgroundModal", "scaleModal"];
 
     modalIds.forEach((id) => {
       const modal = document.getElementById(id);
@@ -278,7 +278,7 @@ export class BackgroundManager {
 
   // Close all background modals
   closeAllModals() {
-    const modalIds = ["customModal", "mapModal", "cropModal", "customBackgroundModal", "scaleModal"];
+    const modalIds = ["customModal", "mapModal", "osmModal", "cropModal", "customBackgroundModal", "scaleModal"];
 
     modalIds.forEach((id) => {
       const modal = document.getElementById(id);
@@ -289,6 +289,14 @@ export class BackgroundManager {
 
     // Clean up stacked backdrops
     this.normalizeBackdrops();
+
+    // Remove any remaining backdrops
+    setTimeout(() => {
+      document.querySelectorAll(".modal-backdrop").forEach((bd) => bd.remove());
+      document.body.classList.remove("modal-open");
+      document.body.style.overflow = "";
+      document.body.style.paddingRight = "";
+    }, 300);
 
     // Reset UI state
     this.resetState();
@@ -318,7 +326,7 @@ export class BackgroundManager {
 
   // Check if in background creation process
   isInBackgroundProcess() {
-    const modalIds = ["customModal", "mapModal", "cropModal", "customBackgroundModal", "scaleModal"];
+    const modalIds = ["customModal", "mapModal", "osmModal", "cropModal", "customBackgroundModal", "scaleModal"];
     return modalIds.some((id) => document.getElementById(id)?.classList.contains("show"));
   }
 
@@ -340,7 +348,7 @@ export class BackgroundManager {
 
   // Get currently visible modal
   getVisibleModal() {
-    const modalIds = ["customModal", "mapModal", "cropModal", "customBackgroundModal", "scaleModal"];
+    const modalIds = ["customModal", "mapModal", "osmModal", "cropModal", "customBackgroundModal", "scaleModal"];
     return modalIds.find((id) => document.getElementById(id)?.classList.contains("show"));
   }
 

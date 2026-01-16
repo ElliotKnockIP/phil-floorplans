@@ -1,4 +1,5 @@
 // Scale Calculator handles scale measurement and application
+import { calculateArea } from "../sidebar/sidebar-utils.js";
 
 export class ScaleCalculator {
   constructor(fabricCanvas, manager) {
@@ -58,7 +59,6 @@ export class ScaleCalculator {
   startScaling(canvas) {
     this.manager.normalizeBackdrops();
     this.manager.showModal(this.elements.scaleModal);
-
     this.initializeScaleCanvas(canvas);
     this.manager.updateStepIndicators(3);
   }
@@ -84,32 +84,48 @@ export class ScaleCalculator {
       (img) => {
         // Calculate canvas dimensions to fit container
         const containerRect = this.elements.scaleWrapper.getBoundingClientRect();
-        const maxWidth = containerRect.width - 20;
-        const maxHeight = containerRect.height - 20;
-        const scale = Math.min(maxWidth / img.width, maxHeight / img.height);
+        let maxWidth = containerRect.width - 40;
+        let maxHeight = containerRect.height - 40;
 
-        const canvasWidth = img.width * scale;
-        const canvasHeight = img.height * scale;
+        // Fallback for missing dimensions if modal is still opening
+        if (maxWidth <= 0 || maxHeight <= 0) {
+          maxWidth = Math.min(800, window.innerWidth * 0.8);
+          maxHeight = Math.min(600, window.innerHeight * 0.6);
+        }
+        
+        // Calculate scale to fit screen, but keep original resolution for canvas
+        const fitScale = Math.min(maxWidth / img.width, maxHeight / img.height);
 
-        scaleCanvasElement.width = canvasWidth;
-        scaleCanvasElement.height = canvasHeight;
-        scaleCanvasElement.style.width = canvasWidth + "px";
-        scaleCanvasElement.style.height = canvasHeight + "px";
+        // Store UI scale factor to keep controls visible on large images
+        this.uiScale = Math.max(1, 1 / (fitScale || 1));
 
-        // Create fabric canvas
+        const cssWidth = Math.floor(img.width * fitScale);
+        const cssHeight = Math.floor(img.height * fitScale);
+
+        // Set canvas to full resolution
+        scaleCanvasElement.width = img.width;
+        scaleCanvasElement.height = img.height;
+        
+        // Create fabric canvas at full resolution
         this.scaleCanvas = new fabric.Canvas("scaleCanvas", {
-          width: canvasWidth,
-          height: canvasHeight,
+          width: img.width,
+          height: img.height,
           backgroundColor: "#ffffff",
           selection: false,
         });
 
-        // Add background image
+        //Apply the visual CSS scale to the fabric wrapper
+        this.scaleCanvas.setDimensions({
+          width: cssWidth + "px",
+          height: cssHeight + "px"
+        }, { cssOnly: true });
+
+        // Add background image at 1:1 scale
         img.set({
           left: 0,
           top: 0,
-          scaleX: scale,
-          scaleY: scale,
+          scaleX: 1, 
+          scaleY: 1,
           selectable: false,
           evented: false,
           hoverCursor: "default",
@@ -153,9 +169,9 @@ export class ScaleCalculator {
 
     this.distanceText = new fabric.IText(currentValue + " m", {
       left: canvasWidth / 2,
-      top: canvasHeight / 2 - 30,
+      top: canvasHeight / 2 - (30 * this.uiScale),
       fontFamily: "Poppins, sans-serif",
-      fontSize: 20,
+      fontSize: 20 * this.uiScale,
       fill: "#000000",
       selectable: false,
       editable: false,
@@ -173,9 +189,9 @@ export class ScaleCalculator {
 
     this.instructionText = new fabric.Text("Click twice or click-and-drag to set the scale", {
       left: canvasWidth / 2,
-      top: 20,
+      top: 20 * this.uiScale,
       fontFamily: "Poppins, sans-serif",
-      fontSize: 14,
+      fontSize: 14 * this.uiScale,
       fill: "#111",
       backgroundColor: "rgba(255,255,255,0.75)",
       originX: "center",
@@ -191,11 +207,11 @@ export class ScaleCalculator {
   // Create reset button on canvas
   createResetButton() {
     const canvasWidth = this.scaleCanvas.getWidth();
-    const btnWidth = 110;
-    const btnHeight = 26;
-    const btnMargin = 10;
+    const btnWidth = 110 * this.uiScale;
+    const btnHeight = 26 * this.uiScale;
+    const btnMargin = 10 * this.uiScale;
     const btnLeft = canvasWidth - btnMargin - btnWidth;
-    const btnTop = 16;
+    const btnTop = 16 * this.uiScale;
 
     // Button background
     const btnBg = new fabric.Rect({
@@ -203,11 +219,11 @@ export class ScaleCalculator {
       top: btnTop,
       width: btnWidth,
       height: btnHeight,
-      rx: 6,
-      ry: 6,
+      rx: 6 * this.uiScale,
+      ry: 6 * this.uiScale,
       fill: "rgba(255,255,255,0.9)",
       stroke: "#f8794b",
-      strokeWidth: 1,
+      strokeWidth: 1 * this.uiScale,
       originX: "left",
       originY: "top",
       selectable: false,
@@ -219,7 +235,7 @@ export class ScaleCalculator {
       left: btnLeft + btnWidth / 2,
       top: btnTop + btnHeight / 2,
       fontFamily: "Poppins, sans-serif",
-      fontSize: 13,
+      fontSize: 13 * this.uiScale,
       fill: "#111",
       originX: "center",
       originY: "center",
@@ -306,7 +322,7 @@ export class ScaleCalculator {
   createMeasurementLine(startX, startY, endX, endY) {
     return new fabric.Line([startX, startY, endX, endY], {
       stroke: "red",
-      strokeWidth: 3,
+      strokeWidth: 3 * this.uiScale,
       strokeLineCap: "round",
       selectable: false,
       evented: false,
@@ -325,7 +341,7 @@ export class ScaleCalculator {
   positionDistanceText(startX, startY, endX, endY) {
     const midX = (startX + endX) / 2;
     const midY = (startY + endY) / 2;
-    this.distanceText.set({ left: midX, top: midY - 30 });
+    this.distanceText.set({ left: midX, top: midY - (30 * this.uiScale) });
     this.distanceText.setCoords();
   }
 
@@ -410,8 +426,8 @@ export class ScaleCalculator {
     const points = [this.scaleStartPoint.x, this.scaleStartPoint.y, clampedPointer.x, clampedPointer.y];
     this.tempLine = new fabric.Line(points, {
       stroke: "red",
-      strokeWidth: 3,
-      strokeDashArray: [6, 6],
+      strokeWidth: 3 * this.uiScale,
+      strokeDashArray: [6 * this.uiScale, 6 * this.uiScale],
       evented: false,
     });
 
@@ -472,16 +488,14 @@ export class ScaleCalculator {
     bootstrap.Modal.getInstance(this.elements.scaleModal)?.hide();
     this.cleanup();
 
-    setTimeout(() => {
-      // Try to restore crop modal
-      const restored = this.manager.cropper.restoreCropModal();
-      if (!restored) {
-        const cropModal = document.getElementById("cropModal");
-        this.manager.normalizeBackdrops();
-        this.manager.showModal(cropModal);
-        this.manager.updateStepIndicators(2);
-      }
-    }, 200);
+    // Try to restore crop modal
+    const restored = this.manager.cropper.restoreCropModal();
+    if (!restored) {
+      const cropModal = document.getElementById("cropModal");
+      this.manager.normalizeBackdrops();
+      this.manager.showModal(cropModal);
+      this.manager.updateStepIndicators(2);
+    }
   }
 
   // Handle finish button and apply scale to background
@@ -629,20 +643,11 @@ export class ScaleCalculator {
         return isPolygon && isZoneOrRoom;
       });
 
-      const calculateArea = (points, ppm) => {
-        let area = 0;
-        for (let i = 0; i < points.length; i++) {
-          const j = (i + 1) % points.length;
-          area += points[i].x * points[j].y - points[j].x * points[i].y;
-        }
-        return Math.abs(area) / (2 * ppm * ppm);
-      };
-
       polygons.forEach((polygon) => {
         const pairedText = polygon.associatedText;
         if (!pairedText || typeof pairedText.text !== "string") return;
 
-        const areaVal = calculateArea(polygon.points || [], this.pixelsPerMeter);
+        const areaVal = calculateArea(polygon.points || [], this.fabricCanvas);
         const heightVal = pairedText.displayHeight || polygon.height || 2.4;
         const volumeVal = areaVal * heightVal;
 

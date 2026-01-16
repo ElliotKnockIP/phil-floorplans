@@ -5,7 +5,7 @@ export class DeviceFactory {
   // Create a new device group with an icon and label
   static createDevice(fabricCanvas, imgSrc, canvasX, canvasY, options = {}) {
     // Determine if the device is a camera based on options or image path
-    const isCamera = options.isCamera === true || this.isCameraType(imgSrc);
+    const isCamera = options.isCamera === true || isCameraType(imgSrc);
     // Generate the next sequential label for the device
     const nextNum = this.getNextAvailableDeviceNumber(fabricCanvas, isCamera);
     const labelText = isCamera ? `Camera ${nextNum}` : `Device ${nextNum}`;
@@ -166,13 +166,6 @@ export class DeviceFactory {
       },
       { crossOrigin: "anonymous" }
     );
-  }
-
-  // Check if a file path or name indicates a camera device
-  static isCameraType(imgSrc) {
-    if (!imgSrc) return false;
-    const filename = imgSrc.split("/").pop()?.toLowerCase() || "";
-    return filename.includes("camera");
   }
 
   // Find the next available number for a device label to avoid duplicates

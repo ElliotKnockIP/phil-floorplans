@@ -181,10 +181,17 @@ import { DeviceFactory } from "../devices/DeviceFactory.js";
             clientY: touch.clientY,
           });
 
-          const hasMenu = window._fabricContextMenu && typeof window._fabricContextMenu.showMenu === "function";
+          const hasMenu = window.fabricContextMenu && typeof window.fabricContextMenu.showMenu === "function";
 
           if (longPressTarget && hasMenu) {
-            window._fabricContextMenu.showMenu(longPressTarget, touch.clientX, touch.clientY);
+            // Preserve a synthetic event so context menu actions (like add control point) know where the press happened
+            window.lastContextMenuEvent = {
+              clientX: touch.clientX,
+              clientY: touch.clientY,
+              pageX: touch.pageX,
+              pageY: touch.pageY,
+            };
+            window.fabricContextMenu.showMenu(longPressTarget, touch.clientX, touch.clientY);
           }
         } catch (err) {
           console.warn("Failed to detect long press target:", err);

@@ -104,6 +104,31 @@ class PolygonDrawer {
   toggleLock() {
     this.lineLock = !this.lineLock;
     this.updateToggleUI();
+    this.updateTempLineStyles();
+  }
+
+  // Update style of existing temporary lines when lock state changes
+  updateTempLineStyles() {
+    if (!this.points.length) return;
+
+    const drawingColor = this.getDrawingColor();
+    const style = this.lineLock ? { color: "#f8794b", dash: [3, 3] } : { color: drawingColor, dash: [5, 5] };
+
+    this.tempLines.forEach((line) => {
+      line.set({
+        stroke: style.color,
+        strokeDashArray: style.dash,
+      });
+    });
+
+    if (this.preview) {
+      this.preview.set({
+        stroke: style.color,
+        strokeDashArray: style.dash,
+      });
+    }
+
+    this.fabricCanvas.requestRenderAll();
   }
 
   // Update toggle UI appearance
@@ -205,7 +230,7 @@ class PolygonDrawer {
       this.startCircle = new fabric.Circle({
         left: pointer.x,
         top: pointer.y,
-        radius: 6,
+        radius: 5,
         fill: "transparent",
         stroke: "#00ff00",
         strokeWidth: 3,
@@ -251,7 +276,7 @@ class PolygonDrawer {
 
     // Handle auto-alignment guides
     this.clearGuideLines();
-    if (!nearStart && this.points.length >= 3) {
+    if (this.lineLock && !nearStart && this.points.length >= 3) {
       const threshold = 15;
       const verticallyAligned = Math.abs(pointer.x - startPoint.x) <= threshold;
       const horizontallyAligned = Math.abs(pointer.y - startPoint.y) <= threshold;
@@ -291,7 +316,7 @@ class PolygonDrawer {
 
     // Create preview line
     const drawingColor = this.getDrawingColor();
-    const lineStyle = nearStart ? { color: "#00ff00", width: 3, dash: [5, 5] } : this.lineLock ? { color: "#f8794b", width: 2, dash: [3, 3] } : { color: drawingColor, width: 2, dash: [5, 5] };
+    const lineStyle = nearStart ? { color: "#00ff00", width: 2, dash: [5, 5] } : this.lineLock ? { color: "#f8794b", width: 2, dash: [3, 3] } : { color: drawingColor, width: 2, dash: [5, 5] };
 
     this.preview && this.fabricCanvas.remove(this.preview);
     this.preview = new fabric.Line([lastPoint.x, lastPoint.y, pointer.x, pointer.y], {
@@ -351,6 +376,7 @@ class PolygonDrawer {
       fill: fillStyle,
       stroke: color,
       strokeWidth: 2,
+      strokeLineJoin: "round",
       selectable: true,
       evented: true,
       perPixelTargetFind: true,

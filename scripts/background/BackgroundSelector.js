@@ -2,6 +2,7 @@
 
 import { FileSourceHandler } from "./sources/FileSource.js";
 import { MapSourceHandler } from "./sources/MapSource.js";
+import { OSMSourceHandler } from "./sources/OSMSource.js";
 import { CustomSourceHandler } from "./sources/CustomSource.js";
 import { GOOGLE_MAPS_API_KEY } from "../config/config-loader.js";
 
@@ -14,8 +15,8 @@ export class BackgroundSelector {
     this.elements = {
       mainModal: document.getElementById("customModal"),
       uploadFileBtn: document.getElementById("upload-file-btn"),
-      uploadPdfBtn: document.getElementById("upload-pdf-btn"),
       googleMapsBtn: document.getElementById("google-maps-btn"),
+      openStreetMapBtn: document.getElementById("openstreetmap-btn"),
       customStyleBtn: document.getElementById("custom-style-btn"),
       subSidebar: document.getElementById("sub-sidebar"),
     };
@@ -23,6 +24,7 @@ export class BackgroundSelector {
     // Initialize source handlers
     this.fileHandler = new FileSourceHandler(manager);
     this.mapHandler = new MapSourceHandler(manager, GOOGLE_MAPS_API_KEY);
+    this.osmHandler = new OSMSourceHandler(manager);
     this.customHandler = new CustomSourceHandler(manager);
   }
 
@@ -31,6 +33,7 @@ export class BackgroundSelector {
     this.fileHandler.setupFileInputs();
     this.setupButtonListeners();
     this.mapHandler.setupMapHandlers();
+    this.osmHandler.setupOSMHandlers();
     this.customHandler.setupCustomHandlers();
     this.setupModalListeners();
   }
@@ -41,17 +44,7 @@ export class BackgroundSelector {
       this.elements.uploadFileBtn.addEventListener("click", (e) => {
         e.preventDefault();
         e.stopPropagation();
-        this.fileHandler.resetFileInputs();
-        this.fileHandler.fileInputs.image.click();
-      });
-    }
-
-    if (this.elements.uploadPdfBtn) {
-      this.elements.uploadPdfBtn.addEventListener("click", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        this.fileHandler.resetFileInputs();
-        this.fileHandler.fileInputs.pdf.click();
+        this.fileHandler.triggerUpload();
       });
     }
 
@@ -60,6 +53,14 @@ export class BackgroundSelector {
         e.preventDefault();
         e.stopPropagation();
         this.manager.selectSource("maps");
+      });
+    }
+
+    if (this.elements.openStreetMapBtn) {
+      this.elements.openStreetMapBtn.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        this.manager.selectSource("osm");
       });
     }
 
@@ -79,6 +80,9 @@ export class BackgroundSelector {
     switch (sourceType) {
       case "maps":
         this.mapHandler.showMapModal();
+        break;
+      case "osm":
+        this.osmHandler.showOSMModal();
         break;
       case "custom":
         this.customHandler.showCustomModal();

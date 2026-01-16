@@ -92,12 +92,12 @@ export class ImageCropper {
     this.destroyCropper();
     this.isReady = false;
 
-    const isMapSource = this.manager.currentSource === "map" || this.manager.currentSource === "maps";
+    const isMapSource = this.manager.currentSource === "map" || this.manager.currentSource === "maps" || this.manager.currentSource === "osm";
     const initCropperInstance = () => {
       this.cropper = new Cropper(this.elements.croppableImage, {
         aspectRatio: NaN,
         viewMode: 1,
-        autoCropArea: isMapSource ? 1 : 0.8,
+        autoCropArea: 0.9,
         responsive: true,
         background: true,
         movable: true,
@@ -173,6 +173,7 @@ export class ImageCropper {
       custom: "customBackgroundModal",
       map: "mapModal",
       maps: "mapModal",
+      osm: "osmModal",
     };
 
     const targetModalId = sourceModalMap[this.manager.currentSource];
@@ -197,8 +198,7 @@ export class ImageCropper {
 
     // Get cropped canvas
     const croppedCanvas = this.cropper.getCroppedCanvas({
-      imageSmoothingEnabled: true,
-      imageSmoothingQuality: "high",
+      imageSmoothingEnabled: false,
     });
 
     if (!croppedCanvas) {

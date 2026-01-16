@@ -1,11 +1,11 @@
-<!-- Google Maps Modal -->
-<div class="modal custom-modal" id="mapModal" tabindex="-1" aria-labelledby="mapModalLabel" aria-hidden="true">
+<!-- OpenStreetMap Modal -->
+<div class="modal custom-modal" id="osmModal" tabindex="-1" aria-labelledby="osmModalLabel" aria-hidden="true">
   <div class="modal-dialog">
     <div class="modal-content">
       <div class="modal-header">
         <div class="modal-header-content">
           <div class="modal-header-left">
-            <h1 class="modal-title fs-4" id="mapModalLabel">Maps Satellite</h1>
+            <h1 class="modal-title fs-4" id="osmModalLabel">OpenStreetMap Map</h1>
           </div>
           <div class="modal-header-center">
             <div class="background-steps">
@@ -24,13 +24,13 @@
             </div>
           </div>
           <div class="modal-header-right nav-buttons">
-            <button id="map-back-btn" class="modal-header-btn">
+            <button id="osm-back-btn" class="modal-header-btn">
               <div class="icon-label">
                 <img src="images/icons/back-black-arrow.svg" alt="Back Arrow" />
                 <span>Back</span>
               </div>
             </button>
-            <button id="map-next-btn" class="modal-header-btn">
+            <button id="osm-next-btn" class="modal-header-btn">
               <div class="icon-label">
                 <span>Next</span>
                 <img src="images/icons/forward-black-arrow.svg" alt="Next Arrow" />
@@ -42,39 +42,37 @@
       </div>
       <div class="modal-body">
         <div class="map-container">
-          <form id="address-form">
-            <input type="text" id="maps-address-input" placeholder="Enter address, building name or postcode..." />
+          <form id="osm-address-form">
+            <div class="osm-search-wrapper">
+              <input type="text" id="osm-address-input" placeholder="Enter address, building name or postcode..." autocomplete="off" />
+              <div id="osm-search-results" class="osm-search-results"></div>
+            </div>
           </form>
-          <div id="google-maps-container">
-            <div id="map"></div>
+          <div id="osm-map-container">
+            <div id="osm-map"></div>
             <!-- Map Controls (Top Left) -->
-            <div id="map-controls-group">
+            <div id="osm-controls-group">
               <div class="map-controls-row">
                 <!-- Map Types -->
-                <div class="btn-toggle-group" role="group" aria-label="Map type">
-                  <button type="button" class="map-type-btn toggle-btn" data-type="roadmap">Map</button>
-                  <button type="button" class="map-type-btn toggle-btn active" data-type="satellite">Satellite</button>
-                </div>
-                <!-- Labels Toggle -->
-                <div class="btn-toggle-group" role="group" aria-label="Map Features">
-                  <button type="button" id="toggle-labels-btn" class="toggle-btn">Labels</button>
+                <div class="btn-toggle-group" role="group" aria-label="Map type" style="display: none;">
+                  <button type="button" class="osm-map-type-btn toggle-btn active" data-type="roadmap">Map</button>
                 </div>
                 <!-- Shape Controls -->
                 <div class="btn-toggle-group" role="group" aria-label="Capture shape">
-                  <button type="button" id="shape-square-btn" class="toggle-btn active">Square</button>
-                  <button type="button" id="shape-rect-btn" class="toggle-btn">Rect</button>
+                  <button type="button" id="osm-shape-square-btn" class="toggle-btn active">Square</button>
+                  <button type="button" id="osm-shape-rect-btn" class="toggle-btn">Rect</button>
                 </div>
               </div>
             </div>
             <!-- Square Capture Overlay -->
-            <div id="map-capture-overlay">
+            <div id="osm-capture-overlay">
               <div class="capture-frame square">
                 <div class="capture-label">Capture Area</div>
                 <div class="capture-corners"></div>
               </div>
             </div>
             <!-- Center crosshair for precise positioning -->
-            <div id="map-center-cross">
+            <div id="osm-center-cross">
               <div class="horizontal-line"></div>
               <div class="vertical-line"></div>
             </div>

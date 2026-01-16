@@ -128,6 +128,7 @@ export function setupMeasurementTools(fabricCanvas) {
         selectable: true,
         hasControls: false,
         borderColor: "#f8794b",
+        isMeasurement: true, // Add identifier
       });
 
       // Handle undo/redo state
