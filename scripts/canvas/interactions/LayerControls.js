@@ -506,17 +506,9 @@ export class LayerControls {
         newToggle.addEventListener("change", () => {
           layers[layerName].visible = newToggle.checked;
 
-          // Main devices toggle affects all system layers
-          if (layerName === "devices") {
-            SYSTEM_LAYERS.forEach((sysLayer) => {
-              const sysToggle = this.getLayerElements(sysLayer).toggle;
-              layers[sysLayer].visible = newToggle.checked && (sysToggle?.checked ?? true);
-            });
-          }
-
-          // System layer visibility depends on main devices layer
+          // System layer visibility is independent
           if (SYSTEM_LAYERS.includes(layerName)) {
-            layers[layerName].visible = newToggle.checked && layers.devices.visible;
+            layers[layerName].visible = newToggle.checked;
           }
 
           this.updateLayerVisibility();
