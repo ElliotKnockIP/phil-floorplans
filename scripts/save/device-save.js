@@ -156,11 +156,9 @@ class CameraDeviceSerializer {
       }
 
       if (group.textObject && group.deviceType !== "text-device") {
-        const isHidden = group.textObject._isHidden;
-        const isVisible = group.textObject.visible !== false;
-        const isOnCanvas = !group.textObject.canvas || group.textObject.canvas.getObjects().includes(group.textObject);
-
-        const isTextVisible = !isHidden && isVisible && isOnCanvas;
+        const labelHidden = this.getLabelHiddenState(group);
+        const isHidden = labelHidden || group.textObject._isHidden === true;
+        const isTextVisible = !isHidden;
         const scaleFactor = group.scaleFactor || 1;
         const defaultOffset = getDefaultLabelOffset(group);
         const labelOffset = group.labelOffset
@@ -185,7 +183,7 @@ class CameraDeviceSerializer {
             selectable: group.textObject.selectable || false,
             isDeviceLabel: group.textObject.isDeviceLabel || true,
             visible: isTextVisible,
-            _isHidden: group.textObject._isHidden || false,
+            _isHidden: isHidden,
           },
           scaleRelation: { baseFontSize: 12, currentScaleFactor: scaleFactor },
           offset: labelOffset,

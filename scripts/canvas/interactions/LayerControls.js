@@ -41,6 +41,9 @@ export class LayerControls {
     this.eventListeners = new Map();
     this.domItemsChangedHandler = null;
     this.perItemContainers = { zones: null, rooms: null, risks: null, safetyZones: null };
+    if (typeof window !== "undefined") {
+      window.layers = layers;
+    }
     this.init();
   }
 
@@ -65,6 +68,7 @@ export class LayerControls {
     this.categorizeAllObjects();
     this.setupLayerControls();
     this.setupCanvasEventListeners();
+    this.applyPendingLayerState();
     this.updateLayerVisibility();
     this.updateLayerOpacity();
   }
@@ -79,6 +83,7 @@ export class LayerControls {
     this.renderLayerItems("rooms");
     this.renderLayerItems("risks");
     this.renderLayerItems("safetyZones");
+    this.applyPendingLayerState();
     this.updateLayerVisibility();
     this.updateLayerOpacity();
   }
@@ -525,6 +530,76 @@ export class LayerControls {
     this.renderLayerItems("rooms");
     this.renderLayerItems("risks");
     this.renderLayerItems("safetyZones");
+    this.syncLayerControlsUI();
+  }
+
+  // Get a serializable snapshot of layer settings (visibility + opacity)
+  getSerializableLayerState() {
+    const layerState = {};
+    Object.keys(layers).forEach((layerName) => {
+      layerState[layerName] = {
+        visible: !!layers[layerName].visible,
+        opacity: typeof layers[layerName].opacity === "number" ? layers[layerName].opacity : 1,
+      };
+    });
+    return {
+      version: 1,
+      layers: layerState,
+    };
+  }
+
+  // Apply a saved layer settings snapshot
+  applySerializableLayerState(state) {
+    if (!state || !state.layers) return false;
+
+    Object.keys(state.layers).forEach((layerName) => {
+      if (!layers[layerName]) return;
+      const saved = state.layers[layerName] || {};
+      if (typeof saved.visible === "boolean") {
+        layers[layerName].visible = saved.visible;
+      } else if (typeof saved.visible === "string") {
+        layers[layerName].visible = saved.visible.toLowerCase() === "true";
+      } else if (typeof saved.visible === "number") {
+        layers[layerName].visible = saved.visible !== 0;
+      }
+
+      if (typeof saved.opacity === "number") {
+        layers[layerName].opacity = Math.max(0, Math.min(1, saved.opacity));
+      } else if (typeof saved.opacity === "string") {
+        const parsedOpacity = Number.parseFloat(saved.opacity);
+        if (!Number.isNaN(parsedOpacity)) {
+          layers[layerName].opacity = Math.max(0, Math.min(1, parsedOpacity));
+        }
+      }
+    });
+
+    this.syncLayerControlsUI();
+    this.updateLayerVisibility();
+    this.updateLayerOpacity();
+    return true;
+  }
+
+  // Sync UI toggles/sliders with current layer settings
+  syncLayerControlsUI() {
+    Object.keys(layers).forEach((layerName) => {
+      const { toggle, slider } = this.getLayerElements(layerName);
+      if (toggle) toggle.checked = !!layers[layerName].visible;
+      if (slider) {
+        const val = Math.round((typeof layers[layerName].opacity === "number" ? layers[layerName].opacity : 1) * 100);
+        slider.value = `${Math.max(0, Math.min(100, val))}`;
+        this.updateSliderTrack(slider, Number(slider.value), Number(slider.min || 0), Number(slider.max || 100));
+      }
+    });
+  }
+
+  // Apply pending layer state if provided by a project load
+  applyPendingLayerState() {
+    if (typeof window === "undefined") return;
+    const pending = window.pendingLayerControlsState;
+    if (pending) {
+      this.applySerializableLayerState(pending);
+      window.pendingLayerControlsState = null;
+    }
   }
 
   // Ensure UI containers for individual item controls exist
@@ -657,12 +732,23 @@ export function refreshLayers() {
   if (window.layerControls) window.layerControls.refreshLayers();
 }
 
+export function initCanvasLayers(canvas) {
+  if (window.layerControls) {
+    if (canvas) window.layerControls.canvas = canvas;
+    window.layerControls.refreshLayers();
+    if (window.layerControls.syncLayerControlsUI) window.layerControls.syncLayerControlsUI();
+  } else if (canvas) {
+    window.layerControls = new LayerControls(canvas);
+  }
+}
+
 export function getLayersState() {
   if (window.layerControls) return window.layerControls.getLayersState();
   return null;
 }
 
 window.refreshLayers = refreshLayers;
+window.initCanvasLayers = initCanvasLayers;
 window.getLayersState = getLayersState;
 window.requestLayerItemsRefresh = () => {
   if (window.layerControls) {

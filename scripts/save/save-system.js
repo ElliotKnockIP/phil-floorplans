@@ -102,6 +102,7 @@ class SaveSystem {
         globalBoldText: window.globalBoldText !== undefined ? !!window.globalBoldText : false,
         globalCompleteDeviceIndicator: window.globalCompleteDeviceIndicator !== undefined ? !!window.globalCompleteDeviceIndicator : true,
         globalLabelDragEnabled: window.globalLabelDragEnabled !== undefined ? !!window.globalLabelDragEnabled : false,
+        layerControls: typeof window !== "undefined" && window.layerControls?.getSerializableLayerState ? window.layerControls.getSerializableLayerState() : null,
       };
 
       const projectData = {
@@ -197,6 +198,9 @@ class SaveSystem {
             globalCompleteDeviceIndicator: savedSettings.globalCompleteDeviceIndicator !== undefined ? !!savedSettings.globalCompleteDeviceIndicator : true,
             globalLabelDragEnabled: savedSettings.globalLabelDragEnabled !== undefined ? !!savedSettings.globalLabelDragEnabled : false,
           });
+          if (savedSettings.layerControls) {
+            window.pendingLayerControlsState = savedSettings.layerControls;
+          }
           if (projectData.settings) {
             const { pixelsPerMeter, zoom, viewportTransform } = projectData.settings;
             this.fabricCanvas.pixelsPerMeter = pixelsPerMeter || 17.5;
@@ -283,6 +287,9 @@ class SaveSystem {
 
           // Final passes
           if (window.initCanvasLayers) window.initCanvasLayers(this.fabricCanvas);
+          if (savedSettings.layerControls && window.layerControls?.applySerializableLayerState) {
+            window.layerControls.applySerializableLayerState(savedSettings.layerControls);
+          }
           setTimeout(() => {
             if (savedZoom) this.fabricCanvas.setZoom(savedZoom);
             if (savedViewportTransform) this.fabricCanvas.setViewportTransform(savedViewportTransform);

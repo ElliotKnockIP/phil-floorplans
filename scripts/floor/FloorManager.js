@@ -215,6 +215,10 @@ export class FloorManager {
     this.fabricCanvas.pixelsPerMeter = pixelsPerMeter || 17.5;
     window.defaultDeviceIconSize = defaultDeviceIconSize || 30;
 
+    if (settings.layerControls) {
+      window.pendingLayerControlsState = settings.layerControls;
+    }
+
     // Apply ALL global settings from the floor data
     const globalSettings = this.serializer.extractGlobalSettings(settings);
     if (Object.keys(globalSettings).length > 0) {

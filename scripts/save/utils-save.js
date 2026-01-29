@@ -28,8 +28,9 @@ export const ObjectTypeUtils = {
   // Checks if an object is a managed object
   isManagedObject: (obj) => {
     const isNetworkLabel = obj.isSegmentDistanceLabel || obj.isConnectionCustomLabel || obj.isChannelLabel;
+    const isNetworkObject = obj.isConnectionSegment || obj.isNetworkSplitPoint || obj.isNetworkConnection;
 
-    return ObjectTypeUtils.isDevice(obj) || (obj.type === "text" && obj.isDeviceLabel) || obj.isResizeIcon === true || obj.isCoverage === true || isNetworkLabel;
+    return ObjectTypeUtils.isDevice(obj) || (obj.type === "text" && obj.isDeviceLabel) || obj.isResizeIcon === true || obj.isCoverage === true || isNetworkLabel || isNetworkObject;
   },
   // Checks if an object is a zone object
   isZoneObject: (obj) => (obj.type === "polygon" && obj.class === "zone-polygon") || (obj.type === "i-text" && obj.class === "zone-text"),
@@ -531,6 +532,9 @@ export const DrawingUtils = {
   serializeWalls: (fabricCanvas) => {
     const circles = fabricCanvas.getObjects().filter((obj) => obj.type === "circle" && obj.isWallCircle);
     const lines = fabricCanvas.getObjects().filter((obj) => {
+      // Filter out connection segments and split points to prevent "ghost" lines
+      if (obj.isConnectionSegment || obj.isNetworkSplitPoint) return false;
+      
       return obj.type === "line" && !obj.deviceType && !obj.isResizeIcon && !obj.isConnectionLine && obj.stroke !== "grey" && obj.stroke !== "blue";
     });
     return {

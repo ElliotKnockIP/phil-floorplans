@@ -173,6 +173,7 @@ export class FloorSerializer {
         zoom: this.fabricCanvas.getZoom(),
         viewportTransform: [...this.fabricCanvas.viewportTransform],
         defaultDeviceIconSize: window.defaultDeviceIconSize || 30,
+        layerControls: typeof window !== "undefined" && window.layerControls?.getSerializableLayerState ? window.layerControls.getSerializableLayerState() : null,
         ...this.getCurrentGlobalSettings(),
       },
       counters: { cameraCounter: window.cameraCounter || 1, deviceCounter: window.deviceCounter || 1 },

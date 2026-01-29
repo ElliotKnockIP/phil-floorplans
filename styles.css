@@ -1090,7 +1090,7 @@ input[type="range"].form-range {
 /* Sliding panels */
 .sliding-panels {
   position: relative;
-  flex: 1 1 600px; /* Allow shrinking/growing */
+  flex: 1 1 655px;
   min-height: 0;
   overflow: hidden;
   border-bottom-left-radius: var(--border-radius-md);

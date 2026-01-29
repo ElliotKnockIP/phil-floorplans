@@ -269,8 +269,12 @@ class OptimizedDrawingObjectSerializer {
             zoneResistanceValue: p.zoneResistanceValue || z.zoneResistanceValue || "",
             zoneNotes: p.zoneNotes || "",
             area: p.area || 0,
-            height: p.height || 2.4,
+            height: p.ceilingHeight || (p.height < 100 ? p.height : 2.4),
             volume: p.volume || 0,
+            nameVisible: p.nameVisible !== undefined ? p.nameVisible : true,
+            areaVisible: p.areaVisible !== undefined ? p.areaVisible : false,
+            volumeVisible: p.volumeVisible !== undefined ? p.volumeVisible : false,
+            notesVisible: p.notesVisible !== undefined ? p.notesVisible : false,
             polygon: DrawingUtils.extractProps(p, ["points", "fill", "stroke", "strokeWidth", "strokeLineJoin", "left", "top", "scaleX", "scaleY", "angle", "class", "selectable", "evented", "hasControls", "hasBorders", "hoverCursor", "perPixelTargetFind"]),
             text: this.getTextObjectData(z.text),
           };
@@ -297,8 +301,12 @@ class OptimizedDrawingObjectSerializer {
             roomNotes: r.roomNotes || p.roomNotes || "",
             roomColor: r.roomColor || p.stroke || "#0066cc",
             area: r.area || p.area || 0,
-            height: r.height || p.height || 2.4,
+            height: r.ceilingHeight || p.ceilingHeight || (p.height < 100 ? p.height : 2.4),
             volume: r.volume || p.volume || 0,
+            nameVisible: p.nameVisible !== undefined ? p.nameVisible : true,
+            areaVisible: p.areaVisible !== undefined ? p.areaVisible : false,
+            volumeVisible: p.volumeVisible !== undefined ? p.volumeVisible : false,
+            notesVisible: p.notesVisible !== undefined ? p.notesVisible : false,
             devices: r.devices || [],
             polygon: DrawingUtils.extractProps(p, ["points", "fill", "stroke", "strokeWidth", "strokeLineJoin", "left", "top", "scaleX", "scaleY", "angle", "class", "selectable", "evented", "hasControls", "hasBorders", "hoverCursor", "perPixelTargetFind"]),
             text: this.getTextObjectData(r.text),
@@ -325,6 +333,13 @@ class OptimizedDrawingObjectSerializer {
             riskName: r.riskName || p.riskName || `Risk ${i + 1}`,
             riskNotes: r.riskNotes || p.riskNotes || "",
             riskColor: r.riskColor || p.stroke || "#e53935",
+            riskEase: r.riskEase || p.riskEase || "",
+            showInIntruder: p.showInIntruder,
+            showInCctv: p.showInCctv,
+            showInAccess: p.showInAccess,
+            showInFire: p.showInFire,
+            nameVisible: p.nameVisible !== undefined ? p.nameVisible : true,
+            notesVisible: p.notesVisible !== undefined ? p.notesVisible : false,
             devices: r.devices || [],
             polygon: DrawingUtils.extractProps(p, ["points", "fill", "stroke", "strokeWidth", "strokeDashArray", "strokeLineJoin", "left", "top", "scaleX", "scaleY", "angle", "class", "selectable", "evented", "hasControls", "hasBorders", "hoverCursor", "perPixelTargetFind"]),
             text: this.getTextObjectData(r.text),
@@ -350,6 +365,7 @@ class OptimizedDrawingObjectSerializer {
             id: `safety_${i}`,
             safetyName: s.safetyName || p.safetyName || `Safety ${i + 1}`,
             safetySubDetails: s.safetySubDetails || [],
+            nameVisible: p.nameVisible !== undefined ? p.nameVisible : true,
             safetyColor: s.safetyColor || p.stroke || "#f9a825",
             devices: s.devices || [],
             polygon: DrawingUtils.extractProps(p, ["points", "fill", "stroke", "strokeWidth", "strokeDashArray", "strokeLineJoin", "left", "top", "scaleX", "scaleY", "angle", "class", "selectable", "evented", "hasControls", "hasBorders", "hoverCursor", "perPixelTargetFind"]),
@@ -480,7 +496,7 @@ class OptimizedDrawingObjectSerializer {
         const stroke = objectData.properties?.stroke;
         const isTopologyLine = typeof stroke === "string" && (stroke.toLowerCase() === "#2196f3" || /rgba?\(\s*33\s*,\s*150\s*,\s*243/i.test(stroke)) && objectData.properties?.selectable === false && objectData.properties?.evented === false;
 
-        if (isTopologyLine) return resolve(null);
+        if (isTopologyLine || objectData.properties?.isConnectionSegment || objectData.properties?.isNetworkSplitPoint) return resolve(null);
 
         // For connection lines, only check ID to avoid position-based false duplicates
         const isConnectionLine = objectData.properties?.isConnectionLine === true;
@@ -928,26 +944,52 @@ class OptimizedDrawingObjectSerializer {
             zoneNotes: itemData.zoneNotes,
             zoneNumber: itemData.zoneNumber ?? itemData.polygon.zoneNumber ?? undefined,
             zoneResistanceValue: itemData.zoneResistanceValue ?? itemData.polygon.zoneResistanceValue ?? undefined,
+            nameVisible: itemData.nameVisible,
+            areaVisible: itemData.areaVisible,
+            volumeVisible: itemData.volumeVisible,
+            notesVisible: itemData.notesVisible,
           };
         } else if (type === "rooms") {
-          props = { roomName: itemData.roomName, roomNotes: itemData.roomNotes };
+          props = {
+            roomName: itemData.roomName,
+            roomNotes: itemData.roomNotes,
+            nameVisible: itemData.nameVisible,
+            areaVisible: itemData.areaVisible,
+            volumeVisible: itemData.volumeVisible,
+            notesVisible: itemData.notesVisible,
+          };
         } else if (type === "safetyZones") {
           props = {
             safetyName: itemData.safetyName,
             safetySubDetails: itemData.safetySubDetails || [],
+            nameVisible: itemData.nameVisible,
           };
         } else {
-          props = { riskName: itemData.riskName, riskNotes: itemData.riskNotes };
+          props = {
+            riskName: itemData.riskName,
+            riskNotes: itemData.riskNotes,
+            riskEase: itemData.riskEase,
+            showInIntruder: itemData.showInIntruder,
+            showInCctv: itemData.showInCctv,
+            showInAccess: itemData.showInAccess,
+            showInFire: itemData.showInFire,
+            nameVisible: itemData.nameVisible,
+            notesVisible: itemData.notesVisible,
+          };
         }
-        const polygon = new fabric.Polygon(itemData.polygon.points, {
+        const polyOptions = {
           ...itemData.polygon,
           ...props,
           strokeLineJoin: itemData.polygon.strokeLineJoin || "round",
           perPixelTargetFind: true,
           area: itemData.area,
-          height: itemData.height,
+          ceilingHeight: itemData.height || itemData.ceilingHeight || 2.4,
           volume: itemData.volume,
-        });
+        };
+        // Remove height from options to prevent Fabric.js messing with polygons
+        delete polyOptions.height;
+
+        const polygon = new fabric.Polygon(itemData.polygon.points, polyOptions);
         const text = new fabric.IText(itemData.text.text, { ...itemData.text });
         polygon.associatedText = text;
         text.associatedPolygon = polygon;
@@ -1248,7 +1290,7 @@ class OptimizedDrawingObjectSerializer {
       "zone",
       (p) => {
         if (window.showDeviceProperties) {
-          window.showDeviceProperties("zone-polygon", text, p, p.height);
+          window.showDeviceProperties("zone-polygon", text, p, p.ceilingHeight || 2.4);
         }
       },
       () => window.maintainZoneLayerOrder?.()
@@ -1349,18 +1391,15 @@ class OptimizedDrawingObjectSerializer {
         return o !== polygon && o !== text && o.type === "group" && o.deviceType && o.containsPoint(pointer);
       });
       polygon.set("evented", true);
-      e.e.preventDefault();
-      e.e.stopPropagation();
 
-      let target = polygon;
+      // If a device is underneath, select it instead of the polygon
       if (devices.length > 0) {
-        target = devices[0];
-      } else if (type === "zone") {
-        target = text;
-      }
-
-      this.fabricCanvas.setActiveObject(target);
-      this.fabricCanvas.requestRenderAll();
+        e.e.preventDefault();
+        e.e.stopPropagation();
+        this.fabricCanvas.setActiveObject(devices[0]);
+        this.fabricCanvas.requestRenderAll();
+      } 
+      // otherwise allow default behavior (select/drag polygon)
     };
 
     polygon.on("moving", polygonMovingHandler);

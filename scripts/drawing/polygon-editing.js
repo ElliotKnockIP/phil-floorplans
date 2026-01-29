@@ -186,7 +186,7 @@ function handleControlMove(fabricCanvas, polygon, movedIndex, movedCircle) {
     polygon.area = areaInPixels / (pixelsPerMeter * pixelsPerMeter);
 
     // Calculate volume (area * height in meters)
-    polygon.volume = polygon.area * (polygon.height || 2.4);
+    polygon.volume = polygon.area * (polygon.ceilingHeight || 2.4);
   }
 
   // Update polygonss coordinates
@@ -206,6 +206,15 @@ function handleControlMove(fabricCanvas, polygon, movedIndex, movedCircle) {
 
     // Update the text content to reflect the new area/volume
     updatePolygonTextContent(polygon, fabricCanvas);
+    
+    // Save visibility state from text content
+     if (polygon.associatedText && !polygon.associatedText._isHidden) {
+      const text = polygon.associatedText.text || "";
+      if (polygon.nameVisible === undefined) polygon.nameVisible = true;
+      if (polygon.areaVisible === undefined) polygon.areaVisible = text.includes("Area:");
+      if (polygon.volumeVisible === undefined) polygon.volumeVisible = text.includes("Volume:");
+      if (polygon.notesVisible === undefined) polygon.notesVisible = text.includes("Notes:");
+    }
   }
 
   // Ensure control points stay on top of the polygon
@@ -238,7 +247,7 @@ function updatePolygonTextContent(polygon, fabricCanvas) {
       ) / 2;
   }
   const area = areaInPixels / (pixelsPerMeter * pixelsPerMeter);
-  const height = textObject.displayHeight || polygon.height || 2.4;
+  const height = polygon.ceilingHeight || textObject.displayHeight || 2.4;
   const volume = area * height;
 
   // Parse existing text lines and update area/volume values

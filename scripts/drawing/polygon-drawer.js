@@ -391,7 +391,7 @@ class PolygonDrawer {
     if (this.type !== "risk") {
       const height = 2.4;
       polygonProps.area = area;
-      polygonProps.height = height;
+      polygonProps.ceilingHeight = height;
       polygonProps.volume = area * height;
     }
 

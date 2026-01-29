@@ -1,4 +1,4 @@
-import { preventEventPropagation, createSliderInputSync, setupColorControls, setMultipleObjectProperties, calculateArea, updatePolygonText, updatePolygonColor } from "../sidebar-utils.js";
+import { preventEventPropagation, createSliderInputSync, setupColorControls, setMultipleObjectProperties, calculateArea, updatePolygonText, updatePolygonColor, updateWarningText } from "../sidebar-utils.js";
 import { updateControlPointColors } from "../../drawing/polygon-editing.js";
 
 // Manages all polygon property panels (Zones, Rooms, Risks, Safety)
@@ -19,6 +19,7 @@ export class PolygonPanels {
     this.setupRiskInputs();
     this.setupSafetyInputs();
     this.setupAppearanceControls();
+    this.setupSliders();
 
     // Global access for updates
     window.updatePolygonPanels = (type, polygon, textObj) => this.update(type, polygon, textObj);
@@ -178,6 +179,68 @@ export class PolygonPanels {
     }
 
     window.renderSafetySubDetailsList = () => this.renderSafetySubDetailsList();
+  }
+
+  // Binds slider inputs for height and text capabilities
+  setupSliders() {
+    // Height controls (Zones & Rooms)
+    const heightConfigs = [
+      { id: "zone-height-slider", inputId: "zone-height-input", warningId: "zone-warning" },
+      { id: "room-height-slider", inputId: "room-height-input", warningId: "room-warning" },
+    ];
+
+    heightConfigs.forEach((config) => {
+      const slider = document.getElementById(config.id);
+      const displaySpan = document.getElementById(config.inputId);
+      const warningEl = document.getElementById(config.warningId);
+
+      if (slider) {
+        preventEventPropagation(slider, ["mousedown", "click", "touchstart"]);
+        createSliderInputSync(
+          slider,
+          displaySpan,
+          (val) => {
+            if (this.currentPolygon) {
+              this.currentPolygon.ceilingHeight = val;
+              if (this.currentTextObject) {
+                this.currentTextObject.displayHeight = val;
+              }
+              if (warningEl) updateWarningText(warningEl, val);
+              this.refreshText();
+            }
+          },
+          { min: 1, max: 10, step: 0.1, suffix: "m" }
+        );
+      }
+    });
+
+    // Text Size controls (All types)
+    const textSizeConfigs = [
+      { id: "zone-text-size-slider", inputId: "zone-text-size-input" },
+      { id: "room-text-size-slider", inputId: "room-text-size-input" },
+      { id: "risk-text-size-slider", inputId: "risk-text-size-input" },
+      { id: "safety-text-size-slider", inputId: "safety-text-size-input" },
+    ];
+
+    textSizeConfigs.forEach((config) => {
+      const slider = document.getElementById(config.id);
+      const displaySpan = document.getElementById(config.inputId);
+
+      if (slider) {
+        preventEventPropagation(slider, ["mousedown", "click", "touchstart"]);
+        createSliderInputSync(
+          slider,
+          displaySpan,
+          (val) => {
+            if (this.currentTextObject) {
+              this.currentTextObject.set({ fontSize: val });
+              this.currentPolygon.canvas?.renderAll();
+            }
+          },
+          { min: 1, max: 100, step: 1, suffix: "px" }
+        );
+      }
+    });
   }
 
   // Renders the list of sub-details in the safety properties panel
@@ -343,19 +406,55 @@ export class PolygonPanels {
       colorPicker.value = this.currentPolygon.stroke;
     }
 
+    // Initialize visibility flags based on existing text content
+    if (this.currentTextObject && this.currentTextObject.text) {
+      const existingText = this.currentTextObject.text;
+
+      if (this.currentPolygon.areaVisible === undefined) {
+        this.currentPolygon.areaVisible = existingText.includes("Area:");
+      }
+      if (this.currentPolygon.volumeVisible === undefined) {
+        this.currentPolygon.volumeVisible = existingText.includes("Volume:");
+      }
+      if (this.currentPolygon.notesVisible === undefined) {
+        this.currentPolygon.notesVisible = existingText.includes("Notes:");
+      }
+
+      if (this.currentPolygon.nameVisible === undefined) {
+        this.currentPolygon.nameVisible = true;
+      }
+    }
+
     // Sync toggles
     ["name", "area", "volume", "notes"].forEach((toggleType) => {
       const toggle = document.getElementById(`${type}-${toggleType}-toggle`);
       if (toggle) {
-        // We need to check the polygon's state.
-        // Usually these are stored in the polygon object or inferred from text visibility.
-        // For now, let's assume they are stored on the polygon object.
         const prop = `${toggleType}Visible`;
         if (this.currentPolygon[prop] !== undefined) {
           toggle.checked = this.currentPolygon[prop];
+        } else if (toggleType === "name") {
+          toggle.checked = true; // Default to showing name if undefined
+        } else {
+          toggle.checked = false; // Default others to hidden
         }
       }
     });
+
+    // Sync Sliders
+
+    // Height
+    const heightSlider = document.getElementById(`${type}-height-slider`);
+    if (heightSlider) {
+      heightSlider.value = this.currentPolygon.ceilingHeight || 2.4;
+      heightSlider.dispatchEvent(new Event("input"));
+    }
+
+    // Text Size
+    const textSizeSlider = document.getElementById(`${type}-text-size-slider`);
+    if (textSizeSlider && this.currentTextObject) {
+      textSizeSlider.value = this.currentTextObject.fontSize || 15;
+      textSizeSlider.dispatchEvent(new Event("input"));
+    }
   }
 
   // Refreshes the text display on the canvas
@@ -372,10 +471,16 @@ export class PolygonPanels {
 
     const name = this.currentPolygon[`${type}Name`] || "Polygon";
     const notes = this.currentPolygon[`${type}Notes`] || "";
-    const height = this.currentPolygon.height || 2.4;
+    const height = this.currentPolygon.ceilingHeight || 2.4;
     const isZone = type === "zone";
 
     updatePolygonText(this.currentPolygon, this.currentTextObject, this.currentPolygon.canvas, toggles, name, notes, height, isZone);
+
+    // Save visibility state to polygon object 
+    if (toggles.name) this.currentPolygon.nameVisible = toggles.name.checked;
+    if (toggles.area) this.currentPolygon.areaVisible = toggles.area.checked;
+    if (toggles.volume) this.currentPolygon.volumeVisible = toggles.volume.checked;
+    if (toggles.notes) this.currentPolygon.notesVisible = toggles.notes.checked;
   }
 
   // Updates polygon fill and stroke colors

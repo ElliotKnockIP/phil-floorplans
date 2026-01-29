@@ -384,7 +384,7 @@ export function updateDevicesList(container, polygon, fabricCanvas, typeOrIsZone
 export function updatePolygonText(polygon, textObject, canvas, toggles, name, notes, height, isZone = true) {
   if (!polygon || !textObject || !canvas) return;
   const area = calculateArea(polygon.points, canvas);
-  const displayHeight = textObject.displayHeight || polygon.height || 2.4;
+  const displayHeight = height || polygon.ceilingHeight || textObject.displayHeight || 2.4;
   const volume = area * displayHeight;
   const lines = [];
   if (toggles.name?.checked) lines.push(name);

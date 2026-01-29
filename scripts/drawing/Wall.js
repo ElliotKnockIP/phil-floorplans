@@ -17,7 +17,7 @@ export class Wall {
     this.tempCircles = [];
 
     this.CLOSE_DISTANCE_THRESHOLD = 25;
-    this.MIN_POINTS_FOR_COMPLETION = 2;
+    this.MIN_POINTS_FOR_COMPLETION = 1;
 
     // Default properties for wall lines
     this.WALL_LINE_PROPS = {
